@@ -55,7 +55,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
         .select('*')
         .eq('post_id', project.id)
         .eq('user_id', currentUser.id)
-        .maybeSingle() as { id: number; post_id: string; user_id: string; reaction_type: ReactionType } | null;
+        .maybeSingle() as any;
 
       if (existingReaction) {
         if (existingReaction.reaction_type === reactionType) {
@@ -103,9 +103,30 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
     }
   };
   
-  // Get all images from media_urls or use image_url as fallback
-  const projectImages = project.media_urls && project.media_urls.length > 0 
-    ? project.media_urls 
+  // Get all images from media_urls or use image_url as fallback, but filter out videos
+  const isVideoUrl = (url: string) => {
+    if (!url) return false;
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv', '.m4v'];
+    const lowerUrl = url.toLowerCase();
+    return videoExtensions.some(ext => lowerUrl.includes(ext)) || 
+           lowerUrl.includes('video') || 
+           lowerUrl.includes('stream');
+  };
+
+  // Priorizar video_url si existe, luego filtrar media_urls para separar imágenes de videos
+  const videoUrl = project.video_url;
+  const allMediaUrls = project.media_urls || [];
+  
+  // Separar imágenes y videos
+  const imageUrls = allMediaUrls.filter(url => !isVideoUrl(url));
+  const videoUrls = allMediaUrls.filter(url => isVideoUrl(url));
+  
+  // Usar video_url principal si existe, o el primer video de media_urls
+  const primaryVideoUrl = videoUrl || videoUrls[0];
+  
+  // Para imágenes: usar image_url si no hay imágenes en media_urls
+  const projectImages = imageUrls.length > 0 
+    ? imageUrls 
     : project.image_url 
       ? [project.image_url] 
       : [];
@@ -115,6 +136,9 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
 
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Si hay video principal, no abrir galería (los videos se reproducen en el card)
+    if (primaryVideoUrl) return;
+    
     if (projectImages.length > 0) {
       setShowImageGallery(true);
       setCurrentImageIndex(0);
@@ -139,9 +163,35 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
       >
         {/* Horizontal Layout: Image Left, Content Right */}
         <div className="flex flex-col md:flex-row">
-          {/* Project Image - Left Side */}
+          {/* Project Image/Video - Left Side */}
           <div className="relative md:w-2/5 aspect-[16/9] md:aspect-auto bg-gradient-to-br from-primary/10 via-primary/5 to-background overflow-hidden">
-            {projectImages.length > 0 ? (
+            {primaryVideoUrl ? (
+              <>
+                <video
+                  src={primaryVideoUrl}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="relative z-10 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-pointer"
+                  onClick={handleImageClick}
+                />
+                
+                {/* Video indicator overlay */}
+                <div className="absolute inset-0 z-20 bg-black/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="text-center">
+                    <div className="text-white text-lg font-semibold mb-1">
+                      ▶️ Video
+                    </div>
+                    {projectImages.length > 0 && (
+                      <div className="text-white text-sm bg-white/20 backdrop-blur-md rounded-full px-4 py-2 border border-white/30">
+                        Ver galería ({projectImages.length} imágenes)
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : projectImages.length > 0 ? (
               <>
                 <img
                   src={projectImages[0]}
