@@ -30,8 +30,15 @@ export function PostCard({ post }: PostCardProps) {
   const { username, avatar_url, career, institution } = post.profiles;
 
   // Determine if media is an image or video
-  const isVideo = post.media_url?.match(/\.(mp4|webm|mov|ogg)$/i);
-  const isImage = post.media_url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+  const isVideo = post.media_url?.match(/\.(mp4|webm|mov|ogg)$/i) || 
+                  (post.media_urls && post.media_urls.some(url => url.match(/\.(mp4|webm|mov|ogg)$/i)));
+  const isImage = post.media_url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) || 
+                  (post.media_urls && post.media_urls.some(url => url.match(/\.(jpg|jpeg|png|gif|webp)$/i)));
+  
+  // Get the primary media URL (for projects, use first video if exists)
+  const primaryMediaUrl = post.media_url || 
+                          (post.media_urls && post.media_urls.find(url => url.match(/\.(mp4|webm|mov|ogg)$/i))) ||
+                          (post.media_urls && post.media_urls[0]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -92,11 +99,11 @@ export function PostCard({ post }: PostCardProps) {
       </div>
 
       {/* Media */}
-      {post.media_url && (
+      {primaryMediaUrl && (
         <div className="border-t border-b border-gray-100 dark:border-gray-700">
           {isImage && (
             <img
-              src={post.media_url}
+              src={primaryMediaUrl}
               alt="Post media"
               className="w-full h-auto max-h-[500px] object-cover"
               loading="lazy"
@@ -104,7 +111,7 @@ export function PostCard({ post }: PostCardProps) {
           )}
           {isVideo && (
             <video
-              src={post.media_url}
+              src={primaryMediaUrl}
               controls
               className="w-full max-h-[500px]"
             >

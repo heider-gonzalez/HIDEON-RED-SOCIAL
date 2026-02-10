@@ -4,6 +4,10 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { DEMO_FEED_ITEMS, type DemoFeedItem } from './demo-feed-items';
 
+// SECURITY: This script is server-side only and uses environment variables
+// API keys are never exposed to client-side code
+// This file should never be imported or used in browser environments
+
 function loadEnvFromFile(filePath: string) {
   try {
     if (!fs.existsSync(filePath)) return;
@@ -132,6 +136,15 @@ async function authAdminRequest<T>(pathname: string, init: RequestInit): Promise
     throw err;
   }
   return data as T;
+}
+
+// Security: Ensure sensitive data is not logged or exposed
+function sanitizeForLogging(obj: any): any {
+  if (!obj) return obj;
+  const sanitized = { ...obj };
+  if (sanitized.apikey) sanitized.apikey = '[REDACTED]';
+  if (sanitized.Authorization) sanitized.Authorization = '[REDACTED]';
+  return sanitized;
 }
 
 async function findUserIdByEmail(email: string): Promise<string | null> {
