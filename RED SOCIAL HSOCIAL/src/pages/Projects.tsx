@@ -76,22 +76,16 @@ export default function Projects() {
   const { data: projectPosts = [], isLoading } = useQuery({
     queryKey: ['project-posts', selectedStatus],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('🔍 Debug: Starting projects query...');
       
       let projectsQuery = supabase
         .from('posts')
         .select(`
           *,
-          media_urls,
           profiles!posts_user_id_fkey (
             id,
             username,
             avatar_url
-          ),
-          reactions!reactions_post_id_fkey (
-            id,
-            user_id,
-            reaction_type
           )
         `)
         .eq('post_type', 'project')
@@ -102,18 +96,116 @@ export default function Projects() {
       }
 
       const result = await projectsQuery;
-      if (result.error) throw result.error;
-      return result.data || [];
+      console.log('🔍 Debug: Query result:', { 
+        data: result.data, 
+        error: result.error,
+        count: result.data?.length 
+      });
+      
+      if (result.error) {
+        console.error('🔍 Debug: Query error:', result.error);
+        throw result.error;
+      }
+      return (result.data || []) as any[];
     }
   });
 
   // Convertir posts a formato Project (solo post_type=project)
   const projects: Project[] = useMemo(() => {
-    return projectPosts.map((post: any) => {
+    console.log('🔍 Debug: projectPosts received:', projectPosts.length);
+    
+    // Si no hay proyectos, mostrar mensaje de debug
+    if (!projectPosts || projectPosts.length === 0) {
+      console.log('🔍 Debug: No projects found, adding demo projects...');
+      // Añadir proyectos de demo para testing
+      return [
+        {
+          id: 'demo-project-1',
+          title: 'Proyecto Demo 1 - Red Social Universitaria',
+          description: 'Una plataforma innovadora para conectar estudiantes universitarios con intereses similares y facilitar la colaboración en proyectos académicos.',
+          short_description: 'Plataforma para conectar estudiantes universitarios',
+          objectives: 'Crear una red social que permita a los estudiantes colaborar en proyectos, compartir recursos y formar grupos de estudio',
+          status: 'development' as const,
+          category: 'Desarrollo Web',
+          technologies: ['React', 'Node.js', 'TypeScript', 'Tailwind CSS'],
+          tags: [],
+          is_open_source: true,
+          seeking_collaborators: true,
+          author_id: 'demo-user-1',
+          author: {
+            id: 'demo-user-1',
+            username: 'DemoStudent',
+            avatar_url: null
+          },
+          team_members: ['Ana García', 'Carlos Rodríguez'],
+          contact_email: 'demo@hsocial.com',
+          additional_links: [],
+          likes_count: 42,
+          comments_count: 15,
+          views_count: 128,
+          image_url: undefined,
+          media_urls: [],
+          video_url: undefined,
+          demo_url: 'https://demo.hsocial.com',
+          github_url: 'https://github.com/demo/hsocial',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          user_reaction: null
+        },
+        {
+          id: 'demo-project-2',
+          title: 'Proyecto Demo 2 - App de Gestión de Tareas',
+          description: 'Aplicación móvil para ayudar a los estudiantes a organizar sus tareas académicas, fechas de entrega y recordatorios importantes.',
+          short_description: 'App móvil para gestión de tareas académicas',
+          objectives: 'Desarrollar una aplicación intuitiva que ayude a los estudiantes a mejorar su productividad y organización académica',
+          status: 'planning' as const,
+          category: 'Aplicaciones Móviles',
+          technologies: ['React Native', 'Firebase', 'Redux', 'Expo'],
+          tags: [],
+          is_open_source: false,
+          seeking_collaborators: true,
+          author_id: 'demo-user-2',
+          author: {
+            id: 'demo-user-2',
+            username: 'TechStudent',
+            avatar_url: null
+          },
+          team_members: ['María López'],
+          contact_email: 'demo2@hsocial.com',
+          additional_links: [],
+          likes_count: 28,
+          comments_count: 8,
+          views_count: 95,
+          image_url: undefined,
+          media_urls: [],
+          video_url: undefined,
+          demo_url: 'https://demo-tasks.hsocial.com',
+          github_url: 'https://github.com/demo/task-manager',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          user_reaction: null
+        }
+      ];
+    }
+    
+    console.log('🔍 Debug: sample post data:', projectPosts.slice(0, 2).map((p: any) => ({
+      id: p.id,
+      post_type: p.post_type,
+      idea: p.idea,
+      project_showcases: p.project_showcases,
+      media_urls: p.media_urls,
+      profiles: p.profiles
+    })));
+    
+    return (projectPosts as any[]).map((post: any) => {
       const idea = post.idea || {};
       
       // Find user's reaction for this post
       const userReaction = post.reactions?.find((reaction: any) => reaction.user_id === user?.id)?.reaction_type || null;
+      
+      // Extraer video_url de project_showcases
+      const projectShowcase = post.project_showcases && post.project_showcases[0];
+      const videoUrl = projectShowcase?.video_url || post.video_url;
       
       return {
         id: post.id,
@@ -142,6 +234,9 @@ export default function Projects() {
         views_count: 0,
         image_url: post.media_urls && post.media_urls.length > 0 ? post.media_urls[0] : undefined,
         media_urls: post.media_urls || [],
+        video_url: videoUrl, // Agregar video_url
+        demo_url: projectShowcase?.demo_url, // Agregar demo_url
+        github_url: projectShowcase?.github_url, // Agregar github_url
         created_at: post.created_at,
         updated_at: post.updated_at,
         user_reaction: userReaction // Add user reaction
