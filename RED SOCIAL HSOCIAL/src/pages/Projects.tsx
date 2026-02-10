@@ -86,13 +86,7 @@ export default function Projects() {
             id,
             username,
             avatar_url
-          ),
-          json_agg(reactions!reactions_post_id_fkey (
-            id,
-            user_id,
-            reaction_type,
-            created_at
-          )) as reactions
+          )
         `)
         .eq('post_type', 'project')
         .order('updated_at', { ascending: false });
@@ -112,7 +106,34 @@ export default function Projects() {
         console.error('🔍 Debug: Query error:', result.error);
         throw result.error;
       }
-      return (result.data || []) as any[];
+      
+      // Get reactions separately for each post
+      const posts = result.data || [];
+      const postIds = posts.map((p: any) => p.id);
+      
+      if (postIds.length === 0) return [];
+      
+      const { data: reactionsData } = await (supabase as any)
+        .from('reactions')
+        .select('post_id, id, user_id, reaction_type, created_at')
+        .in('post_id', postIds);
+      
+      // Group reactions by post_id
+      const reactionsByPost = reactionsData?.reduce((acc: any, reaction: any) => {
+        if (!acc[reaction.post_id]) {
+          acc[reaction.post_id] = [];
+        }
+        acc[reaction.post_id].push(reaction);
+        return acc;
+      }, {}) || {};
+      
+      // Attach reactions to posts
+      const postsWithReactions = posts.map((post: any) => ({
+        ...post,
+        reactions: reactionsByPost[post.id] || []
+      }));
+      
+      return postsWithReactions as any[];
     }
   });
 

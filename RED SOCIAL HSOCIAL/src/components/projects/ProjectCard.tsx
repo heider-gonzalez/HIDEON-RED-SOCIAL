@@ -389,6 +389,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
                   userReaction={userReaction}
                   onReactionClick={handleReaction}
                   postType="project"
+                  reactionCount={reactionCount}
                 />
               </div>
               <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-blue-500 transition-colors cursor-pointer">
