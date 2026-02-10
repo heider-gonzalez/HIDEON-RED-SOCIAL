@@ -88,6 +88,11 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
       
+      // Also invalidate specific project query to ensure UI updates
+      queryClient.invalidateQueries({ queryKey: ['project-posts', project.id] });
+      queryClient.invalidateQueries({ queryKey: ['posts', project.id] });
+      queryClient.invalidateQueries({ queryKey: ['personalized-feed', project.id] });
+      
       toast({
         title: "Reacción guardada",
         description: "Tu reacción ha sido guardada exitosamente",
