@@ -13,9 +13,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { HoverReactionButton } from '@/components/post/reactions/HoverReactionButton';
-import { ReactionType } from '@/types/database/social.types';
-import { useUnifiedReactions } from '@/hooks/use-unified-reactions';
+import { ReactionButtons } from '@/components/post/ReactionButtons';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface ProjectCardProps {
@@ -32,7 +30,6 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { isReacting, userReaction, reactionCount, handleReaction } = useUnifiedReactions(project.id);
   const statusConfig = PROJECT_STATUS_CONFIG[project.status];
   
   const isOwner = user?.id === project.author_id;
@@ -384,13 +381,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
                 </div>
               )}
               <div onClick={(e) => e.stopPropagation()}>
-                <HoverReactionButton
-                  postId={project.id}
-                  userReaction={userReaction}
-                  onReactionClick={handleReaction}
-                  postType="project"
-                  reactionCount={reactionCount}
-                />
+                <ReactionButtons post={project} />
               </div>
               <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-blue-500 transition-colors cursor-pointer">
                 <MessageCircle size={15} className="opacity-70" />

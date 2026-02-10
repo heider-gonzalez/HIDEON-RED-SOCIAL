@@ -29,6 +29,7 @@ interface ModalPublicacionWebProps {
   initialContent?: string;
   initialMedia?: File | null;
   initialMediaType?: string | null;
+  editingProject?: any; // For editing existing projects
 }
 
  async function sendIdeaPublishedAutoMessage(recipientUserId: string) {
@@ -56,6 +57,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   initialContent = '',
   initialMedia = null,
   initialMediaType = null,
+  editingProject,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -93,7 +95,30 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [projectDescription, setProjectDescription] = useState('');
   const [projectStatus, setProjectStatus] = useState<'idea' | 'in_progress' | 'completed'>('in_progress');
   const [projectTechnologies, setProjectTechnologies] = useState<string[]>([]);
+  const [projectObjectives, setProjectObjectives] = useState('');
+  const [projectTeamMembers, setProjectTeamMembers] = useState<string[]>([]);
+  const [projectGithubUrl, setProjectGithubUrl] = useState('');
+  const [teamMemberInput, setTeamMemberInput] = useState('');
   const [projectDemoUrl, setProjectDemoUrl] = useState('');
+
+  // Populate form fields when editing a project
+  useEffect(() => {
+    if (editingProject) {
+      setProjectTitle(editingProject.title || '');
+      setProjectDescription(editingProject.description || '');
+      setProjectStatus(
+        editingProject.status === 'development' ? 'in_progress' : 
+        editingProject.status === 'completed' ? 'completed' : 'idea'
+      );
+      setProjectTechnologies(editingProject.technologies || []);
+      setProjectObjectives(editingProject.objectives || '');
+      setProjectTeamMembers(editingProject.team_members || []);
+      setProjectGithubUrl(editingProject.github_url || '');
+      setProjectDemoUrl(editingProject.additional_links?.[0] || '');
+      setContent(editingProject.description || '');
+      setSelectedPostType('proyecto');
+    }
+  }, [editingProject]);
   const [techInput, setTechInput] = useState('');
 
   const [pollQuestion, setPollQuestion] = useState('');
@@ -258,7 +283,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       return Boolean(serviceCategory.trim()) && Boolean(content.trim() || selectedFiles.length > 0);
     }
     return Boolean(content.trim() || selectedFiles.length > 0);
-  }, [content, selectedFiles.length, selectedPostType, ideaTitle, ideaDescription, projectTitle, projectDescription, projectStatus, projectTechnologies, projectDemoUrl, pollQuestion, pollOptions, eventTitle, eventDescription, eventStartDate, eventLocationType, eventMeetingLink, eventLocation, serviceCategory]);
+  }, [content, selectedFiles.length, selectedPostType, ideaTitle, ideaDescription, projectTitle, projectDescription, projectStatus, projectTechnologies, projectObjectives, projectTeamMembers, projectGithubUrl, projectDemoUrl, pollQuestion, pollOptions, eventTitle, eventDescription, eventStartDate, eventLocationType, eventMeetingLink, eventLocation, serviceCategory]);
 
   const handlePublish = async () => {
     if (effectivePublishing) return;
@@ -370,8 +395,10 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           description: projectDescription.trim(),
           category: 'Otro',
           resources_needed: projectTechnologies,
-          expected_impact: '',
+          expected_impact: projectObjectives.trim(),
           demo_url: projectDemoUrl.trim() || null,
+          github_url: projectGithubUrl.trim() || null,
+          team_members: projectTeamMembers,
           participants: [],
         };
         postData.project_status = projectStatus;
@@ -399,18 +426,33 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         postData.post_type = 'regular';
       }
 
-      const { data: insertedPost, error: insertError } = await (supabase as any)
-        .from('posts')
-        .insert(postData)
-        .select('id')
-        .maybeSingle();
+      let result;
+      if (editingProject) {
+        // Update existing project
+        const { data: updatedPost, error: updateError } = await (supabase as any)
+          .from('posts')
+          .update(postData)
+          .eq('id', editingProject.id)
+          .select('id')
+          .maybeSingle();
+        
+        if (updateError) throw updateError;
+        result = { data: updatedPost, error: null };
+      } else {
+        // Insert new project
+        result = await (supabase as any)
+          .from('posts')
+          .insert(postData)
+          .select('id')
+          .maybeSingle();
+      }
 
-      let insertedPostId = (insertedPost as any)?.id as string | undefined;
+      let insertedPostId = (result.data as any)?.id as string | undefined;
 
-      if (insertError) {
+      if (result.error) {
         // Ignore conflict errors (duplicate key) but log for debugging
-        if (insertError.code === '23505' || insertError.message?.includes('duplicate key')) {
-          console.warn('Post insert conflict (likely duplicate), ignoring:', insertError);
+        if (result.error.code === '23505' || result.error.message?.includes('duplicate key')) {
+          console.warn('Post insert conflict (likely duplicate), ignoring:', result.error);
           // Try to fetch existing post by user+content to continue flow
           const { data: existingPost } = await (supabase as any)
             .from('posts')
@@ -423,10 +465,10 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
             insertedPostId = (existingPost as any).id;
           } else {
             // If we can't find the post, still throw to surface the error
-            throw insertError;
+            throw result.error;
           }
         } else {
-          throw insertError;
+          throw result.error;
         }
       }
 
@@ -472,7 +514,10 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       queryClient.invalidateQueries({ queryKey: ['posts', undefined, undefined, undefined, 'infinite'] });
 
       onPublish?.(content, selectedPostType, selectedFiles[0] || null);
-      toast({ title: 'Publicado', description: 'Tu publicación se creó correctamente' });
+      toast({ 
+        title: editingProject ? 'Proyecto actualizado' : 'Publicado', 
+        description: editingProject ? 'Tu proyecto se actualizó correctamente' : 'Tu publicación se creó correctamente' 
+      });
       onClose();
     } catch (error: any) {
       console.error('Error publishing from ModalPublicacionWeb:', error);
@@ -729,9 +774,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Publicando...
+                  {editingProject ? 'Actualizando...' : 'Publicando...'}
                 </span>
-              ) : 'Publicar'}
+              ) : (editingProject ? 'Actualizar' : 'Publicar')}
             </Button>
           </div>
         </div>
@@ -827,6 +872,20 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 </Select>
               </div>
               
+              {/* Campo Objetivos del proyecto */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Objetivos del proyecto:
+                </label>
+                <textarea
+                  value={projectObjectives}
+                  onChange={(e) => setProjectObjectives(e.target.value)}
+                  placeholder="¿Cuáles son los objetivos principales de este proyecto? ¿Qué impacto esperas lograr?"
+                  rows={3}
+                  className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+              </div>
+              
               {/* Campo Tecnologías */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -888,6 +947,83 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     Máximo 8 tecnologías
                   </p>
                 )}
+              </div>
+              
+              {/* Campo Miembros del equipo */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Miembros del equipo (opcional):
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {projectTeamMembers.map((member, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm"
+                    >
+                      {member}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProjectTeamMembers(prev => prev.filter((_, i) => i !== index));
+                        }}
+                        className="ml-1 text-green-600 hover:text-green-800 dark:text-green-300 dark:hover:text-green-100"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={teamMemberInput}
+                    onChange={(e) => setTeamMemberInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && teamMemberInput.trim()) {
+                        e.preventDefault();
+                        if (projectTeamMembers.length < 5 && !projectTeamMembers.includes(teamMemberInput.trim())) {
+                          setProjectTeamMembers(prev => [...prev, teamMemberInput.trim()]);
+                          setTeamMemberInput('');
+                        }
+                      }
+                    }}
+                    placeholder="Ej: Ana García, Carlos Rodríguez..."
+                    className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9"
+                    onClick={() => {
+                      if (teamMemberInput.trim() && projectTeamMembers.length < 5 && !projectTeamMembers.includes(teamMemberInput.trim())) {
+                        setProjectTeamMembers(prev => [...prev, teamMemberInput.trim()]);
+                        setTeamMemberInput('');
+                      }
+                    }}
+                    disabled={!teamMemberInput.trim() || projectTeamMembers.length >= 5}
+                  >
+                    Agregar
+                  </Button>
+                </div>
+                {projectTeamMembers.length >= 5 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Máximo 5 miembros
+                  </p>
+                )}
+              </div>
+              
+              {/* Campo URL GitHub */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  URL de GitHub (opcional):
+                </label>
+                <input
+                  type="url"
+                  value={projectGithubUrl}
+                  onChange={(e) => setProjectGithubUrl(e.target.value)}
+                  placeholder="https://github.com/usuario/proyecto"
+                  className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                />
               </div>
               
               {/* Campo URL Demo */}
