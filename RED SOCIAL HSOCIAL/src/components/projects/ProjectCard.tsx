@@ -44,8 +44,8 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
            lowerUrl.includes('stream');
   };
 
-  // Priorizar video_url si existe, luego filtrar media_urls para separar imágenes de videos
-  const videoUrl = project.video_url;
+  // Priorizar demo_url si existe, luego filtrar media_urls para separar imágenes de videos
+  const videoUrl = project.demo_url;
   const allMediaUrls = project.media_urls || [];
   
   // Separar imágenes y videos
@@ -65,7 +65,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   // Debug: Log media data to understand what's being received
   console.log('🎬 ProjectCard Debug - Media Data:', {
     projectTitle: project.title,
-    video_url: project.video_url,
+    demo_url: project.demo_url,
     image_url: project.image_url,
     media_urls: project.media_urls,
     allMediaUrls: allMediaUrls,
@@ -381,7 +381,12 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
                 </div>
               )}
               <div onClick={(e) => e.stopPropagation()}>
-                <ReactionButtons post={project} />
+                <ReactionButtons post={{
+                  ...project,
+                  user_id: project.author_id,
+                  visibility: 'public' as const,
+                  reactions: project.reactions || []
+                }} />
               </div>
               <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-blue-500 transition-colors cursor-pointer">
                 <MessageCircle size={15} className="opacity-70" />

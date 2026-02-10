@@ -35,6 +35,7 @@ export interface Project {
   comments_count: number;
   views_count: number;
   user_reaction?: string | null;
+  reactions?: any[]; 
   created_at: string;
   updated_at: string;
 }
