@@ -43,7 +43,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
       if (!currentUser) {
         toast({
           title: "Error",
-          description: "Debes iniciar sesión para reaccionar",
+          description: "Debes estar autenticado para reaccionar",
           variant: "destructive"
         });
         return;
@@ -55,7 +55,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
         .select('*')
         .eq('post_id', project.id)
         .eq('user_id', currentUser.id)
-        .maybeSingle() as any;
+        .maybeSingle() as { data: any } | null;
 
       if (existingReaction) {
         if (existingReaction.reaction_type === reactionType) {
@@ -67,9 +67,8 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
             .eq('user_id', currentUser.id);
         } else {
           // Update reaction type
-          await supabase
-            .from('reactions')
-            .update({ reaction_type: reactionType } as any)
+          await (supabase.from('reactions') as any)
+            .update({ reaction_type: reactionType })
             .eq('post_id', project.id)
             .eq('user_id', currentUser.id);
         }
