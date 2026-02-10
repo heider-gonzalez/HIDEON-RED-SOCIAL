@@ -118,6 +118,12 @@ export default function Projects() {
         .select('post_id, id, user_id, reaction_type, created_at')
         .in('post_id', postIds);
       
+      // Get comments count for each post
+      const { data: commentsData } = await supabase
+        .from('comments')
+        .select('post_id')
+        .in('post_id', postIds);
+      
       // Group reactions by post_id
       const reactionsByPost = reactionsData?.reduce((acc: any, reaction: any) => {
         if (!acc[reaction.post_id]) {
@@ -127,10 +133,17 @@ export default function Projects() {
         return acc;
       }, {}) || {};
       
-      // Attach reactions to posts
+      // Count comments by post_id
+      const commentsCountByPost = commentsData?.reduce((acc: any, comment: any) => {
+        acc[comment.post_id] = (acc[comment.post_id] || 0) + 1;
+        return acc;
+      }, {}) || {};
+      
+      // Attach reactions and comments count to posts
       const postsWithReactions = posts.map((post: any) => ({
         ...post,
-        reactions: reactionsByPost[post.id] || []
+        reactions: reactionsByPost[post.id] || [],
+        comments_count: commentsCountByPost[post.id] || 0
       }));
       
       return postsWithReactions as any[];
