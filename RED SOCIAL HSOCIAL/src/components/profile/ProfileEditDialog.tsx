@@ -15,6 +15,7 @@ import { ProfileBasicInfo } from "./form/ProfileBasicInfo";
 import { CareerSelect } from "./form/CareerSelect";
 import { SemesterSelect } from "./form/SemesterSelect";
 import { RelationshipStatusSelect } from "./form/RelationshipStatusSelect";
+import { ProfileAudioSection } from "./ProfileAudioSection";
 import { formSchema, type ProfileFormValues } from "./form/profileSchema";
 
 interface ProfileEditDialogProps {
@@ -174,6 +175,8 @@ export function ProfileEditDialog({
             <SemesterSelect form={form} />
             
             <RelationshipStatusSelect form={form} />
+            
+            <ProfileAudioSection profile={profile} onProfileUpdate={onUpdate} />
             
             <div className="flex justify-end gap-4">
               <Button variant="outline" onClick={onClose} type="button">

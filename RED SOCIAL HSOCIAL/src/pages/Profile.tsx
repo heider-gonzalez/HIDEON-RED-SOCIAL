@@ -20,6 +20,9 @@ export type Profile = {
   bio: string | null;
   avatar_url: string | null;
   cover_url: string | null;
+  intro_audio_url?: string | null;
+  intro_audio_duration_seconds?: number | null;
+  intro_audio_is_active?: boolean;
   location: string | null;
   education: string | null;
   career: string | null;
@@ -87,7 +90,7 @@ export default function Profile() {
         const [profileResult, followersResult, followingResult, postsResult, heartsResult] = await Promise.all([
           supabase
             .from('profiles')
-            .select('id, username, bio, avatar_url, cover_url, career, semester, birth_date, relationship_status, account_type, company_name, institution_name, academic_role, created_at, updated_at, last_seen, status')
+            .select('id, username, bio, avatar_url, cover_url, intro_audio_url, intro_audio_duration_seconds, intro_audio_is_active, career, semester, birth_date, relationship_status, account_type, company_name, institution_name, academic_role, created_at, updated_at, last_seen, status')
             .eq('id', profileId)
             .single(),
           // Seguidores: usuarios que siguen a este perfil (following_id = profileId)
@@ -166,6 +169,9 @@ export default function Profile() {
                 bio: typedProfileData.bio,
                 avatar_url: typedProfileData.avatar_url,
                 cover_url: typedProfileData.cover_url,
+                intro_audio_url: (typedProfileData as any)?.intro_audio_url ?? null,
+                intro_audio_duration_seconds: (typedProfileData as any)?.intro_audio_duration_seconds ?? null,
+                intro_audio_is_active: (typedProfileData as any)?.intro_audio_is_active ?? false,
                 location: null, // Campo no existe en BD
                 education: null, // Campo no existe en BD
                 career: typedProfileData.career,
@@ -246,6 +252,9 @@ export default function Profile() {
           bio: typedProfileData.bio,
           avatar_url: typedProfileData.avatar_url,
           cover_url: typedProfileData.cover_url,
+          intro_audio_url: (typedProfileData as any)?.intro_audio_url ?? null,
+          intro_audio_duration_seconds: (typedProfileData as any)?.intro_audio_duration_seconds ?? null,
+          intro_audio_is_active: (typedProfileData as any)?.intro_audio_is_active ?? false,
           location: null, // Campo no existe en BD, mantener null
           education: null, // Campo no existe en BD, mantener null
           career: typedProfileData.career,

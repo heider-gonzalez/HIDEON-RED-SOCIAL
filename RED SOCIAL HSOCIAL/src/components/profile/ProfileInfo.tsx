@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { ProfileAudioPlayButton } from "./ProfileAudioPlayButton";
 
 
 interface ProfileInfoProps {
@@ -442,6 +443,14 @@ export function ProfileInfo({ profile }: ProfileInfoProps) {
             <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
               {profile.bio || "Agrega una descripción profesional para que otros entiendan tu experiencia y qué estás buscando."}
             </p>
+            {(profile as any).intro_audio_url && (profile as any).intro_audio_is_active && (
+              <div className="pt-2">
+                <ProfileAudioPlayButton 
+                  audioUrl={(profile as any).intro_audio_url}
+                  durationSeconds={(profile as any).intro_audio_duration_seconds}
+                />
+              </div>
+            )}
           </div>
 
           <Separator />
