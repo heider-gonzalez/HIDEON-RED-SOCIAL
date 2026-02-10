@@ -87,12 +87,12 @@ export default function Projects() {
             username,
             avatar_url
           ),
-          reactions!reactions_post_id_fkey (
+          json_agg(reactions!reactions_post_id_fkey (
             id,
             user_id,
             reaction_type,
             created_at
-          )
+          )) as reactions
         `)
         .eq('post_type', 'project')
         .order('updated_at', { ascending: false });
@@ -209,9 +209,13 @@ export default function Projects() {
       // Find user's reaction for this post
       const userReaction = post.reactions?.find((reaction: any) => reaction.user_id === user?.id)?.reaction_type || null;
       
+      // Count total reactions
+      const reactionCount = post.reactions?.length || 0;
+      
       console.log('🔍 Debug: Post reactions:', {
         postId: post.id,
         reactions: post.reactions,
+        reactionCount,
         userReaction,
         currentUserId: user?.id
       });
@@ -242,7 +246,7 @@ export default function Projects() {
         team_members: [],
         contact_email: '',
         additional_links: [],
-        likes_count: post.reactions_count || 0,
+        likes_count: reactionCount,
         comments_count: post.comments_count || 0,
         views_count: 0,
         image_url: post.media_urls && post.media_urls.length > 0 ? post.media_urls[0] : undefined,
