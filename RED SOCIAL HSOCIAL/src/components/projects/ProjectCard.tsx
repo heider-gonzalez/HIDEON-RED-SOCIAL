@@ -117,6 +117,19 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
            lowerUrl.includes('stream');
   };
 
+  // Debug: Log media data to understand what's being received
+  console.log('🎬 ProjectCard Debug - Media Data:', {
+    projectTitle: project.title,
+    video_url: project.video_url,
+    image_url: project.image_url,
+    media_urls: project.media_urls,
+    allMediaUrls: allMediaUrls,
+    imageUrls: imageUrls,
+    videoUrls: videoUrls,
+    primaryVideoUrl: primaryVideoUrl,
+    projectImages: projectImages
+  });
+
   // Priorizar video_url si existe, luego filtrar media_urls para separar imágenes de videos
   const videoUrl = project.video_url;
   const allMediaUrls = project.media_urls || [];
