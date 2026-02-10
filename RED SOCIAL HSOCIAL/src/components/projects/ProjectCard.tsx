@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, Heart, MessageCircle, Users, Calendar, X, ChevronLeft, ChevronRight, Edit, Trash2, MoreHorizontal, ExternalLink } from 'lucide-react';
+import { Eye, Heart, MessageCircle, Users, Calendar, X, ChevronLeft, ChevronRight, Edit, Trash2, MoreHorizontal, ExternalLink, ChevronUp, ChevronDown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -27,6 +27,7 @@ interface ProjectCardProps {
 export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: ProjectCardProps) {
   const [showImageGallery, setShowImageGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showComments, setShowComments] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -372,25 +373,35 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="flex items-center gap-3">
-              {project.team_members && project.team_members.length > 0 && (
-                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors">
-                  <Users size={15} className="opacity-70" />
-                  <span>{project.team_members.length + 1}</span>
+            {/* Interaction Footer - Like PostCard */}
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
+                {/* Reactions - Like PostCard ReactionButtons */}
+                <div className="flex-1 justify-start">
+                  <ReactionButtons post={{
+                    ...project,
+                    user_id: project.author_id,
+                    visibility: 'public' as const,
+                    reactions: project.reactions || []
+                  }} />
                 </div>
-              )}
-              <div onClick={(e) => e.stopPropagation()}>
-                <ReactionButtons post={{
-                  ...project,
-                  user_id: project.author_id,
-                  visibility: 'public' as const,
-                  reactions: project.reactions || []
-                }} />
-              </div>
-              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-blue-500 transition-colors cursor-pointer">
-                <MessageCircle size={15} className="opacity-70" />
-                <span>{project.comments_count}</span>
+                
+                {/* Comments */}
+                <Button 
+                  variant="ghost" 
+                  className="flex items-center gap-1"
+                  onClick={() => setShowComments(!showComments)}
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  <span className="text-sm">
+                    {project.comments_count > 0 ? project.comments_count : ''} Comentar
+                  </span>
+                  {showComments ? (
+                    <ChevronUp className="h-4 w-4 ml-1" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  )}
+                </Button>
               </div>
             </div>
           </div>
