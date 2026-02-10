@@ -86,6 +86,12 @@ export default function Projects() {
             id,
             username,
             avatar_url
+          ),
+          reactions!reactions_post_id_fkey (
+            id,
+            user_id,
+            reaction_type,
+            created_at
           )
         `)
         .eq('post_type', 'project')
@@ -202,6 +208,13 @@ export default function Projects() {
       
       // Find user's reaction for this post
       const userReaction = post.reactions?.find((reaction: any) => reaction.user_id === user?.id)?.reaction_type || null;
+      
+      console.log('🔍 Debug: Post reactions:', {
+        postId: post.id,
+        reactions: post.reactions,
+        userReaction,
+        currentUserId: user?.id
+      });
       
       // Extraer video_url de project_showcases
       const projectShowcase = post.project_showcases && post.project_showcases[0];
