@@ -290,7 +290,8 @@ export default function Projects() {
         github_url: projectShowcase?.github_url, // Agregar github_url
         created_at: post.created_at,
         updated_at: post.updated_at,
-        user_reaction: userReaction // Add user reaction
+        user_reaction: userReaction, // Add user reaction
+        reactions: post.reactions || [] // Add reactions array for ReactionButtons!
       };
     });
   }, [projectPosts, user]);
