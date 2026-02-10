@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { HoverReactionButton } from '@/components/post/reactions/HoverReactionButton';
 import { ReactionType } from '@/types/database/social.types';
+import { useUnifiedReactions } from '@/hooks/use-unified-reactions';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface ProjectCardProps {
@@ -31,82 +32,11 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { isReacting, userReaction, reactionCount, handleReaction } = useUnifiedReactions(project.id);
   const statusConfig = PROJECT_STATUS_CONFIG[project.status];
   
   const isOwner = user?.id === project.author_id;
 
-  // Handle reactions
-  const handleReaction = async (reactionType: ReactionType) => {
-    try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) {
-        toast({
-          title: "Error",
-          description: "Debes estar autenticado para reaccionar",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Check if user already reacted
-      const { data: existingReaction } = await supabase
-        .from('reactions')
-        .select('*')
-        .eq('post_id', project.id)
-        .eq('user_id', currentUser.id)
-        .maybeSingle() as { data: any } | null;
-
-      if (existingReaction) {
-        if (existingReaction.reaction_type === reactionType) {
-          // Remove reaction if same type
-          await supabase
-            .from('reactions')
-            .delete()
-            .eq('post_id', project.id)
-            .eq('user_id', currentUser.id);
-        } else {
-          // Update reaction type
-          await (supabase.from('reactions') as any)
-            .update({ reaction_type: reactionType })
-            .eq('post_id', project.id)
-            .eq('user_id', currentUser.id);
-        }
-      } else {
-        // Add new reaction
-        await supabase
-          .from('reactions')
-          .insert({
-            post_id: project.id,
-            user_id: currentUser.id,
-            reaction_type: reactionType
-          } as any);
-      }
-
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['project-posts'] });
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-      queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
-      
-      // Also invalidate specific project query to ensure UI updates
-      queryClient.invalidateQueries({ queryKey: ['project-posts', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['posts', project.id] });
-      queryClient.invalidateQueries({ queryKey: ['personalized-feed', project.id] });
-      
-      toast({
-        title: "Reacción guardada",
-        description: "Tu reacción ha sido guardada exitosamente",
-      });
-    } catch (error) {
-      console.error('Error handling reaction:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo procesar tu reacción",
-        variant: "destructive"
-      });
-    }
-  };
-  
   // Get all images from media_urls or use image_url as fallback, but filter out videos
   const isVideoUrl = (url: string) => {
     if (!url) return false;
@@ -456,7 +386,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
               <div onClick={(e) => e.stopPropagation()}>
                 <HoverReactionButton
                   postId={project.id}
-                  userReaction={project.user_reaction as ReactionType | null}
+                  userReaction={userReaction}
                   onReactionClick={handleReaction}
                   postType="project"
                 />
