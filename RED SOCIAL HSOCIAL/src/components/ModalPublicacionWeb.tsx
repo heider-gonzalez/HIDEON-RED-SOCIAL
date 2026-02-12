@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar } from 'lucide-react';
+import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -81,6 +81,16 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [content, setContent] = useState(initialContent);
   const [selectedFiles, setSelectedFiles] = useState<File[]>(initialMedia ? [initialMedia] : []);
   const [filePreviews, setFilePreviews] = useState<string[]>(initialMedia ? [URL.createObjectURL(initialMedia)] : []);
+  
+  // 🎵 Audio support for Instagram-style music posts
+  const [selectedAudioFile, setSelectedAudioFile] = useState<File | null>(null);
+  const [audioPreview, setAudioPreview] = useState<string>('');
+  const [audioMetadata, setAudioMetadata] = useState<{
+    name: string;
+    duration: number;
+    size: number;
+    type: string;
+  } | null>(null);
   const [showPostTypeMenu, setShowPostTypeMenu] = useState(false);
   const [selectedPostType, setSelectedPostType] = useState<PostType>(null);
   const [privacy, setPrivacy] = useState('Público');
@@ -159,7 +169,63 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       setSelectedFiles([]);
       setFilePreviews([]);
     }
-  }, [initialContent, initialMedia]);
+    
+    // 🎵 Reset audio state when modal closes
+    if (!isVisible) {
+      setSelectedAudioFile(null);
+      setAudioPreview('');
+      setAudioMetadata(null);
+    }
+  }, [initialContent, initialMedia, isVisible]);
+
+  // 🎵 Audio file processing function
+  const handleAudioFileSelect = (file: File) => {
+    if (!file.type.startsWith('audio/')) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un archivo de audio válido (MP3, WAV, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Error", 
+        description: "El archivo de audio es demasiado grande. Máximo 10MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedAudioFile(file);
+    setAudioPreview(URL.createObjectURL(file));
+
+    // Get audio metadata
+    const audio = new Audio();
+    audio.addEventListener('loadedmetadata', () => {
+      setAudioMetadata({
+        name: file.name,
+        duration: audio.duration,
+        size: file.size,
+        type: file.type,
+      });
+    });
+    audio.src = URL.createObjectURL(file);
+
+    toast({
+      title: "Audio añadido",
+      description: `${file.name} listo para usar como música de fondo`,
+    });
+  };
+
+  // 🎵 Remove audio file
+  const removeAudioFile = () => {
+    setSelectedAudioFile(null);
+    setAudioPreview('');
+    setAudioMetadata(null);
+  };
 
   useEffect(() => {
     if (!isVisible) return;
@@ -1244,6 +1310,55 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               </div>
             </div>
           )}
+
+          {/* 🎵 Audio File Section */}
+          {selectedAudioFile && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">
+                  🎵 Música de fondo
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeAudioFile}
+                  className="text-xs h-7"
+                >
+                  Eliminar audio
+                </Button>
+              </div>
+              
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Music className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {selectedAudioFile.name}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {audioMetadata ? 
+                        `${Math.floor(audioMetadata.duration / 60)}:${(audioMetadata.duration % 60).toString().padStart(2, '0')} • ${(audioMetadata.size / 1024 / 1024).toFixed(1)} MB` 
+                        : 'Procesando...'
+                      }
+                    </div>
+                  </div>
+                </div>
+                
+                {audioPreview && (
+                  <div className="mt-3">
+                    <audio 
+                      controls 
+                      className="w-full h-8"
+                      src={audioPreview}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bottom Bar */}
@@ -1260,6 +1375,26 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               disabled={false}
             />
             <ImageIcon className="h-5 w-5" />
+          </label>
+          
+          {/* 🎵 Audio Upload Button */}
+          <label className={cn(
+            "cursor-pointer rounded-full p-2 text-purple-500 hover:bg-gray-100 dark:hover:bg-gray-700 ml-1"
+          )}>
+            <input 
+              type="file" 
+              className="hidden" 
+              accept="audio/*" 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleAudioFileSelect(file);
+                }
+                e.target.value = '';
+              }}
+              disabled={false}
+            />
+            <Music className="h-5 w-5" />
           </label>
           
           <div className="flex-1"></div>

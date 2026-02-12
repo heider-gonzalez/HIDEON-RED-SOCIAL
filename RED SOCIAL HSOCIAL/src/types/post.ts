@@ -20,6 +20,13 @@ export interface Post {
   media_url?: string | null;
   media_urls?: string[] | null; // Array de URLs para múltiples archivos
   media_type?: string | null;
+  audio_url?: string | null; // 🎵 Audio file URL for background music
+  audio_metadata?: {
+    name: string;
+    duration: number; // in seconds
+    size: number; // in bytes
+    type: string; // audio/mp3, audio/wav, etc.
+  } | null; // 🎵 Audio metadata for Instagram-style music posts
   service_category?: string | null;
   visibility: 'public' | 'friends' | 'private' | 'incognito';
   created_at: string;
