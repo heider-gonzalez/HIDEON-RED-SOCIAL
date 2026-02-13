@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { LikeButton } from './LikeButton';
 import { AudioPlayer } from '@/components/media/AudioPlayer';
+import { EnhancedAudioPlayer } from '@/components/media/EnhancedAudioPlayer';
 import { useUser } from '@/hooks/use-user';
 import { Post } from './PostFeed';
 import { CommentForm } from './CommentForm';
@@ -125,9 +126,10 @@ export function PostCard({ post }: PostCardProps) {
       {/* 🎵 Audio Player */}
       {post.audio_url && (
         <div className="border-b border-gray-100 dark:border-gray-700">
-          <AudioPlayer
+          <EnhancedAudioPlayer
             audioUrl={post.audio_url}
-            metadata={post.audio_metadata}
+            videoUrl={isVideo ? primaryMediaUrl : undefined}
+            audioMetadata={post.audio_metadata}
             autoPlay={false}
             loop={false}
           />

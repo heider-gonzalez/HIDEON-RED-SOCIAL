@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 import { uploadMediaFile, getMediaType } from "@/lib/api/posts/storage";
+import { uploadAudioFile, getAudioDuration } from "@/lib/api/posts/audio-storage";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { FirstPostBadge } from '@/components/badges/FirstPostBadge';
@@ -375,11 +376,49 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       }
 
       const mediaUrls: string[] = [];
+      let audioUrl: string | null = null;
+      let audioMetadata: any = null;
 
+      // Upload media files (images/videos)
       if (selectedFiles.length > 0) {
         for (const f of selectedFiles) {
           const url = await uploadMediaFile(f);
           if (url) mediaUrls.push(url);
+        }
+      }
+
+      // Upload audio file if selected
+      if (selectedAudioFile) {
+        try {
+          const duration = await getAudioDuration(selectedAudioFile);
+          const audioResult = await uploadAudioFile(selectedAudioFile, user.id, {
+            name: selectedAudioFile.name,
+            duration: duration,
+            size: selectedAudioFile.size,
+            type: selectedAudioFile.type,
+            startTime: audioClipStart,
+            endTime: audioClipEnd,
+          });
+          
+          audioUrl = audioResult.url;
+          audioMetadata = audioResult.metadata;
+          
+          console.log('✅ Audio uploaded successfully:', {
+            url: audioUrl,
+            metadata: audioMetadata
+          });
+          
+          toast({
+            title: 'Audio subido',
+            description: 'Música de fondo añadida correctamente',
+          });
+        } catch (error) {
+          console.error('❌ Audio upload failed:', error);
+          toast({
+            title: 'Error al subir audio',
+            description: 'No se pudo subir el archivo de audio',
+            variant: 'destructive'
+          });
         }
       }
 
@@ -451,6 +490,12 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
       if (mediaUrls.length > 0) {
         postData.media_urls = mediaUrls;
+      }
+
+      // 🎵 Add audio data if uploaded
+      if (audioUrl) {
+        postData.audio_url = audioUrl;
+        postData.audio_metadata = audioMetadata;
       }
 
       if (selectedPostType === 'idea') {
