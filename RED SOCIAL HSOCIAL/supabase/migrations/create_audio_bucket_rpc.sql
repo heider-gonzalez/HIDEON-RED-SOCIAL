@@ -26,20 +26,25 @@ BEGIN
         ARRAY['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/webm', 'audio/aac']
     );
     
+    -- Drop existing policies first
+    DROP POLICY IF EXISTS "Users can upload audio files" ON storage.objects;
+    DROP POLICY IF EXISTS "Audio files are publicly accessible" ON storage.objects;
+    DROP POLICY IF EXISTS "Users can delete their own audio files" ON storage.objects;
+    
     -- Create policies for the bucket
-    CREATE POLICY IF NOT EXISTS "Users can upload audio files" ON storage.objects
+    CREATE POLICY "Users can upload audio files" ON storage.objects
     FOR INSERT WITH CHECK (
         bucket_id = 'post-audio' AND
         auth.role() = 'authenticated' AND
         (storage.foldername(name))[1] = auth.uid()
     );
     
-    CREATE POLICY IF NOT EXISTS "Audio files are publicly accessible" ON storage.objects
+    CREATE POLICY "Audio files are publicly accessible" ON storage.objects
     FOR SELECT USING (
         bucket_id = 'post-audio'
     );
     
-    CREATE POLICY IF NOT EXISTS "Users can delete their own audio files" ON storage.objects
+    CREATE POLICY "Users can delete their own audio files" ON storage.objects
     FOR DELETE USING (
         bucket_id = 'post-audio' AND
         auth.role() = 'authenticated' AND

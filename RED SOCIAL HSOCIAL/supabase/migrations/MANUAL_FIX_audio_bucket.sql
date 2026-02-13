@@ -11,34 +11,39 @@ VALUES (
   ARRAY['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/webm', 'audio/aac']
 ) ON CONFLICT (id) DO NOTHING;
 
--- 2. Política para subir archivos de audio
-CREATE POLICY IF NOT EXISTS "Users can upload audio files" ON storage.objects
+-- 2. Eliminar políticas existentes (si las hay)
+DROP POLICY IF EXISTS "Users can upload audio files" ON storage.objects;
+DROP POLICY IF EXISTS "Audio files are publicly accessible" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own audio files" ON storage.objects;
+
+-- 3. Política para subir archivos de audio
+CREATE POLICY "Users can upload audio files" ON storage.objects
 FOR INSERT WITH CHECK (
   bucket_id = 'post-audio' AND
   auth.role() = 'authenticated' AND
   (storage.foldername(name))[1] = auth.uid()
 );
 
--- 3. Política para acceso público a archivos de audio
-CREATE POLICY IF NOT EXISTS "Audio files are publicly accessible" ON storage.objects
+-- 4. Política para acceso público a archivos de audio
+CREATE POLICY "Audio files are publicly accessible" ON storage.objects
 FOR SELECT USING (
   bucket_id = 'post-audio'
 );
 
--- 4. Política para eliminar archivos propios
-CREATE POLICY IF NOT EXISTS "Users can delete their own audio files" ON storage.objects
+-- 5. Política para eliminar archivos propios
+CREATE POLICY "Users can delete their own audio files" ON storage.objects
 FOR DELETE USING (
   bucket_id = 'post-audio' AND
   auth.role() = 'authenticated' AND
   (storage.foldername(name))[1] = auth.uid()
 );
 
--- 5. Dar permisos a usuarios autenticados
+-- 6. Dar permisos a usuarios autenticados
 GRANT ALL ON storage.buckets TO authenticated;
 GRANT ALL ON storage.objects TO authenticated;
 
--- 6. Verificar que el bucket fue creado
+-- 7. Verificar que el bucket fue creado
 SELECT * FROM storage.buckets WHERE id = 'post-audio';
 
--- 7. Verificar políticas creadas
+-- 8. Verificar políticas creadas
 SELECT * FROM pg_policies WHERE tablename = 'objects' AND schemaname = 'storage';
