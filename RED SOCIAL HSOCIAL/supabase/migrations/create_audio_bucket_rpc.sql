@@ -36,7 +36,7 @@ BEGIN
     FOR INSERT WITH CHECK (
         bucket_id = 'post-audio' AND
         auth.role() = 'authenticated' AND
-        (storage.foldername(name))[1] = auth.uid()
+        (storage.foldername(name))[1] = auth.uid()::text
     );
     
     CREATE POLICY "Audio files are publicly accessible" ON storage.objects
@@ -48,7 +48,7 @@ BEGIN
     FOR DELETE USING (
         bucket_id = 'post-audio' AND
         auth.role() = 'authenticated' AND
-        (storage.foldername(name))[1] = auth.uid()
+        (storage.foldername(name))[1] = auth.uid()::text
     );
     
     -- Grant permissions
