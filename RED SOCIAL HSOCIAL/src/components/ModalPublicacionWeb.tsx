@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar, Music } from 'lucide-react';
+import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar, Music, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { AudioPlayer } from '@/components/media/AudioPlayer';
+import { AudioWaveform } from '@/components/media/AudioWaveform';
 import {
   Select,
   SelectContent,
@@ -91,6 +93,11 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     size: number;
     type: string;
   } | null>(null);
+  
+  // 🎵 Audio clip selection state
+  const [audioClipStart, setAudioClipStart] = useState(0);
+  const [audioClipEnd, setAudioClipEnd] = useState(30);
+  const [showWaveformEditor, setShowWaveformEditor] = useState(false);
   const [showPostTypeMenu, setShowPostTypeMenu] = useState(false);
   const [selectedPostType, setSelectedPostType] = useState<PostType>(null);
   const [privacy, setPrivacy] = useState('Público');
@@ -1318,16 +1325,44 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 <span className="text-sm text-muted-foreground">
                   🎵 Música de fondo
                 </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={removeAudioFile}
-                  className="text-xs h-7"
-                >
-                  Eliminar audio
-                </Button>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowWaveformEditor(!showWaveformEditor)}
+                    className="text-xs h-7"
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    {showWaveformEditor ? 'Ocultar editor' : 'Recortar audio'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeAudioFile}
+                    className="text-xs h-7"
+                  >
+                    Eliminar audio
+                  </Button>
+                </div>
               </div>
+              
+              {/* Waveform Editor */}
+              {showWaveformEditor && (
+                <div className="mb-4">
+                  <AudioWaveform
+                    audioFile={selectedAudioFile}
+                    startTime={audioClipStart}
+                    endTime={audioClipEnd}
+                    onClipSelect={(start, end) => {
+                      setAudioClipStart(start);
+                      setAudioClipEnd(end);
+                    }}
+                    maxDuration={60}
+                  />
+                </div>
+              )}
               
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                 <div className="flex items-center space-x-3">
@@ -1340,7 +1375,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       {audioMetadata ? 
-                        `${Math.floor(audioMetadata.duration / 60)}:${(audioMetadata.duration % 60).toString().padStart(2, '0')} • ${(audioMetadata.size / 1024 / 1024).toFixed(1)} MB` 
+                        `Clip: ${Math.floor(audioClipStart)}s - ${Math.floor(audioClipEnd)}s (${Math.floor(audioClipEnd - audioClipStart)}s) • ${(selectedAudioFile.size / 1024 / 1024).toFixed(1)} MB` 
                         : 'Procesando...'
                       }
                     </div>
@@ -1349,10 +1384,14 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 
                 {audioPreview && (
                   <div className="mt-3">
-                    <audio 
-                      controls 
-                      className="w-full h-8"
-                      src={audioPreview}
+                    <AudioPlayer
+                      audioUrl={audioPreview}
+                      metadata={audioMetadata ? {
+                        ...audioMetadata,
+                        duration: audioClipEnd - audioClipStart
+                      } : undefined}
+                      autoPlay={false}
+                      loop={false}
                     />
                   </div>
                 )}
