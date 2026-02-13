@@ -22,6 +22,25 @@ export async function uploadAudioFile(
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}/${Date.now()}.${fileExt}`;
     
+    // Check if bucket exists, create if needed
+    try {
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const audioBucket = buckets?.find(b => b.name === 'post-audio');
+      
+      if (!audioBucket) {
+        console.log('🪣 Creating post-audio bucket...');
+        // Create bucket if it doesn't exist
+        const { error: bucketError } = await supabase.rpc('create_audio_bucket_if_not_exists');
+        if (bucketError) {
+          console.error('❌ Bucket creation error:', bucketError);
+          throw new Error(`Bucket creation failed: ${bucketError.message}`);
+        }
+      }
+    } catch (bucketCheckError) {
+      console.error('❌ Bucket check error:', bucketCheckError);
+      // Continue with upload attempt
+    }
+    
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from('post-audio')
@@ -33,6 +52,22 @@ export async function uploadAudioFile(
 
     if (error) {
       console.error('❌ Audio upload error:', error);
+      
+      // If bucket doesn't exist, provide helpful error message
+      if (error.message?.includes('Bucket not found')) {
+        throw new Error(`
+          ❌ El bucket 'post-audio' no existe en Supabase Storage.
+          
+          📋 **SOLUCIÓN:**
+          1. Ve a Supabase Dashboard → Storage
+          2. Crea un nuevo bucket llamado 'post-audio'
+          3. O ejecuta la migración: supabase/migrations/MANUAL_FIX_audio_bucket.sql
+          4. Configura las políticas RLS para acceso público
+          
+          📁 **Archivo SQL:** MANUAL_FIX_audio_bucket.sql
+        `);
+      }
+      
       throw new Error(`Error uploading audio: ${error.message}`);
     }
 
