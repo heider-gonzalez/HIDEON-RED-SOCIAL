@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { LikeButton } from './LikeButton';
 import { AudioPlayer } from '@/components/media/AudioPlayer';
-import { EnhancedAudioPlayer } from '@/components/media/EnhancedAudioPlayer';
+import { InstagramAudioPlayer } from '@/components/media/InstagramAudioPlayer';
 import { useUser } from '@/hooks/use-user';
 import { Post } from './PostFeed';
 import { CommentForm } from './CommentForm';
@@ -33,14 +33,14 @@ export function PostCard({ post }: PostCardProps) {
 
   // Determine if media is an image or video
   const isVideo = post.media_url?.match(/\.(mp4|webm|mov|ogg)$/i) || 
-                  (post.media_urls && post.media_urls.some(url => url.match(/\.(mp4|webm|mov|ogg)$/i)));
+                  ((post as any).media_urls && (post as any).media_urls.some((url: string) => url.match(/\.(mp4|webm|mov|ogg)$/i)));
   const isImage = post.media_url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) || 
-                  (post.media_urls && post.media_urls.some(url => url.match(/\.(jpg|jpeg|png|gif|webp)$/i)));
+                  ((post as any).media_urls && (post as any).media_urls.some((url: string) => url.match(/\.(jpg|jpeg|png|gif|webp)$/i)));
   
   // Get the primary media URL (for projects, use first video if exists)
   const primaryMediaUrl = post.media_url || 
-                          (post.media_urls && post.media_urls.find(url => url.match(/\.(mp4|webm|mov|ogg)$/i))) ||
-                          (post.media_urls && post.media_urls[0]);
+                          (((post as any).media_urls && (post as any).media_urls.find((url: string) => url.match(/\.(mp4|webm|mov|ogg)$/i))) ||
+                           ((post as any).media_urls && (post as any).media_urls[0]));
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -124,12 +124,11 @@ export function PostCard({ post }: PostCardProps) {
       )}
 
       {/* 🎵 Audio Player */}
-      {post.audio_url && (
+      {(post as any).audio_url && (
         <div className="border-b border-gray-100 dark:border-gray-700">
-          <EnhancedAudioPlayer
-            audioUrl={post.audio_url}
-            videoUrl={isVideo ? primaryMediaUrl : undefined}
-            audioMetadata={post.audio_metadata}
+          <InstagramAudioPlayer
+            audioUrl={(post as any).audio_url}
+            audioMetadata={(post as any).audio_metadata}
             autoPlay={false}
             loop={false}
           />
