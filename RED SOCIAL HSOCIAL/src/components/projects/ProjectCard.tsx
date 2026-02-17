@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { ReactionButtons } from '@/components/post/ReactionButtons';
 import { useQueryClient } from '@tanstack/react-query';
+import { AcademicBadge } from './AcademicBadge';
 
 interface ProjectCardProps {
   project: Project;
@@ -186,6 +187,13 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
               <Badge className="bg-emerald-500 text-white font-bold px-3 py-1.5 text-xs shadow-lg backdrop-blur-sm">
                 🤝 Busca colaboradores
               </Badge>
+            </div>
+          )}
+
+          {/* Academic Badge - Top Right (below collaboration if present) */}
+          {project.is_academic && (
+            <div className={`absolute top-3 z-30 ${project.seeking_collaborators ? 'top-14 right-3' : 'right-3'}`}>
+              <AcademicBadge />
             </div>
           )}
 
