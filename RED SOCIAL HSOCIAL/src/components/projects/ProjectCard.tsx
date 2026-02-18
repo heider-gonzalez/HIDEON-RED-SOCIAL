@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Eye, Heart, MessageCircle, Users, Calendar, X, ChevronLeft, ChevronRight, Edit, Trash2, MoreHorizontal, ExternalLink, ChevronUp, ChevronDown } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Eye, Heart, MessageCircle, Users, Calendar, X, ChevronLeft, ChevronRight, Edit, Trash2, MoreHorizontal, ExternalLink, ChevronUp, ChevronDown, Volume2, VolumeX } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -33,6 +33,10 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const { toast } = useToast();
   const navigate = useNavigate();
   const statusConfig = PROJECT_STATUS_CONFIG[project.status];
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isVideoHovered, setIsVideoHovered] = useState(false);
+  const [isVideoInView, setIsVideoInView] = useState(false);
+  const [isCardVideoMuted, setIsCardVideoMuted] = useState(true);
   
   const isOwner = user?.id === project.author_id;
 
@@ -80,6 +84,57 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const displayTechs = project.technologies.slice(0, 4);
   const remainingTechsCount = project.technologies.length - 4;
 
+  // Auto-play video: in viewport (mobile/desktop) + hover (desktop)
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setIsVideoInView(Boolean(entry?.isIntersecting));
+      },
+      { threshold: 0.6 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [primaryVideoUrl]);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+
+    const shouldPlay = isVideoInView || isVideoHovered;
+    if (shouldPlay) {
+      // Autoplay typically works only when muted
+      el.muted = isCardVideoMuted;
+      el.play().catch(() => {});
+    } else {
+      try {
+        el.pause();
+        el.currentTime = 0;
+      } catch {
+        // ignore
+      }
+    }
+  }, [isVideoHovered, isVideoInView, isCardVideoMuted]);
+
+  const toggleCardVideoMute = () => {
+    const el = videoRef.current;
+    const next = !isCardVideoMuted;
+    setIsCardVideoMuted(next);
+    if (!el) return;
+    try {
+      el.muted = next;
+      if (!next) {
+        el.play().catch(() => {});
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     // Si hay video principal, no abrir galería (los videos se reproducen en el card)
@@ -114,14 +169,28 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
             {primaryVideoUrl ? (
               <>
                 <video
+                  ref={videoRef}
                   src={primaryVideoUrl}
-                  autoPlay
                   muted
                   loop
                   playsInline
                   className="relative z-10 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-pointer"
                   onClick={handleImageClick}
+                  onMouseEnter={() => setIsVideoHovered(true)}
+                  onMouseLeave={() => setIsVideoHovered(false)}
                 />
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleCardVideoMute();
+                  }}
+                  className="absolute top-3 right-3 z-40 rounded-full bg-black/50 text-white p-2 backdrop-blur-sm"
+                  aria-label={isCardVideoMuted ? 'Activar sonido' : 'Silenciar'}
+                >
+                  {isCardVideoMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                </button>
                 
                 {/* Video indicator overlay */}
                 <div className="absolute inset-0 z-20 bg-black/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
