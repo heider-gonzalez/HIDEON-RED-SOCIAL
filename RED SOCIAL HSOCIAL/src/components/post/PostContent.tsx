@@ -129,48 +129,12 @@ function PostContentComponent({ post, postId }: PostContentProps) {
       
       {hasMedia && !hasMarketplace && (
         <div className="mt-2 mb-0 w-full">
-          {mediaItems.length > 1 ? (
-            // Múltiples archivos: usar MediaCarousel estilo LinkedIn
-            <MediaCarousel mediaItems={mediaItems} />
-          ) : mediaItems.length === 1 ? (
-            // Un solo archivo: mostrar directamente
-            <div className="w-full">
-              {mediaItems[0].type === 'image' ? (
-                <div className="w-full overflow-hidden h-[320px] sm:h-[420px]">
-                  <PostImage
-                    src={mediaItems[0].url}
-                    alt="Contenido multimedia del post"
-                    className="w-full h-full object-cover rounded-none cursor-zoom-in"
-                    onClick={() => setIsImageModalOpen(true)}
-                  />
-                </div>
-              ) : (
-                <video
-                  src={mediaItems[0].url}
-                  className="w-full max-h-[420px] object-contain rounded-none cursor-pointer"
-                  onClick={() => {
-                    // Treat single video posts as Reels to provide the requested vertical viewer experience
-                    navigate(`/reels/${post.id}`);
-                  }}
-                  onError={(e) => {
-                    console.error('Error cargando video:', e);
-                    const target = e.target as HTMLVideoElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="w-full h-32 bg-muted rounded-lg flex items-center justify-center">
-                          <p class="text-muted-foreground text-sm">No se pudo cargar el video</p>
-                        </div>
-                      `;
-                    }
-                  }}
-                  controls
-                  preload="metadata"
-                  crossOrigin="anonymous"
-                />
-              )}
-            </div>
+          {mediaItems.length >= 1 ? (
+            <MediaCarousel
+              mediaItems={mediaItems}
+              audioUrl={post.audio_url || undefined}
+              audioMetadata={post.audio_metadata || null}
+            />
           ) : null}
         </div>
       )}

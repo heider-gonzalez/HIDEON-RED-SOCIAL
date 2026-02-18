@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Volume2, VolumeX } from "lucide-react";
 import { PostImage } from "@/components/ui/optimized-image";
 import { MediaLightbox } from "./MediaLightbox";
 
@@ -10,16 +11,86 @@ interface MediaItem {
 interface MediaCarouselProps {
   mediaItems: MediaItem[];
   className?: string;
+  audioUrl?: string;
+  audioMetadata?: any | null;
 }
 
-export function MediaCarousel({ mediaItems, className = "" }: MediaCarouselProps) {
+export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetadata }: MediaCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxStartIndex, setLightboxStartIndex] = useState(0);
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const [isMuted, setIsMuted] = useState(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const hasAudio = Boolean(audioUrl);
+  const clipStart = useMemo(() => {
+    const s = Number(audioMetadata?.startTime ?? audioMetadata?.start_time ?? 0);
+    return Number.isFinite(s) ? Math.max(0, s) : 0;
+  }, [audioMetadata]);
+  const clipEnd = useMemo(() => {
+    const e = Number(audioMetadata?.endTime ?? audioMetadata?.end_time ?? 0);
+    return Number.isFinite(e) && e > 0 ? e : null;
+  }, [audioMetadata]);
+
   if (!mediaItems || mediaItems.length === 0) return null;
 
-  const currentMedia = mediaItems[currentIndex];
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      const width = el.clientWidth || 1;
+      const idx = Math.round(el.scrollLeft / width);
+      setCurrentIndex(Math.max(0, Math.min(mediaItems.length - 1, idx)));
+    };
+
+    onScroll();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [mediaItems.length]);
+
+  useEffect(() => {
+    if (!hasAudio) return;
+    const audio = new Audio(audioUrl!);
+    audio.loop = true;
+    audio.preload = 'metadata';
+    audioRef.current = audio;
+
+    const onTimeUpdate = () => {
+      if (clipEnd != null && audio.currentTime >= clipEnd) {
+        audio.currentTime = clipStart;
+      }
+    };
+    audio.addEventListener('timeupdate', onTimeUpdate);
+
+    return () => {
+      audio.pause();
+      audio.removeEventListener('timeupdate', onTimeUpdate);
+      audioRef.current = null;
+    };
+  }, [audioUrl, hasAudio, clipStart, clipEnd]);
+
+  const toggleMute = async () => {
+    if (!hasAudio) return;
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isMuted) {
+      try {
+        audio.currentTime = clipStart;
+        await audio.play();
+        setIsMuted(false);
+      } catch {
+        setIsMuted(true);
+      }
+    } else {
+      audio.pause();
+      setIsMuted(true);
+    }
+  };
 
   const openAtIndex = (index: number) => {
     const item = mediaItems[index];
@@ -29,130 +100,125 @@ export function MediaCarousel({ mediaItems, className = "" }: MediaCarouselProps
     setIsLightboxOpen(true);
   };
 
-  // Estilo LinkedIn: primera imagen grande, resto pequeñas abajo
-  if (mediaItems.length === 1) {
-    return (
-      <div className={`w-full ${className}`}>
-        {currentMedia.type === 'image' ? (
-          <div className="w-full overflow-hidden h-[320px] sm:h-[420px]">
-            <PostImage
-              src={currentMedia.url}
-              alt="Contenido multimedia"
-              className="w-full h-full object-cover rounded-none cursor-zoom-in"
-              onClick={() => openAtIndex(0)}
-            />
-          </div>
-        ) : (
-          <video
-            src={currentMedia.url}
-            className="w-full max-h-[420px] object-contain rounded-none cursor-pointer"
-            onClick={() => openAtIndex(0)}
-            controls
-            preload="metadata"
-          />
-        )}
-      </div>
-    );
-  }
+  // Distinguish tap/click from drag (Instagram-like: swipe changes slide, tap opens)
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerMovedRef = useRef(false);
+  const DRAG_THRESHOLD_PX = 8;
 
-  // Múltiples medios: estilo LinkedIn
+  // Enable drag-to-scroll with mouse (desktop) and touch-like pointer events
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartScrollLeftRef = useRef(0);
+
+  // Carrusel estilo Instagram (para 1 o múltiples medios)
   return (
     <div className={`relative w-full ${className}`}>
-      <div className="w-full overflow-hidden">
-        {/* Grid tipo Facebook con altura fija */}
-        {(() => {
-          const total = mediaItems.length;
-          const heightClass = "h-[320px] sm:h-[420px]";
-
-          const Tile = ({ item, index, overlayText }: { item: MediaItem; index: number; overlayText?: string }) => (
-            <button
-              type="button"
-              className="relative w-full h-full overflow-hidden"
-              onClick={() => openAtIndex(index)}
+      <div
+        ref={scrollRef}
+        className="flex w-full overflow-x-auto snap-x snap-mandatory scroll-smooth"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+        onPointerDown={(e) => {
+          const el = scrollRef.current;
+          if (!el) return;
+          // Only left button for mouse
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          isDraggingRef.current = true;
+          dragStartXRef.current = e.clientX;
+          dragStartScrollLeftRef.current = el.scrollLeft;
+          try {
+            (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+          } catch {
+            // ignore
+          }
+        }}
+        onPointerMove={(e) => {
+          const el = scrollRef.current;
+          if (!el || !isDraggingRef.current) return;
+          const dx = e.clientX - dragStartXRef.current;
+          if (Math.abs(dx) > DRAG_THRESHOLD_PX) {
+            pointerMovedRef.current = true;
+          }
+          el.scrollLeft = dragStartScrollLeftRef.current - dx;
+        }}
+        onPointerUp={(e) => {
+          isDraggingRef.current = false;
+          try {
+            (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
+          } catch {
+            // ignore
+          }
+        }}
+        onPointerCancel={() => {
+          isDraggingRef.current = false;
+        }}
+      >
+          {mediaItems.map((item, idx) => (
+            <div
+              key={`${item.url}_${idx}`}
+              className="relative flex-none w-full snap-start"
+              onClick={() => {
+                if (pointerMovedRef.current) return;
+                pointerMovedRef.current = false;
+                openAtIndex(idx);
+              }}
             >
               {item.type === 'image' ? (
-                <PostImage
-                  src={item.url}
-                  alt={`Media ${index + 1} de ${total}`}
-                  className="w-full h-full object-cover"
-                  lazy={false}
-                />
+                <div
+                  className="w-full bg-black flex items-center justify-center"
+                  style={{ width: '100%', height: 'min(500px, 70vh)' }}
+                >
+                  <PostImage
+                    src={item.url}
+                    alt={`Media ${idx + 1} de ${mediaItems.length}`}
+                    className="w-full h-full object-cover md:object-contain rounded-none"
+                    lazy={idx !== 0}
+                  />
+                </div>
               ) : (
-                <video
-                  src={item.url}
-                  className="w-full h-full object-cover"
-                  muted
-                  playsInline
-                  preload="metadata"
-                />
-              )}
-              {overlayText && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <span className="text-white text-3xl font-bold">{overlayText}</span>
+                <div
+                  className="w-full bg-black flex items-center justify-center"
+                  style={{ width: '100%', height: 'min(500px, 70vh)' }}
+                >
+                  <video
+                    src={item.url}
+                    className="w-full h-full object-contain rounded-none"
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
                 </div>
               )}
-            </button>
-          );
-
-          if (total === 2) {
-            return (
-              <div className={`grid grid-cols-2 gap-[2px] ${heightClass}`}>
-                <Tile item={mediaItems[0]} index={0} />
-                <Tile item={mediaItems[1]} index={1} />
-              </div>
-            );
-          }
-
-          if (total === 3) {
-            return (
-              <div className={`grid grid-cols-2 grid-rows-2 gap-[2px] ${heightClass}`}>
-                <div className="row-span-2">
-                  <Tile item={mediaItems[0]} index={0} />
-                </div>
-                <Tile item={mediaItems[1]} index={1} />
-                <Tile item={mediaItems[2]} index={2} />
-              </div>
-            );
-          }
-
-          if (total === 4) {
-            return (
-              <div className={`grid grid-cols-2 gap-[2px] ${heightClass}`}>
-                <div className="h-full">
-                  <Tile item={mediaItems[0]} index={0} />
-                </div>
-                <div className="grid grid-rows-3 gap-[2px] h-full">
-                  <Tile item={mediaItems[1]} index={1} />
-                  <Tile item={mediaItems[2]} index={2} />
-                  <Tile item={mediaItems[3]} index={3} />
-                </div>
-              </div>
-            );
-          }
-
-          const extra = total - 5;
-          // Estilo Facebook común: 2 arriba, 3 abajo (con overlay +N en la última si hay más de 5)
-          return (
-            <div className={`grid grid-cols-6 grid-rows-2 gap-[2px] ${heightClass}`}>
-              <div className="col-span-3 row-span-1">
-                <Tile item={mediaItems[0]} index={0} />
-              </div>
-              <div className="col-span-3 row-span-1">
-                <Tile item={mediaItems[1]} index={1} />
-              </div>
-              <div className="col-span-2 row-span-1">
-                <Tile item={mediaItems[2]} index={2} />
-              </div>
-              <div className="col-span-2 row-span-1">
-                <Tile item={mediaItems[3]} index={3} />
-              </div>
-              <div className="col-span-2 row-span-1">
-                <Tile item={mediaItems[4]} index={4} overlayText={extra > 0 ? `+${extra}` : undefined} />
-              </div>
             </div>
-          );
-        })()}
+          ))}
       </div>
+
+      {mediaItems.length > 1 && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/20 px-2 py-1 rounded-full">
+          {mediaItems.map((_, idx) => (
+            <span
+              key={idx}
+              className={
+                "h-1.5 w-1.5 rounded-full transition-all " +
+                (idx === currentIndex ? "bg-white w-2.5" : "bg-white/60")
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      {hasAudio && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            void toggleMute();
+          }}
+          className="absolute top-3 right-3 z-10 rounded-full bg-black/40 hover:bg-black/55 text-white p-2"
+          aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
+        >
+          {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        </button>
+      )}
 
       {/* Modales */}
       <MediaLightbox

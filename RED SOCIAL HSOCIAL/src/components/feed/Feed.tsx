@@ -229,7 +229,7 @@ export function Feed({ userId, groupId, companyId }: FeedProps) {
 
     return (
       <div
-        className="feed-container mx-auto w-full max-w-[680px] px-2 lg:px-0"
+        className="feed-container mx-auto w-full max-w-[600px] px-2 lg:px-0"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -262,7 +262,7 @@ export function Feed({ userId, groupId, companyId }: FeedProps) {
 
   return (
     <div
-      className="feed-container mx-auto w-full max-w-[680px] px-2 lg:px-0"
+      className="feed-container mx-auto w-full max-w-[600px] px-2 lg:px-0"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
