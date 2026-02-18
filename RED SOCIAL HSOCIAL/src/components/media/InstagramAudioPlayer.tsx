@@ -6,6 +6,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX, Music } from 'lucide-react';
+import {
+  getSoundEnabled,
+  setNowPlayingVideoId,
+  setSoundEnabled,
+  subscribeNowPlayingVideoId,
+  subscribeSoundEnabled,
+} from '@/lib/media/global-media';
 
 interface InstagramAudioPlayerProps {
   audioUrl?: string;
@@ -31,10 +38,40 @@ export function InstagramAudioPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.7);
-  const [isMuted, setIsMuted] = useState(false);
+  const [soundEnabled, setSoundEnabledState] = useState(() => getSoundEnabled());
+  const [isMuted, setIsMuted] = useState(() => !getSoundEnabled());
   const [isLoading, setIsLoading] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(null);
+  const instanceIdRef = useRef<string>(
+    typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function'
+      ? (crypto as any).randomUUID()
+      : `iap_${Math.random().toString(16).slice(2)}_${Date.now()}`
+  );
+
+  useEffect(() => {
+    return subscribeSoundEnabled((enabled) => {
+      setSoundEnabledState(enabled);
+      setIsMuted(!enabled);
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeNowPlayingVideoId((id) => {
+      if (!id) return;
+      const prefix = `${instanceIdRef.current}:`;
+      if (id.startsWith(prefix)) return;
+
+      const audio = audioRef.current;
+      if (!audio) return;
+      try {
+        audio.pause();
+      } catch {
+        // ignore
+      }
+      setIsPlaying(false);
+    });
+  }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -74,6 +111,7 @@ export function InstagramAudioPlayer({
     if (isPlaying) {
       audio.pause();
     } else {
+      setNowPlayingVideoId(`${instanceIdRef.current}:audio`);
       audio.play().catch(() => {
         // Play was prevented (browser policy)
       });
@@ -92,11 +130,17 @@ export function InstagramAudioPlayer({
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = Number(e.target.value);
     setVolume(newVolume);
-    setIsMuted(newVolume === 0);
+    const shouldMute = newVolume === 0;
+    setIsMuted(shouldMute);
+    if (shouldMute) {
+      setSoundEnabled(false);
+    } else {
+      setSoundEnabled(true);
+    }
   };
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
+    setSoundEnabled(!soundEnabled);
   };
 
   const formatTime = (time: number) => {

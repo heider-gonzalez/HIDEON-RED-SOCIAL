@@ -2,6 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { PostImage } from "@/components/ui/optimized-image";
 import { MediaLightbox } from "./MediaLightbox";
+import {
+  getSoundEnabled,
+  setNowPlayingVideoId,
+  setSoundEnabled,
+  subscribeNowPlayingVideoId,
+  subscribeSoundEnabled,
+} from "@/lib/media/global-media";
 
 interface MediaItem {
   url: string;
@@ -23,9 +30,14 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
 
-  const [isVideoMuted, setIsVideoMuted] = useState(true);
+  const instanceIdRef = useRef<string>(
+    typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function"
+      ? (crypto as any).randomUUID()
+      : `mc_${Math.random().toString(16).slice(2)}_${Date.now()}`
+  );
 
-  const [isMuted, setIsMuted] = useState(true);
+  const [soundEnabled, setSoundEnabledState] = useState(() => getSoundEnabled());
+  const [isMuted, setIsMuted] = useState(() => !getSoundEnabled());
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const hasAudio = Boolean(audioUrl);
@@ -39,6 +51,42 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   }, [audioMetadata]);
 
   if (!mediaItems || mediaItems.length === 0) return null;
+
+  useEffect(() => {
+    return subscribeSoundEnabled((enabled) => {
+      setSoundEnabledState(enabled);
+      setIsMuted(!enabled);
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeNowPlayingVideoId((id) => {
+      // If something else started playing, pause our media
+      if (!id) return;
+      const prefix = `${instanceIdRef.current}:`;
+      if (id.startsWith(prefix)) return;
+
+      videoRefs.current.forEach((v) => {
+        if (!v) return;
+        try {
+          v.pause();
+          v.currentTime = 0;
+          v.muted = true;
+        } catch {
+          // ignore
+        }
+      });
+
+      const audio = audioRef.current;
+      if (audio) {
+        try {
+          audio.pause();
+        } catch {
+          // ignore
+        }
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -76,37 +124,23 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
     if (activeItem?.type !== 'video' || !activeVideo) return;
 
     // Autoplay is usually allowed when muted
-    activeVideo.muted = isVideoMuted;
+    activeVideo.muted = !soundEnabled;
     const t = window.setTimeout(() => {
+      setNowPlayingVideoId(`${instanceIdRef.current}:${currentIndex}`);
       activeVideo.play().catch(() => {});
     }, 50);
     return () => window.clearTimeout(t);
-  }, [currentIndex, mediaItems, isVideoMuted]);
+  }, [currentIndex, mediaItems, soundEnabled]);
 
   useEffect(() => {
     const v = videoRefs.current[currentIndex];
     if (!v) return;
     try {
-      v.muted = isVideoMuted;
+      v.muted = !soundEnabled;
     } catch {
       // ignore
     }
-  }, [currentIndex, isVideoMuted]);
-
-  const toggleVideoMute = () => {
-    const v = videoRefs.current[currentIndex];
-    const next = !isVideoMuted;
-    setIsVideoMuted(next);
-    if (!v) return;
-    try {
-      v.muted = next;
-      if (!next) {
-        v.play().catch(() => {});
-      }
-    } catch {
-      // ignore
-    }
-  };
+  }, [currentIndex, soundEnabled]);
 
   useEffect(() => {
     if (!hasAudio) return;
@@ -134,15 +168,19 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (isMuted) {
+    if (!soundEnabled) {
       try {
+        setSoundEnabled(true);
         audio.currentTime = clipStart;
+        setNowPlayingVideoId(`${instanceIdRef.current}:audio`);
         await audio.play();
         setIsMuted(false);
       } catch {
+        setSoundEnabled(false);
         setIsMuted(true);
       }
     } else {
+      setSoundEnabled(false);
       audio.pause();
       setIsMuted(true);
     }
@@ -257,12 +295,31 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            toggleVideoMute();
+            setSoundEnabled(!soundEnabled);
+            const v = videoRefs.current[currentIndex];
+            if (v && soundEnabled) {
+              // going to muted
+              try {
+                v.muted = true;
+              } catch {
+                // ignore
+              }
+            }
+            if (v && !soundEnabled) {
+              // going to sound on
+              try {
+                v.muted = false;
+                setNowPlayingVideoId(`${instanceIdRef.current}:${currentIndex}`);
+                v.play().catch(() => {});
+              } catch {
+                // ignore
+              }
+            }
           }}
           className="absolute top-3 right-3 z-20 rounded-full bg-black/50 text-white p-2 backdrop-blur-sm"
-          aria-label={isVideoMuted ? 'Activar sonido' : 'Silenciar'}
+          aria-label={!soundEnabled ? 'Activar sonido' : 'Silenciar'}
         >
-          {isVideoMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          {!soundEnabled ? <VolumeX size={18} /> : <Volume2 size={18} />}
         </button>
       )}
 

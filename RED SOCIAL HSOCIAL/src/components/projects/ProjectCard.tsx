@@ -16,6 +16,13 @@ import { useNavigate } from 'react-router-dom';
 import { ReactionButtons } from '@/components/post/ReactionButtons';
 import { useQueryClient } from '@tanstack/react-query';
 import { AcademicBadge } from './AcademicBadge';
+import {
+  getSoundEnabled,
+  setSoundEnabled,
+  setNowPlayingVideoId,
+  subscribeNowPlayingVideoId,
+  subscribeSoundEnabled,
+} from '@/lib/media/global-media';
 
 interface ProjectCardProps {
   project: Project;
@@ -36,9 +43,46 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoHovered, setIsVideoHovered] = useState(false);
   const [isVideoInView, setIsVideoInView] = useState(false);
-  const [isCardVideoMuted, setIsCardVideoMuted] = useState(true);
+  const instanceIdRef = useRef<string>(
+    typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function'
+      ? (crypto as any).randomUUID()
+      : `pc_${Math.random().toString(16).slice(2)}_${Date.now()}`
+  );
+
+  const [soundEnabled, setSoundEnabledState] = useState(() => getSoundEnabled());
   
   const isOwner = user?.id === project.author_id;
+
+  useEffect(() => {
+    return subscribeSoundEnabled((enabled) => {
+      setSoundEnabledState(enabled);
+      const v = videoRef.current;
+      if (!v) return;
+      try {
+        v.muted = !enabled;
+      } catch {
+        // ignore
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeNowPlayingVideoId((id) => {
+      if (!id) return;
+      const prefix = `${instanceIdRef.current}:`;
+      if (id.startsWith(prefix)) return;
+
+      const v = videoRef.current;
+      if (!v) return;
+      try {
+        v.pause();
+        v.currentTime = 0;
+        v.muted = true;
+      } catch {
+        // ignore
+      }
+    });
+  }, []);
 
   // Get all images from media_urls or use image_url as fallback, but filter out videos
   const isVideoUrl = (url: string) => {
@@ -108,8 +152,12 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
     const shouldPlay = isVideoInView || isVideoHovered;
     if (shouldPlay) {
       // Autoplay typically works only when muted
-      el.muted = isCardVideoMuted;
-      el.play().catch(() => {});
+      el.muted = !soundEnabled;
+      const t = window.setTimeout(() => {
+        setNowPlayingVideoId(`${instanceIdRef.current}:video`);
+        el.play().catch(() => {});
+      }, 50);
+      return () => window.clearTimeout(t);
     } else {
       try {
         el.pause();
@@ -118,17 +166,18 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
         // ignore
       }
     }
-  }, [isVideoHovered, isVideoInView, isCardVideoMuted]);
+  }, [isVideoHovered, isVideoInView, soundEnabled]);
 
   const toggleCardVideoMute = () => {
-    const el = videoRef.current;
-    const next = !isCardVideoMuted;
-    setIsCardVideoMuted(next);
-    if (!el) return;
+    const v = videoRef.current;
+    const nextEnabled = !soundEnabled;
+    setSoundEnabled(nextEnabled);
+    if (!v) return;
     try {
-      el.muted = next;
-      if (!next) {
-        el.play().catch(() => {});
+      v.muted = !nextEnabled;
+      if (nextEnabled) {
+        setNowPlayingVideoId(`${instanceIdRef.current}:video`);
+        v.play().catch(() => {});
       }
     } catch {
       // ignore
@@ -187,9 +236,9 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
                     toggleCardVideoMute();
                   }}
                   className="absolute top-3 right-3 z-40 rounded-full bg-black/50 text-white p-2 backdrop-blur-sm"
-                  aria-label={isCardVideoMuted ? 'Activar sonido' : 'Silenciar'}
+                  aria-label={!soundEnabled ? 'Activar sonido' : 'Silenciar'}
                 >
-                  {isCardVideoMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                  {!soundEnabled ? <VolumeX size={18} /> : <Volume2 size={18} />}
                 </button>
                 
                 {/* Video indicator overlay */}
