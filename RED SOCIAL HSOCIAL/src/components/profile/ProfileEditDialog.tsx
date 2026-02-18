@@ -162,12 +162,15 @@ export function ProfileEditDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md max-h-[85vh] overflow-y-auto"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <DialogHeader>
           <DialogTitle>Editar perfil</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-2">
             <ProfileBasicInfo form={form} />
             
             <CareerSelect form={form} />
