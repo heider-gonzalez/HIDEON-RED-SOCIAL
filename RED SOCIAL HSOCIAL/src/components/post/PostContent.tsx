@@ -33,7 +33,17 @@ function PostContentComponent({ post, postId }: PostContentProps) {
   const proyectoDemoUrl = String((post as any)?.post_metadata?.proyecto?.demo_url || "").trim();
   const fallbackDemoUrl = String((post as any)?.demo_url || "").trim();
   const demoUrl = proyectoDemoUrl || fallbackDemoUrl;
-  const demoIsVideo = Boolean(demoUrl && demoUrl.match(/\.(mp4|webm|ogg|mov|m4v|avi)$/i));
+  
+  const isVideoUrl = (url: string) => {
+    if (!url) return false;
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv', '.m4v'];
+    const lowerUrl = url.toLowerCase();
+    return videoExtensions.some(ext => lowerUrl.includes(ext)) || 
+           lowerUrl.includes('video') || 
+           lowerUrl.includes('stream');
+  };
+
+  const demoIsVideo = isVideoUrl(demoUrl);
 
   // Check if the post has media (single or multiple)
   const hasMedia =
@@ -46,12 +56,12 @@ function PostContentComponent({ post, postId }: PostContentProps) {
   if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
     // Múltiples archivos desde media_urls
     post.media_urls.forEach((url: string, index: number) => {
-      const type = post.media_type?.startsWith('video') || url.match(/\.(mp4|webm|ogg)$/i) ? 'video' : 'image';
+      const type = post.media_type?.startsWith('video') || isVideoUrl(url) ? 'video' : 'image';
       mediaItems.push({ url, type });
     });
   } else if (post.media_url) {
     // Un solo archivo desde media_url (compatibilidad)
-    const type = post.media_type?.startsWith('video') || post.media_url.match(/\.(mp4|webm|ogg)$/i) ? 'video' : 'image';
+    const type = post.media_type?.startsWith('video') || isVideoUrl(post.media_url) ? 'video' : 'image';
     mediaItems.push({ url: post.media_url, type });
   } else if (demoIsVideo) {
     // Fallback: proyectos guardan el video como demo_url en metadata
