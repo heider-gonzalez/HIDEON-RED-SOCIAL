@@ -30,8 +30,16 @@ function PostContentComponent({ post, postId }: PostContentProps) {
 
   const { submitVote, isPending: isVoting } = usePollVoteMutation(postId);
   
+  const proyectoDemoUrl = String((post as any)?.post_metadata?.proyecto?.demo_url || "").trim();
+  const fallbackDemoUrl = String((post as any)?.demo_url || "").trim();
+  const demoUrl = proyectoDemoUrl || fallbackDemoUrl;
+  const demoIsVideo = Boolean(demoUrl && demoUrl.match(/\.(mp4|webm|ogg|mov|m4v|avi)$/i));
+
   // Check if the post has media (single or multiple)
-  const hasMedia = !!post.media_url || (post.media_urls && post.media_urls.length > 0);
+  const hasMedia =
+    !!post.media_url ||
+    (post.media_urls && post.media_urls.length > 0) ||
+    (!post.media_url && (!post.media_urls || post.media_urls.length === 0) && demoIsVideo);
   
   // Preparar items para MediaCarousel
   const mediaItems: Array<{ url: string; type: 'image' | 'video' }> = [];
@@ -45,6 +53,9 @@ function PostContentComponent({ post, postId }: PostContentProps) {
     // Un solo archivo desde media_url (compatibilidad)
     const type = post.media_type?.startsWith('video') || post.media_url.match(/\.(mp4|webm|ogg)$/i) ? 'video' : 'image';
     mediaItems.push({ url: post.media_url, type });
+  } else if (demoIsVideo) {
+    // Fallback: proyectos guardan el video como demo_url en metadata
+    mediaItems.push({ url: demoUrl, type: 'video' });
   }
   
   // Check if the post has a poll
