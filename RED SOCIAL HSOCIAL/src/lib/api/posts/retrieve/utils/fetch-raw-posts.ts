@@ -21,7 +21,8 @@ export async function fetchRawPosts(userId?: string) {
           profiles:profiles(id, username, avatar_url, career),
           comments:comments(count),
           academic_events:academic_events(id, title, description, start_date, end_date, location, is_virtual, max_attendees, event_type, registration_required, registration_deadline, organizer_contact, banner_url)
-        )
+        ),
+        post_metadata
       `);
 
     // Exclude project_showcase posts from feed (they should only appear in Projects page)

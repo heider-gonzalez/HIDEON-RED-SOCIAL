@@ -35,6 +35,7 @@ export function transformPostData(post: any): Post {
     poll: post.poll,
     idea: post.idea,
     post_type: post.post_type,
+    post_metadata: post.post_metadata,
     event: academicEventRow ? {
       id: academicEventRow.id,
       title: academicEventRow.title,
