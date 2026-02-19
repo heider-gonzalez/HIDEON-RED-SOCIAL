@@ -46,6 +46,7 @@ export interface Post {
   event?: Event | null;
   post_type?: string | null;
   post_metadata?: any;
+  project_showcases?: any[];
   is_pinned?: boolean | null;
   reactions?: ReactionSummary | any[]; // Allow both formats for flexibility
   reactions_count?: number;

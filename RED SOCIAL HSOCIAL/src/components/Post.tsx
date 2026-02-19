@@ -41,7 +41,10 @@ function ProyectoPostView({ post }: { post: PostType }) {
   }
 
   return (
-    <ProyectoPostContent profileId={post.user_id} proyecto={proyecto} />
+    <div className="px-0 md:px-4 pb-2">
+      <PostContent post={post} postId={post.id} />
+      <ProyectoPostContent profileId={post.user_id} proyecto={proyecto} />
+    </div>
   );
 }
 
@@ -441,6 +444,7 @@ function ProjectPostView({ post }: { post: PostType }) {
   
   return (
     <div className="px-0 md:px-4 pb-2">
+      <PostContent post={post} postId={post.id} />
       <ProjectContent 
         idea={post.idea} 
         content={post.content || ''}

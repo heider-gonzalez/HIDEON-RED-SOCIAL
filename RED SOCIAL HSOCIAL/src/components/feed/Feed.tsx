@@ -63,6 +63,23 @@ export function Feed({ userId, groupId, companyId }: FeedProps) {
   } = usePersonalizedFeed(userId, groupId, companyId);
   const loaderRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const targetPost = posts.find(p => p.id === '5ae8467d-54c6-4cd3-90eb-289741e17c8f');
+    if (targetPost) {
+      console.log('🎯 Target Post Debug (Feed):', {
+        id: targetPost.id,
+        post_type: targetPost.post_type,
+        media_url: targetPost.media_url,
+        media_urls: targetPost.media_urls,
+        post_metadata: targetPost.post_metadata,
+        project_showcases: targetPost.project_showcases,
+        hasMedia: !!(targetPost.media_url || (targetPost.media_urls && targetPost.media_urls.length > 0)),
+        demoFromMetadata: (targetPost.post_metadata as any)?.proyecto?.demo_url,
+        demoFromPost: targetPost.demo_url
+      });
+    }
+  }, [posts]);
+
   const isAtTop = useCallback(() => {
     const rootEl = loaderRef.current ? getScrollParent(loaderRef.current) : null;
     if (!rootEl) {

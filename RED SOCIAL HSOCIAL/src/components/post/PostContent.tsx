@@ -30,10 +30,13 @@ function PostContentComponent({ post, postId }: PostContentProps) {
 
   const { submitVote, isPending: isVoting } = usePollVoteMutation(postId);
   
+  // 1. Extraer todas las posibles URLs de video/demo
   const proyectoDemoUrl = String((post as any)?.post_metadata?.proyecto?.demo_url || "").trim();
   const fallbackDemoUrl = String((post as any)?.demo_url || "").trim();
-  const demoUrl = proyectoDemoUrl || fallbackDemoUrl;
+  const projectShowcaseVideoUrl = String(post.project_showcases?.[0]?.video_url || "").trim();
+  const projectShowcaseDemoUrl = String(post.project_showcases?.[0]?.demo_url || "").trim();
   
+  // 2. Definir función de detección de video (alineada con ProjectCard)
   const isVideoUrl = (url: string) => {
     if (!url) return false;
     const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv', '.m4v'];
@@ -43,28 +46,42 @@ function PostContentComponent({ post, postId }: PostContentProps) {
            lowerUrl.includes('stream');
   };
 
+  // 3. Buscar el primer video válido entre los metadatos
+  const demoUrl = proyectoDemoUrl || fallbackDemoUrl || projectShowcaseVideoUrl || projectShowcaseDemoUrl;
   const demoIsVideo = isVideoUrl(demoUrl);
 
-  // Check if the post has media (single or multiple)
+  // Debug logs detallados
+  console.log('🔍 PostContent Media Debug:', {
+    id: postId,
+    post_type: post.post_type,
+    has_media_urls: !!(post.media_urls && post.media_urls.length > 0),
+    proyectoDemoUrl,
+    fallbackDemoUrl,
+    projectShowcaseVideoUrl,
+    projectShowcaseDemoUrl,
+    finalDemoUrl: demoUrl,
+    demoIsVideo
+  });
+
+  // 4. Determinar si mostrar media
   const hasMedia =
     !!post.media_url ||
     (post.media_urls && post.media_urls.length > 0) ||
-    (!post.media_url && (!post.media_urls || post.media_urls.length === 0) && demoIsVideo);
+    demoIsVideo;
   
-  // Preparar items para MediaCarousel
+  // 5. Preparar items para MediaCarousel
   const mediaItems: Array<{ url: string; type: 'image' | 'video' }> = [];
+  
   if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
-    // Múltiples archivos desde media_urls
-    post.media_urls.forEach((url: string, index: number) => {
+    post.media_urls.forEach((url: string) => {
       const type = post.media_type?.startsWith('video') || isVideoUrl(url) ? 'video' : 'image';
       mediaItems.push({ url, type });
     });
   } else if (post.media_url) {
-    // Un solo archivo desde media_url (compatibilidad)
     const type = post.media_type?.startsWith('video') || isVideoUrl(post.media_url) ? 'video' : 'image';
     mediaItems.push({ url: post.media_url, type });
   } else if (demoIsVideo) {
-    // Fallback: proyectos guardan el video como demo_url en metadata
+    // Si no hay media_urls, usamos el video encontrado en metadatos
     mediaItems.push({ url: demoUrl, type: 'video' });
   }
   
