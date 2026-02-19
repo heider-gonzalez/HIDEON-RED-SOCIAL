@@ -41,8 +41,10 @@ export function InstagramAudioPlayer({
   const [soundEnabled, setSoundEnabledState] = useState(() => getSoundEnabled());
   const [isMuted, setIsMuted] = useState(() => !getSoundEnabled());
   const [isLoading, setIsLoading] = useState(false);
+  const [isInView, setIsInView] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const instanceIdRef = useRef<string>(
     typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function'
       ? (crypto as any).randomUUID()
@@ -74,6 +76,81 @@ export function InstagramAudioPlayer({
   }, []);
 
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        setIsInView(Boolean(e?.isIntersecting));
+      },
+      { threshold: 0.6 }
+    );
+
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audioUrl || !audio) return;
+
+    // If not visible or sound disabled, pause
+    if (!isInView || !soundEnabled) {
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+      } catch {
+        // ignore
+      }
+      setIsPlaying(false);
+      return;
+    }
+
+    // Try to autoplay when visible.
+    // Autoplay with sound is often blocked: start muted then unmute after playback starts.
+    try {
+      audio.muted = true;
+    } catch {
+      // ignore
+    }
+
+    setNowPlayingVideoId(`${instanceIdRef.current}:audio`);
+    audio
+      .play()
+      .then(() => {
+        setIsPlaying(true);
+        try {
+          // Only unmute if global sound is enabled
+          audio.muted = !soundEnabled;
+        } catch {
+          // ignore
+        }
+      })
+      .catch(() => {
+        // ignore: requires user gesture
+      });
+  }, [audioUrl, isInView, soundEnabled]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'hidden') return;
+      const audio = audioRef.current;
+      if (!audio) return;
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+      } catch {
+        // ignore
+      }
+      setIsPlaying(false);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
+  useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -101,6 +178,7 @@ export function InstagramAudioPlayer({
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = isMuted ? 0 : volume;
+      audioRef.current.muted = isMuted;
     }
   }, [volume, isMuted]);
 
@@ -155,7 +233,10 @@ export function InstagramAudioPlayer({
   const displayDuration = audioMetadata?.duration || duration;
 
   return (
-    <div className={`bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg p-3 ${className}`}>
+    <div
+      ref={containerRef}
+      className={`bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg p-3 ${className}`}
+    >
       {/* Hidden audio element */}
       {audioUrl && (
         <audio
