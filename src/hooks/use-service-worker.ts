@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface PushNotificationData {
   title: string;
@@ -120,10 +121,30 @@ export function useServiceWorker() {
 
       console.log('✅ Push subscription successful:', subscription);
 
-      // Send subscription to your backend for storage
-      // You should send this to Supabase or your server
-      console.log('📤 Subscription endpoint:', subscription.endpoint);
-      console.log('📤 Subscription keys:', subscription.getKey('p256dh'), subscription.getKey('auth'));
+      // Save subscription to Supabase database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from('push_subscriptions')
+          .upsert({
+            user_id: user.id,
+            subscription_data: JSON.stringify({
+              endpoint: subscription.endpoint,
+              keys: {
+                p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
+                auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!)))
+              }
+            })
+          }, {
+            onConflict: 'user_id'
+          });
+
+        if (error) {
+          console.error('❌ Error saving subscription to database:', error);
+        } else {
+          console.log('💾 Subscription saved to database');
+        }
+      }
 
       return subscription;
     } catch (error) {
