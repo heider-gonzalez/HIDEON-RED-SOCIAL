@@ -13,6 +13,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { initializePortalContainer } from "@/utils/portal-container";
 import { RealtimeNotificationHandler } from "@/components/notifications/RealtimeNotificationHandler";
 import { useAuth } from "@/hooks/use-auth";
+import { useServiceWorker } from "@/hooks/use-service-worker";
 
 // Critical pages loaded immediately
 import Index from "./pages/Index";
@@ -72,6 +73,25 @@ function RealtimeNotificationsRoot() {
   return <RealtimeNotificationHandler userId={user.id} />;
 }
 
+function ServiceWorkerRegistration() {
+  const { user } = useAuth();
+  const { requestNotificationPermission, subscribeToPushNotifications } = useServiceWorker();
+
+  React.useEffect(() => {
+    if (user?.id) {
+      // Request notification permission on login
+      requestNotificationPermission().then((granted) => {
+        if (granted) {
+          // Subscribe to push notifications
+          subscribeToPushNotifications();
+        }
+      });
+    }
+  }, [user?.id, requestNotificationPermission, subscribeToPushNotifications]);
+
+  return null;
+}
+
 const App = () => {
   // Initialize portal container on app start
   useEffect(() => {
@@ -88,6 +108,7 @@ const App = () => {
               <AuthProvider>
                 <RecoveryTokenHandler />
                 <RealtimeNotificationsRoot />
+                <ServiceWorkerRegistration />
               <Routes>
               {/* Critical pages - no lazy loading */}
               <Route path="/auth" element={<Auth />} />
