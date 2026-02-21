@@ -39,28 +39,33 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Core vendor libraries
-          vendor: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          
-          // Database and query management
-          supabase: ['@supabase/supabase-js'],
-          query: ['@tanstack/react-query'],
-          
-          // UI component libraries
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-avatar'],
-          radix: ['@radix-ui/react-toast', '@radix-ui/react-tabs', '@radix-ui/react-select'],
-          
-          // Animation and styling
-          animations: ['framer-motion'],
-          icons: ['lucide-react'],
-          
-          // Charts library - heavy, should be separate chunk
-          charts: ['recharts'],
-          
-          // Utilities
-          utils: ['date-fns', 'lodash-es', 'clsx', 'class-variance-authority'],
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'vendor';
+          }
+          if (id.includes('node_modules/react-router') || id.includes('node_modules/@remix-run/router')) {
+            return 'router';
+          }
+
+          if (id.includes('node_modules/@supabase/')) return 'supabase';
+          if (id.includes('node_modules/@tanstack/')) return 'query';
+
+          if (id.includes('node_modules/recharts/') || id.includes('node_modules/d3-')) return 'charts';
+
+          if (id.includes('node_modules/@radix-ui/')) return 'radix';
+          if (id.includes('node_modules/@floating-ui/')) return 'floating';
+          if (id.includes('node_modules/@hookform/')) return 'forms';
+          if (id.includes('node_modules/zod/')) return 'zod';
+
+          if (id.includes('node_modules/framer-motion/')) return 'animations';
+          if (id.includes('node_modules/lucide-react/')) return 'icons';
+
+          if (id.includes('node_modules/date-fns/')) return 'date';
+          if (id.includes('node_modules/lodash-es/')) return 'lodash';
+
+          return 'vendor-other';
         },
       },
     },
