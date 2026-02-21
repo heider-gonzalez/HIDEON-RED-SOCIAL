@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
@@ -29,6 +29,11 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
     showFriendRequestNotification,
   });
 
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
+  const baseReconnectDelay = 1000; // 1 second
+
   useEffect(() => {
     toastRef.current = toast;
   }, [toast]);
@@ -53,65 +58,7 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
     showFriendRequestNotification,
   ]);
 
-  useEffect(() => {
-    if (!userId) return;
-
-    console.log("🔔 Setting up realtime notification handler for user:", userId);
-
-    // Suscribirse a notificaciones en tiempo real
-    const channel = supabase
-      .channel('realtime-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `receiver_id=eq.${userId}`,
-        },
-        async (payload) => {
-          console.log("🔔 New notification received:", payload);
-          
-          const notification = payload.new as any;
-          
-          // Obtener información del remitente
-          const { data: senderData } = await supabase
-            .from('profiles')
-            .select('username, avatar_url')
-            .eq('id', notification.sender_id)
-            .single();
-
-          const senderName = senderData?.username || 'Usuario desconocido';
-
-          // Mostrar toast inmediatamente
-          const toastTitle = getToastTitle(notification.type, senderName);
-          const toastDescription = notification.message || getToastDescription(notification.type, senderName);
-          
-          toastRef.current({
-            title: toastTitle,
-            description: toastDescription,
-          });
-
-          // Mostrar notificación push si está habilitada
-          if (isEnabledRef.current) {
-            showPushNotification(notification, senderName);
-          }
-
-          // Emitir evento personalizado para actualizar el contador
-          window.dispatchEvent(new CustomEvent('new-notification', {
-            detail: { notification, senderName }
-          }));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log("🔔 Cleaning up notification handler");
-      supabase.removeChannel(channel);
-    };
-  }, [userId]);
-
-  const showPushNotification = (notification: any, senderName: string) => {
+  const showPushNotification = useCallback((notification: any, senderName: string) => {
     const {
       showMessageNotification: showMessage,
       showHeartNotification: showHeart,
@@ -124,17 +71,16 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
       case 'profile_heart_received':
         showHeart(senderName, 'profile');
         break;
-        
+
       case 'engagement_hearts_earned': {
         const heartsMatch = notification.message?.match(/(\d+)/);
         const hearts = heartsMatch ? parseInt(heartsMatch[1]) : 1;
         showHeart(senderName, 'engagement', hearts);
         break;
       }
-        
+
       case 'post_like':
       case 'post_comment':
-        // Obtener contenido del post si está disponible
         if (notification.post_id) {
           supabase
             .from('posts')
@@ -151,21 +97,112 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
             });
         }
         break;
-        
+
       case 'friend_request':
         showFriendRequest(senderName, notification.sender_id);
         break;
-        
+
       case 'message':
         showMessage(senderName, notification.message || 'Te envió un mensaje', notification.sender_id);
         break;
-        
+
       default:
-        // Notificación genérica
         showMessage(senderName, notification.message || 'Nueva notificación', notification.sender_id);
         break;
     }
-  };
+  }, []);
+
+  const setupRealtimeSubscription = useCallback(() => {
+    if (!userId) return;
+
+    console.log("🔔 Setting up realtime notification handler for user:", userId);
+
+    const channel = supabase
+      .channel('realtime-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `receiver_id=eq.${userId}`,
+        },
+        async (payload) => {
+          console.log("🔔 New notification received:", payload);
+
+          const notification = payload.new as any;
+
+          // Get sender info
+          const { data: senderData } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', notification.sender_id)
+            .single();
+
+          const senderName = senderData?.username || 'Usuario desconocido';
+
+          // Show toast immediately
+          const toastTitle = getToastTitle(notification.type, senderName);
+          const toastDescription = notification.message || getToastDescription(notification.type, senderName);
+
+          toastRef.current({
+            title: toastTitle,
+            description: toastDescription,
+          });
+
+          // Show push notification if enabled
+          if (isEnabledRef.current) {
+            showPushNotification(notification, senderName);
+          }
+
+          // Emit custom event to update notification counter
+          window.dispatchEvent(new CustomEvent('new-notification', {
+            detail: { notification, senderName }
+          }));
+        }
+      )
+      .subscribe((status) => {
+        console.log("🔔 Notification subscription status:", status);
+
+        if (status === 'SUBSCRIBED') {
+          reconnectAttemptsRef.current = 0; // Reset on successful subscription
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          console.warn("🔔 Notification subscription closed/error, attempting reconnect...");
+          attemptReconnect();
+        }
+      });
+
+    return channel;
+  }, [userId, showPushNotification]);
+
+  const attemptReconnect = useCallback(() => {
+    if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+      console.error("🔔 Max reconnection attempts reached, giving up");
+      return;
+    }
+
+    const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current); // Exponential backoff
+    console.log(`🔔 Attempting reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
+
+    reconnectTimeoutRef.current = setTimeout(() => {
+      reconnectAttemptsRef.current++;
+      setupRealtimeSubscription();
+    }, delay);
+  }, [setupRealtimeSubscription]);
+
+  useEffect(() => {
+    const channel = setupRealtimeSubscription();
+
+    return () => {
+      console.log("🔔 Cleaning up notification handler");
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+    };
+  }, [setupRealtimeSubscription]);
 
   const getToastTitle = (type: NotificationType, senderName: string): string => {
     switch (type) {

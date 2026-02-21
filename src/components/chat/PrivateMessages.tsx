@@ -16,6 +16,9 @@ import { useArchivedChats } from "@/hooks/use-archived-chats";
 import { splitConversationsByMutualFollow } from "@/lib/chat/split-conversations";
 import { followUser } from "@/lib/api/followers/follow-actions";
 import { GlobalChat } from "@/components/chat/GlobalChat";
+import { useMessages, useConversations, useSendMessage } from "@/hooks/use-messages";
+import { Message, Conversation } from "@/types/chat";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   DropdownMenu,
@@ -35,28 +38,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const GLOBAL_CHANNEL_ID = "2f79759f-c53f-40ae-b786-59f6e69264a6";
-
-interface Message {
-  id: string;
-  contenido: string;
-  created_at: string;
-  id_autor: string;
-  author: {
-    username: string;
-    avatar_url: string;
-  };
-}
-
-interface Conversation {
-  id: string;
-  username: string;
-  avatar_url: string | null;
-  last_message: string;
-  last_message_at: string;
-  unread_count: number;
-  channel_id: string;
-  is_global?: boolean;
-}
 
 interface SearchResult {
   id: string;
@@ -85,6 +66,7 @@ export function PrivateMessages() {
   const { archivedChats, handleChatLongPress, handleChatPressEnd, handleUnarchiveChat } = useArchivedChats();
   const [mutualFollowMap, setMutualFollowMap] = useState<Record<string, boolean>>({});
   const [activeInboxTab, setActiveInboxTab] = useState<'inbox' | 'requests' | 'archived'>('inbox');
+  const queryClient = useQueryClient();
 
   const [acceptedRequests, setAcceptedRequests] = useState<Set<string>>(() => {
     try {
@@ -228,8 +210,10 @@ export function PrivateMessages() {
         title: 'Mensaje eliminado',
       });
 
-      await loadMessages(conversation.channel_id);
-      await loadConversations();
+      // Invalidate queries to refetch data
+      queryClient.invalidateQueries({ queryKey: ["messages", conversation.channel_id] });
+      queryClient.invalidateQueries({ queryKey: ["conversations", currentUserId] });
+
       setIsDeleteDialogOpen(false);
       setMessageToDelete(null);
     } catch (error: any) {
@@ -378,6 +362,31 @@ export function PrivateMessages() {
     return conv.channel_id ?? null;
   }, [conversations, selectedConversation]);
 
+  // Use React Query hooks
+  const { data: messagesData, isLoading: messagesLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useMessages(selectedChannelId, !!selectedChannelId && !selectedConv?.is_global);
+  const { data: conversationsData, isLoading: conversationsLoading } = useConversations(currentUserId);
+  const sendMessageMutation = useSendMessage();
+
+  // Flatten messages from pages
+  const allMessages = useMemo(() => {
+    return messagesData?.pages.flatMap(page => page.data) || [];
+  }, [messagesData]);
+
+  // Set conversations from query data
+  useEffect(() => {
+    if (conversationsData?.pages?.[0]) {
+      setConversations(conversationsData.pages[0]);
+      setLoading(false);
+    }
+  }, [conversationsData]);
+
+  // Set messages from query data
+  useEffect(() => {
+    if (allMessages) {
+      setMessages(allMessages);
+    }
+  }, [allMessages]);
+
   // Cargar mensajes de una conversación
   const loadMessages = async (channelId: string) => {
     try {
@@ -433,40 +442,34 @@ export function PrivateMessages() {
     }
   };
 
-  // Enviar mensaje
+  // Enviar mensaje con optimistic updates
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentUserId || !selectedConversation || sending) return;
+    if (!newMessage.trim() || !currentUserId || !selectedConversation || sendMessageMutation.isPending) return;
 
     const conversation = conversations.find(c => c.id === selectedConversation);
     if (!conversation) return;
 
-    setSending(true);
     try {
-      const { error } = await (supabase as any)
-        .from("mensajes")
-        .insert({
-          contenido: newMessage.trim(),
-          id_canal: conversation.channel_id,
-          id_autor: currentUserId,
-        });
-
-      if (error) throw error;
+      await sendMessageMutation.mutateAsync({
+        content: newMessage.trim(),
+        channelId: conversation.channel_id,
+        authorId: currentUserId,
+      });
 
       playUiSound('message_sent');
-
       setNewMessage("");
-      await loadMessages(conversation.channel_id);
-      await loadConversations();
+
+      // Scroll to bottom after sending
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({
+          top: scrollRef.current.scrollHeight,
+          behavior: "smooth"
+        });
+      }, 100);
     } catch (error: any) {
+      // Error handled in mutation
       console.error("Error sending message:", error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo enviar el mensaje",
-        variant: "destructive",
-      });
-    } finally {
-      setSending(false);
     }
   };
 
@@ -787,16 +790,14 @@ export function PrivateMessages() {
                         addSuffix: true,
                         locale: es,
                       })}
-                    </p>
-                  </div>
 
-                  {activeInboxTab === 'requests' && !conv.is_global && (
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={(e) => {
+                        followUser(conv.id).finally(() => {
+                          setActiveInboxTab('inbox');
+                        });
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
                           e.stopPropagation();
                           setAcceptedRequests((prev) => {
                             const next = new Set(prev);
@@ -807,60 +808,77 @@ export function PrivateMessages() {
                           followUser(conv.id).finally(() => {
                             setActiveInboxTab('inbox');
                           });
+                        }
+                      }}
+                    >
+                      Aceptar
+                    </span>
+                    {archivedChats.has(conv.id) ? (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUnarchiveChat(conv.id);
                         }}
-                        className="h-8"
-                      >
-                        Aceptar
-                      </Button>
-                      {archivedChats.has(conv.id) ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
                             e.stopPropagation();
                             handleUnarchiveChat(conv.id);
-                          }}
-                          className="h-8"
-                        >
-                          Desarchivar
-                        </Button>
-                      ) : (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
+                          }
+                        }}
+                      >
+                        Desarchivar
+                      </span>
+                    ) : (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleChatLongPress(conv.id);
+                          setTimeout(() => handleChatPressEnd(), 0);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
                             e.stopPropagation();
                             handleChatLongPress(conv.id);
                             setTimeout(() => handleChatPressEnd(), 0);
-                          }}
-                          className="h-8"
-                        >
-                          Archivar
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                          }
+                        }}
+                      >
+                        Archivar
+                      </span>
+                    )}
+                  </div>
+                )}
 
-                  {activeInboxTab === 'archived' && !conv.is_global && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {
+                {activeInboxTab === 'archived' && !conv.is_global && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUnarchiveChat(conv.id);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
                         e.stopPropagation();
                         handleUnarchiveChat(conv.id);
-                      }}
-                      className="h-8"
-                    >
-                      Desarchivar
-                    </Button>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+                      }
+                    }}
+                  >
+                    Desarchivar
+                  </span>
+                )}
+              </button>
+            ))}
         </ScrollArea>
       </div>
 
