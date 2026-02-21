@@ -1,16 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Home, User, Users, Bell, Settings } from 'lucide-react';
+import { Home, Shield, Settings } from 'lucide-react';
 
 export function Navigation() {
   const location = useLocation();
   
   const navItems = [
-    { name: 'Inicio', path: '/', icon: Home },
-    { name: 'Perfil', path: '/profile', icon: User },
-    { name: 'Mi red', path: '/friends', icon: Users },
-    { name: 'Notificaciones', path: '/notifications', icon: Bell },
+    { name: 'Inicio', path: '/home', icon: Home },
+    { name: 'Moderación', path: '/moderation', icon: Shield },
     { name: 'Configuración', path: '/settings', icon: Settings },
   ];
 

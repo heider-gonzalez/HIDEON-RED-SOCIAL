@@ -22,6 +22,7 @@ export function IdeaContent({ idea, content, postId, postOwnerId }: IdeaContentP
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   
   const { data: participants = [] } = useIdeaParticipants(postId);
   const { data: requestStatus } = useUserRequestStatus(postId, postOwnerId);
@@ -115,122 +116,8 @@ export function IdeaContent({ idea, content, postId, postOwnerId }: IdeaContentP
           </button>
         )}
 
-        {/* Project Details */}
         <div className="space-y-2">
-          {/* Category & Duration */}
-          <div className="flex flex-wrap gap-2 items-center text-sm text-muted-foreground">
-            {idea.category && (
-              <div className="flex items-center">
-                <Briefcase className="h-4 w-4 mr-1" />
-                <span>{idea.category}</span>
-              </div>
-            )}
-            {idea.estimated_duration && (
-              <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-1" />
-                <span>{idea.estimated_duration}</span>
-              </div>
-            )}
-            {idea.location_preference && (
-              <div className="flex items-center">
-                <MapPin className="h-4 w-4 mr-1" />
-                <span>{idea.location_preference}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Expected Impact */}
-          {idea.expected_impact && (
-            <div className="flex items-start">
-              <Target className="h-4 w-4 mr-2 mt-0.5 text-primary" />
-              <div>
-                <span className="text-sm font-medium text-foreground">Impacto esperado:</span>
-                <p className="text-sm text-muted-foreground">{idea.expected_impact}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Needed Roles */}
-          {idea.needed_roles && idea.needed_roles.length > 0 && (
-            <div>
-              <div className="flex items-center mb-2">
-                <Users className="h-4 w-4 mr-2 text-primary" />
-                <span className="text-sm font-medium text-foreground">Roles necesarios:</span>
-              </div>
-              <div className="space-y-2 ml-6">
-                {idea.needed_roles.map((role, index) => (
-                  <div key={index} className="border border-border rounded-lg p-2 bg-muted/50">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm text-foreground">{role.title}</span>
-                      <Badge className={getCommitmentColor(role.commitment_level)}>
-                        {role.commitment_level}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{role.description}</p>
-                    {role.skills_desired && role.skills_desired.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {role.skills_desired.map((skill, skillIndex) => (
-                          <Badge key={skillIndex} variant="outline" className="text-xs">
-                            {skill}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Resources Needed */}
-          {idea.resources_needed && idea.resources_needed.length > 0 && (
-            <div>
-              <span className="text-sm font-medium text-foreground">Recursos necesarios:</span>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {idea.resources_needed.map((resource, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {resource}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Collaboration Type */}
-          {idea.collaboration_type && (
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Modalidad:</span> {idea.collaboration_type}
-            </div>
-          )}
-
-          {/* Participants Section */}
-          {participants.length > 0 && (
-            <div className="pt-3 border-t border-border">
-              <Link to={`/idea/${postId}/participants`} className="flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  {participants.slice(0, 5).map((p) => (
-                    <Avatar key={p.user_id} className="h-8 w-8 border-2 border-background">
-                      <AvatarImage src={p.avatar_url || ''} />
-                      <AvatarFallback className="text-xs">
-                        {p.username?.[0]?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                  ))}
-                  {participants.length > 5 && (
-                    <div className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium">
-                      +{participants.length - 5}
-                    </div>
-                  )}
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {participants.length} {participants.length === 1 ? 'participante' : 'participantes'}
-                </span>
-              </Link>
-            </div>
-          )}
-
-          {/* Request Button */}
-          <div className="pt-3 border-t border-border space-y-2">
+          <div className="pt-2 border-t border-border space-y-2">
             {canAccessIdeaChat && (
               <Button asChild variant="outline" className="w-full">
                 <Link to={`/idea/${postId}/chat`}>
@@ -283,6 +170,126 @@ export function IdeaContent({ idea, content, postId, postOwnerId }: IdeaContentP
               </Button>
             )}
           </div>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setShowDetails((v) => !v)}
+              className="text-xs text-muted-foreground hover:underline"
+            >
+              {showDetails ? 'Ocultar detalles' : 'Ver detalles'}
+            </button>
+          </div>
+
+          {showDetails && (
+            <div className="space-y-2 pt-2">
+              <div className="flex flex-wrap gap-2 items-center text-sm text-muted-foreground">
+                {idea.category && (
+                  <div className="flex items-center">
+                    <Briefcase className="h-4 w-4 mr-1" />
+                    <span>{idea.category}</span>
+                  </div>
+                )}
+                {idea.estimated_duration && (
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>{idea.estimated_duration}</span>
+                  </div>
+                )}
+                {idea.location_preference && (
+                  <div className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    <span>{idea.location_preference}</span>
+                  </div>
+                )}
+              </div>
+
+              {idea.expected_impact && (
+                <div className="flex items-start">
+                  <Target className="h-4 w-4 mr-2 mt-0.5 text-primary" />
+                  <div>
+                    <span className="text-sm font-medium text-foreground">Impacto esperado:</span>
+                    <p className="text-sm text-muted-foreground">{idea.expected_impact}</p>
+                  </div>
+                </div>
+              )}
+
+              {idea.needed_roles && idea.needed_roles.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-2">
+                    <Users className="h-4 w-4 mr-2 text-primary" />
+                    <span className="text-sm font-medium text-foreground">Roles necesarios:</span>
+                  </div>
+                  <div className="space-y-2 ml-6">
+                    {idea.needed_roles.map((role, index) => (
+                      <div key={index} className="border border-border rounded-lg p-2 bg-muted/50">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-sm text-foreground">{role.title}</span>
+                          <Badge className={getCommitmentColor(role.commitment_level)}>
+                            {role.commitment_level}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{role.description}</p>
+                        {role.skills_desired && role.skills_desired.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {role.skills_desired.map((skill, skillIndex) => (
+                              <Badge key={skillIndex} variant="outline" className="text-xs">
+                                {skill}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {idea.resources_needed && idea.resources_needed.length > 0 && (
+                <div>
+                  <span className="text-sm font-medium text-foreground">Recursos necesarios:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {idea.resources_needed.map((resource, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {resource}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {idea.collaboration_type && (
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Modalidad:</span> {idea.collaboration_type}
+                </div>
+              )}
+
+              {participants.length > 0 && (
+                <div className="pt-3 border-t border-border">
+                  <Link to={`/idea/${postId}/participants`} className="flex items-center gap-3">
+                    <div className="flex -space-x-2">
+                      {participants.slice(0, 5).map((p) => (
+                        <Avatar key={p.user_id} className="h-8 w-8 border-2 border-background">
+                          <AvatarImage src={p.avatar_url || ''} />
+                          <AvatarFallback className="text-xs">
+                            {p.username?.[0]?.toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {participants.length > 5 && (
+                        <div className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium">
+                          +{participants.length - 5}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {participants.length} {participants.length === 1 ? 'participante' : 'participantes'}
+                    </span>
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

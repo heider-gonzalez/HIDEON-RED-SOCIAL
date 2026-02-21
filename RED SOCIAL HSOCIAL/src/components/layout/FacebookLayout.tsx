@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { TopNavigation } from '@/components/navigation/TopNavigation';
-import { MobileBottomNavigation } from '@/components/navigation/MobileBottomNavigation';
 import { LeftSidebar } from './LeftSidebar';
 import { RightSidebar } from './RightSidebar';
 import { ChatSystem } from './ChatSystem';
@@ -108,22 +107,13 @@ export function FacebookLayout({
             </div>
           )}
           
-          <main className={`w-full min-h-screen ${!hideNavigation ? 'pt-[96px] pb-[calc(5rem+env(safe-area-inset-bottom))]' : 'py-4 pb-[calc(5rem+env(safe-area-inset-bottom))]'}`}>
+          <main className={`w-full min-h-screen ${!hideNavigation ? 'pt-[96px] pb-4' : 'py-4 pb-4'}`}>
             <div className="w-full px-0 mx-auto max-w-full">
               {currentUserId && <NotificationPermissionBanner />}
               {children}
               <AppLegalFooter />
             </div>
           </main>
-          
-          {!hideNavigation && (
-            <MobileBottomNavigation 
-              currentUserId={currentUserId}
-              unreadNotifications={unreadNotifications}
-              newPosts={newPosts}
-              pendingRequestsCount={pendingRequestsCount}
-            />
-          )}
           
           {currentUserId && <ChatSystem />}
         </div>

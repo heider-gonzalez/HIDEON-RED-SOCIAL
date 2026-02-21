@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { AudioPlayer } from '@/components/media/AudioPlayer';
 import { AudioWaveform } from '@/components/media/AudioWaveform';
+import { MusicSelector } from '@/components/media/MusicSelector';
+import { InstagramAudioEditor } from '@/components/media/InstagramAudioEditor';
+import type { MusicTrack } from '@/lib/api/music/music-library';
 import {
   Select,
   SelectContent,
@@ -94,6 +97,17 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     size: number;
     type: string;
   } | null>(null);
+
+  const [showMusicSelector, setShowMusicSelector] = useState(false);
+  const [showAudioEditor, setShowAudioEditor] = useState(false);
+  const [selectedAudioTrack, setSelectedAudioTrack] = useState<MusicTrack | null>(null);
+  const [selectedAudioData, setSelectedAudioData] = useState<null | {
+    track: MusicTrack;
+    startTime: number;
+    endTime: number;
+    audioUrl: string;
+    duration: number;
+  }>(null);
   
   // 🎵 Audio clip selection state
   const [audioClipStart, setAudioClipStart] = useState(0);
@@ -183,8 +197,41 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       setSelectedAudioFile(null);
       setAudioPreview('');
       setAudioMetadata(null);
+      setSelectedAudioTrack(null);
+      setSelectedAudioData(null);
+      setShowWaveformEditor(false);
+      setShowMusicSelector(false);
+      setShowAudioEditor(false);
     }
   }, [initialContent, initialMedia, isVisible]);
+
+  const handleMusicTrackSelect = (track: MusicTrack) => {
+    setSelectedAudioFile(null);
+    setAudioPreview('');
+    setAudioMetadata(null);
+    setSelectedAudioTrack(track);
+    setShowMusicSelector(false);
+    setShowAudioEditor(true);
+  };
+
+  const handleAudioDataSelect = (audioData: {
+    track: MusicTrack;
+    startTime: number;
+    endTime: number;
+    audioUrl: string;
+    duration: number;
+  }) => {
+    setSelectedAudioData(audioData);
+    setSelectedAudioTrack(audioData.track);
+    setAudioClipStart(audioData.startTime);
+    setAudioClipEnd(audioData.endTime);
+    setShowAudioEditor(false);
+
+    toast({
+      title: 'Música añadida',
+      description: `${audioData.track.title} • ${audioData.track.artist}`,
+    });
+  };
 
   // 🎵 Audio file processing function
   const handleAudioFileSelect = (file: File) => {
@@ -233,6 +280,8 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     setSelectedAudioFile(null);
     setAudioPreview('');
     setAudioMetadata(null);
+    setSelectedAudioTrack(null);
+    setSelectedAudioData(null);
   };
 
   useEffect(() => {
@@ -387,8 +436,21 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         }
       }
 
-      // Upload audio file if selected
-      if (selectedAudioFile) {
+      if (selectedAudioData) {
+        audioUrl = selectedAudioData.audioUrl;
+        audioMetadata = {
+          source: 'music_library',
+          track_id: selectedAudioData.track.id,
+          title: selectedAudioData.track.title,
+          artist: selectedAudioData.track.artist,
+          album: selectedAudioData.track.album || null,
+          cover_art_url: selectedAudioData.track.cover_art_url || null,
+          duration: selectedAudioData.track.duration,
+          startTime: selectedAudioData.startTime,
+          endTime: selectedAudioData.endTime,
+        };
+      } else if (selectedAudioFile) {
+        // Upload audio file if selected
         try {
           const duration = await getAudioDuration(selectedAudioFile);
           const audioResult = await uploadAudioFile(selectedAudioFile, user.id, {
@@ -1364,7 +1426,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           )}
 
           {/* 🎵 Audio File Section */}
-          {selectedAudioFile && (
+          {(selectedAudioFile || selectedAudioData) && (
             <div className="mt-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">
@@ -1375,11 +1437,18 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowWaveformEditor(!showWaveformEditor)}
+                    onClick={() => {
+                      if (selectedAudioData && selectedAudioData.track) {
+                        setSelectedAudioTrack(selectedAudioData.track);
+                        setShowAudioEditor(true);
+                        return;
+                      }
+                      setShowWaveformEditor(!showWaveformEditor);
+                    }}
                     className="text-xs h-7"
                   >
                     <Edit className="h-3 w-3 mr-1" />
-                    {showWaveformEditor ? 'Ocultar editor' : 'Recortar audio'}
+                    {selectedAudioData ? 'Editar' : (showWaveformEditor ? 'Ocultar editor' : 'Recortar audio')}
                   </Button>
                   <Button
                     type="button"
@@ -1394,7 +1463,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               </div>
               
               {/* Waveform Editor */}
-              {showWaveformEditor && (
+              {showWaveformEditor && selectedAudioFile && (
                 <div className="mb-4">
                   <AudioWaveform
                     audioFile={selectedAudioFile}
@@ -1416,25 +1485,39 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   </div>
                   <div className="flex-1">
                     <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {selectedAudioFile.name}
+                      {selectedAudioData
+                        ? `${selectedAudioData.track.title} • ${selectedAudioData.track.artist}`
+                        : (selectedAudioFile ? selectedAudioFile.name : '')}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {audioMetadata ? 
-                        `Clip: ${Math.floor(audioClipStart)}s - ${Math.floor(audioClipEnd)}s (${Math.floor(audioClipEnd - audioClipStart)}s) • ${(selectedAudioFile.size / 1024 / 1024).toFixed(1)} MB` 
-                        : 'Procesando...'
+                      {selectedAudioData
+                        ? `Clip: ${Math.floor(selectedAudioData.startTime)}s - ${Math.floor(selectedAudioData.endTime)}s (${Math.floor(selectedAudioData.endTime - selectedAudioData.startTime)}s)`
+                        : (audioMetadata && selectedAudioFile
+                          ? `Clip: ${Math.floor(audioClipStart)}s - ${Math.floor(audioClipEnd)}s (${Math.floor(audioClipEnd - audioClipStart)}s) • ${(selectedAudioFile.size / 1024 / 1024).toFixed(1)} MB`
+                          : 'Procesando...')
                       }
                     </div>
                   </div>
                 </div>
                 
-                {audioPreview && (
+                {(audioPreview || selectedAudioData?.audioUrl) && (
                   <div className="mt-3">
                     <AudioPlayer
-                      audioUrl={audioPreview}
-                      metadata={audioMetadata ? {
-                        ...audioMetadata,
-                        duration: audioClipEnd - audioClipStart
-                      } : undefined}
+                      audioUrl={selectedAudioData?.audioUrl || audioPreview}
+                      metadata={selectedAudioData
+                        ? {
+                            name: selectedAudioData.track.title,
+                            duration: selectedAudioData.endTime - selectedAudioData.startTime,
+                            size: 0,
+                            type: 'audio/mpeg',
+                          }
+                        : (audioMetadata
+                          ? {
+                              ...audioMetadata,
+                              duration: audioClipEnd - audioClipStart,
+                            }
+                          : undefined)
+                      }
                       autoPlay={false}
                       loop={false}
                     />
@@ -1462,24 +1545,15 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           </label>
           
           {/* 🎵 Audio Upload Button */}
-          <label className={cn(
-            "cursor-pointer rounded-full p-2 text-purple-500 hover:bg-gray-100 dark:hover:bg-gray-700 ml-1"
-          )}>
-            <input 
-              type="file" 
-              className="hidden" 
-              accept="audio/*" 
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  handleAudioFileSelect(file);
-                }
-                e.target.value = '';
-              }}
-              disabled={false}
-            />
+          <button
+            type="button"
+            onClick={() => setShowMusicSelector(true)}
+            className={cn(
+              "cursor-pointer rounded-full p-2 text-purple-500 hover:bg-gray-100 dark:hover:bg-gray-700 ml-1"
+            )}
+          >
             <Music className="h-5 w-5" />
-          </label>
+          </button>
           
           <div className="flex-1"></div>
           
@@ -1550,6 +1624,30 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         </div>
         </form>
       </div>
+
+      {showMusicSelector && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <MusicSelector
+              onTrackSelect={handleMusicTrackSelect}
+              onClose={() => setShowMusicSelector(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showAudioEditor && selectedAudioTrack && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <InstagramAudioEditor
+              track={selectedAudioTrack}
+              videoDuration={30}
+              onAudioSelect={handleAudioDataSelect}
+              onClose={() => setShowAudioEditor(false)}
+            />
+          </div>
+        </div>
+      )}
       
       {/* First Post Badge Modal */}
       <FirstPostBadge 

@@ -9,6 +9,12 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:10000',
+        changeOrigin: true,
+      },
+    },
     // Headers removidos para evitar conflictos con el servidor de Vite
     // Vite maneja automáticamente los tipos MIME correctos
   },
@@ -24,7 +30,7 @@ export default defineConfig(({ mode }) => ({
   base: mode === 'production' ? '/' : '/',
   build: {
     // Production optimizations
-    minify: 'esbuild',
+    minify: 'terser',
     sourcemap: false,
     assetsInlineLimit: 0, // Prevent inline assets that can cause MIME issues
     terserOptions: {

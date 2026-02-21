@@ -1,5 +1,6 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Home, MessageCircle, Users, User, Search, Settings, UserPlus, PlaySquare, Plus, Menu, FolderOpen, Compass } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Home, Search, Users, PlaySquare, Plus, Bell, MessageCircle, Compass } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,9 +13,8 @@ import { FriendSearch } from "@/components/FriendSearch";
 import { FullScreenSearch } from "@/components/search/FullScreenSearch";
 import { UserMenu } from "@/components/user-menu/UserMenu";
 import { HSocialLogo } from "./HSocialLogo";
-import { useScrollDirection } from "@/hooks/use-scroll-direction";
-import ModalPublicacionWeb from "@/components/ModalPublicacionWeb";
 import { useUser } from "@/hooks/use-user";
+import ModalPublicacionWeb from "@/components/ModalPublicacionWeb";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 
 interface TopNavigationProps {
@@ -35,7 +35,6 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showFullScreenSearch, setShowFullScreenSearch] = useState(false);
   const isMobile = useIsMobile();
-  const isVisible = useScrollDirection();
   const [showPostModal, setShowPostModal] = useState(false);
   const { user } = useUser();
 
@@ -102,28 +101,34 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
       isActive: location.pathname === "/home"
     },
     {
+      icon: Users,
+      label: "Amigos",
+      path: "/friends",
+      isActive: location.pathname.startsWith('/friends')
+    },
+    {
       icon: Compass,
       label: "Explorar",
       path: "/explore",
       isActive: location.pathname.startsWith('/explore')
     },
     {
-      icon: Users,
-      label: "Grupos",
-      path: "/groups",
-      isActive: location.pathname.startsWith('/groups')
-    },
-    {
-      icon: FolderOpen,
-      label: "Proyectos",
-      path: "/projects",
-      isActive: location.pathname.startsWith('/projects')
+      icon: MessageCircle,
+      label: "Mensajes",
+      path: "/messages",
+      isActive: location.pathname.startsWith('/messages')
     },
     {
       icon: PlaySquare,
       label: "Reels",
       path: "/reels",
       isActive: location.pathname.startsWith('/reels')
+    },
+    {
+      icon: Bell,
+      label: "Notificaciones",
+      path: "/notifications",
+      isActive: location.pathname.startsWith('/notifications')
     }
   ];
 
@@ -137,57 +142,91 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
     }
   };
 
-  // Mobile navigation (Instagram-style top bar)
+  // Mobile navigation (Facebook Lite-style top bar)
   if (isMobile) {
     return (
       <nav className={cn(
-        "bg-background border-b border-border fixed top-0 left-0 right-0 z-[70] transition-transform duration-300",
-        isVisible ? "translate-y-0" : "-translate-y-full"
+        "bg-background/95 backdrop-blur border-b border-border fixed top-0 left-0 right-0 z-[70] shadow-sm"
       )}>
-        {/* Simplified top bar - Instagram Style */}
-        <div className="flex items-center justify-between h-14 px-3">
-          {/* Logo - "H Social" */}
-          <HSocialLogo
-            size="md"
-            showText={true}
-            onClick={() => navigate(isAuthenticated ? "/home" : "/")}
-          />
-          
-          {/* Search + Actions - Right */}
-          <div className="flex items-center gap-1">
-            {/* Search button (abre buscador de pantalla completa) */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-full text-foreground hover:bg-muted"
-              onClick={() => setShowFullScreenSearch(true)}
-              aria-label="Buscar"
-            >
-              <Search className="h-6 w-6" />
-            </Button>
-            
-            {/* Mensajes */}
-            <Button
-              variant="ghost" 
-              size="icon"
-              className="h-10 w-10 rounded-full text-foreground hover:text-muted-foreground"
-              onClick={() => navigate("/messages")}
-              aria-label="Mensajes"
-            >
-              <MessageCircle className="h-6 w-6" />
-            </Button>
-
-            {/* Notificaciones */}
-            <NotificationDropdown
-              triggerClassName="h-10 w-10 rounded-full text-foreground hover:text-muted-foreground relative shadow-sm ring-1 ring-black/5 hover:shadow-md"
-              iconClassName="h-6 w-6"
-              onOpen={handleNotificationClick}
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between h-12 px-3">
+            <HSocialLogo
+              size="lg"
+              showText={true}
+              variant="brand"
+              onClick={() => navigate(isAuthenticated ? "/home" : "/")}
             />
             
-            {/* Menú de usuario */}
-            <UserMenu />
+            {/* Search + Actions - Right */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-muted/70 text-foreground hover:bg-muted"
+                onClick={() => setShowPostModal(true)}
+                aria-label="Crear"
+              >
+                <Plus className="h-6 w-6" />
+              </Button>
+
+              {/* Search button (abre buscador de pantalla completa) */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-muted/70 text-foreground hover:bg-muted"
+                onClick={() => setShowFullScreenSearch(true)}
+                aria-label="Buscar"
+              >
+                <Search className="h-6 w-6" />
+              </Button>
+
+              <UserMenu
+                triggerClassName="h-10 w-10 rounded-full bg-muted/70 text-foreground hover:bg-muted"
+                iconClassName="h-6 w-6"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center h-12 px-1">
+            {centerNavItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={(e) => {
+                  if (item.onClick) {
+                    e.preventDefault();
+                    item.onClick();
+                  }
+                }}
+                className={cn(
+                  "relative flex-1 flex items-center justify-center h-full rounded-lg transition-colors",
+                  item.isActive ? "text-primary" : "text-muted-foreground hover:bg-muted/60"
+                )}
+                aria-label={item.label}
+              >
+                <item.icon className="h-6 w-6" strokeWidth={item.isActive ? 2 : 1.5} />
+                {item.badge && item.badge > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute top-1 right-3 h-4 min-w-4 px-1 rounded-full p-0 flex items-center justify-center text-[10px]"
+                  >
+                    {item.badge > 9 ? '9+' : item.badge}
+                  </Badge>
+                )}
+                {item.isActive && (
+                  <span className="absolute bottom-0 left-3 right-3 h-1 bg-primary rounded-t-full" />
+                )}
+              </Link>
+            ))}
           </div>
         </div>
+
+        <ModalPublicacionWeb
+          isVisible={showPostModal}
+          onClose={() => setShowPostModal(false)}
+          initialPostType={null}
+          userAvatar={userProfile?.avatar_url || user?.user_metadata?.avatar_url}
+        />
 
         {/* Full Screen Search for Mobile */}
         <FullScreenSearch 

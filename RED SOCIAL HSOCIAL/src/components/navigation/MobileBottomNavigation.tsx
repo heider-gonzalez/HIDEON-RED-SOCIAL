@@ -64,7 +64,7 @@ export function MobileBottomNavigation({
         return;
       }
 
-      setProfileAvatarUrl(data?.avatar_url ?? null);
+      setProfileAvatarUrl((data as any)?.avatar_url ?? null);
     };
 
     loadProfileAvatar();
@@ -112,7 +112,7 @@ export function MobileBottomNavigation({
     <>
       {!showPostModal && (
         <nav className={cn(
-          "fixed bottom-0 left-0 right-0 bg-background border-t border-border z-[60] md:hidden transition-transform duration-300",
+          "fixed bottom-0 left-0 right-0 bg-background border-t border-border z-[60] md:hidden transition-transform duration-300 pb-2",
           isVisible ? "translate-y-0" : "translate-y-full"
         )}>
         <div className="grid grid-cols-5 items-center h-14">

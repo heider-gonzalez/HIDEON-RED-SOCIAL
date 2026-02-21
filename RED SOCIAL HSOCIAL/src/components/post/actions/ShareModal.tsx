@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Share2 } from "lucide-react";
+import { Link2, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,13 +20,31 @@ interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
   post: Post;
+  onSend?: () => void;
 }
 
-export function ShareModal({ isOpen, onClose, post }: ShareModalProps) {
+export function ShareModal({ isOpen, onClose, post, onSend }: ShareModalProps) {
   const [shareComment, setShareComment] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const handleCopyLink = async () => {
+    const postUrl = `${window.location.origin}/post/${post.id}`;
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      toast({
+        title: "Enlace copiado",
+        description: "El enlace de la publicación se ha copiado al portapapeles",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo copiar el enlace",
+      });
+    }
+  };
 
   const handleShareToProfile = async () => {
     setIsSharing(true);
@@ -72,7 +90,7 @@ export function ShareModal({ isOpen, onClose, post }: ShareModalProps) {
         shared_post_id: post.id
       };
       
-      const { error: insertError } = await supabase
+      const { error: insertError } = await (supabase as any)
         .from('posts')
         .insert(postData);
 
@@ -124,6 +142,30 @@ export function ShareModal({ isOpen, onClose, post }: ShareModalProps) {
         </DialogHeader>
 
         <div className="space-y-4">
+          {onSend && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                onClose();
+                onSend();
+              }}
+            >
+              Compartir por mensajes
+            </Button>
+          )}
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleCopyLink}
+          >
+            <Link2 className="h-4 w-4 mr-2" />
+            Copiar enlace
+          </Button>
+
           <Textarea
             value={shareComment}
             onChange={(e) => setShareComment(e.target.value)}

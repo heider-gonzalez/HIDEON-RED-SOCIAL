@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, ThumbsUp, Send, Repeat2 } from "lucide-react";
+import { MessageCircle, ThumbsUp, Share2 } from "lucide-react";
 import { Post } from "@/types/post";
 import { ReactionType } from "@/types/database/social.types";
 import { reactionIcons } from "../reactions/ReactionIcons";
@@ -14,7 +14,6 @@ interface ActionsButtonsProps {
   userReaction: ReactionType | null;
   onComment: () => void;
   onShare?: () => void;
-  onSend?: () => void;
   compact?: boolean;
   handleReaction?: (type: ReactionType) => void;
   post?: Post;
@@ -31,7 +30,6 @@ export function ActionsButtons({
   postId,
   onComment,
   onShare,
-  onSend,
   compact = false,
   post,
   onReaction,
@@ -208,22 +206,8 @@ export function ActionsButtons({
             onShare?.();
           }}
         >
-          <Repeat2 className="h-5 w-5" strokeWidth={1.5} />
-          <span className="text-sm font-medium hidden sm:inline">Volver a publicar</span>
-        </Button>
-        
-        {/* Send button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`flex-1 ${baseActionClass} ${inactiveClass}`}
-          onClick={() => {
-            if (handleAuthRequired()) return;
-            onSend?.();
-          }}
-        >
-          <Send className="h-5 w-5" strokeWidth={1.5} />
-          <span className="text-sm font-medium hidden sm:inline">Enviar</span>
+          <Share2 className="h-5 w-5" strokeWidth={1.5} />
+          <span className="text-sm font-medium hidden sm:inline">Compartir</span>
         </Button>
       </div>
     </div>

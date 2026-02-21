@@ -152,10 +152,22 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
     const shouldPlay = isVideoInView || isVideoHovered;
     if (shouldPlay) {
       // Autoplay typically works only when muted
-      el.muted = !soundEnabled;
+      // Start muted (autoplay-safe), then unmute after playback starts if global sound is enabled.
+      el.muted = true;
       const t = window.setTimeout(() => {
         setNowPlayingVideoId(`${instanceIdRef.current}:video`);
-        el.play().catch(() => {});
+        el
+          .play()
+          .then(() => {
+            if (soundEnabled) {
+              try {
+                el.muted = false;
+              } catch {
+                // ignore
+              }
+            }
+          })
+          .catch(() => {});
       }, 50);
       return () => window.clearTimeout(t);
     } else {

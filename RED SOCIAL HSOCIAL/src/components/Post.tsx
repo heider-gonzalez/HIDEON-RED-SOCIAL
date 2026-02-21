@@ -164,7 +164,6 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
 
   const onCommentsClick = toggleComments;
   const onShareClick = shouldBlockInteractions ? showDemoCta : () => setShowShareModal(true);
-  const onSendClick = shouldBlockInteractions ? showDemoCta : () => setShowSendModal(true);
   const onReactionClick = shouldBlockInteractions ? () => showDemoCta() : onReaction;
 
   useEffect(() => {
@@ -253,7 +252,6 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
         onReaction={onReactionClick}
         onComment={onCommentsClick}
         onShare={onShareClick}
-        onSend={onSendClick}
         commentsExpanded={showComments}
       />
       
@@ -283,6 +281,10 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
         isOpen={showShareModal} 
         onClose={() => setShowShareModal(false)} 
         post={post} 
+        onSend={() => {
+          setShowShareModal(false);
+          setShowSendModal(true);
+        }}
       />
 
       {/* Send Modal */}
@@ -428,9 +430,9 @@ function IdeaPostView({ post }: { post: PostType }) {
   
   return (
     <div className="px-0 md:px-4 pb-2">
+      <PostContent post={post} postId={post.id} />
       <IdeaContent 
         idea={post.idea} 
-        content={post.content || ''}
         postId={post.id}
         postOwnerId={post.user_id}
       />

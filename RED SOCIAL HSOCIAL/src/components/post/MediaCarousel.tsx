@@ -30,6 +30,8 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
 
+  const [isInView, setIsInView] = useState(false);
+
   const instanceIdRef = useRef<string>(
     typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function"
       ? (crypto as any).randomUUID()
@@ -51,6 +53,22 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   }, [audioMetadata]);
 
   if (!mediaItems || mediaItems.length === 0) return null;
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        setIsInView(Boolean(e?.isIntersecting));
+      },
+      { threshold: 0.6 }
+    );
+
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     return subscribeSoundEnabled((enabled) => {
@@ -123,20 +141,35 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
     const activeVideo = refs[currentIndex];
     if (activeItem?.type !== 'video' || !activeVideo) return;
 
-    // Autoplay is usually allowed when muted
-    activeVideo.muted = !soundEnabled;
+    if (!isInView) {
+      try {
+        activeVideo.pause();
+        activeVideo.currentTime = 0;
+        activeVideo.muted = true;
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    // Autoplay is usually allowed only when muted
+    activeVideo.muted = true;
     const t = window.setTimeout(() => {
       setNowPlayingVideoId(`${instanceIdRef.current}:${currentIndex}`);
-      activeVideo.play().catch(() => {});
+      activeVideo
+        .play()
+        .catch(() => {});
     }, 50);
     return () => window.clearTimeout(t);
-  }, [currentIndex, mediaItems, soundEnabled]);
+  }, [currentIndex, mediaItems, soundEnabled, isInView]);
 
   useEffect(() => {
     const v = videoRefs.current[currentIndex];
     if (!v) return;
     try {
-      v.muted = !soundEnabled;
+      // Do not force unmuted before play; browser may block autoplay with sound.
+      // Unmute will be applied right after play starts (see effect above).
+      if (!soundEnabled) v.muted = true;
     } catch {
       // ignore
     }
@@ -276,12 +309,20 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
                   <video
                     src={item.url}
                     className="w-full h-full object-contain rounded-none"
+                    autoPlay
                     muted
                     playsInline
                     preload="metadata"
                     loop
                     ref={(el) => {
                       videoRefs.current[idx] = el;
+                      if (el) {
+                        try {
+                          el.setAttribute('webkit-playsinline', 'true');
+                        } catch {
+                          // ignore
+                        }
+                      }
                     }}
                   />
                 </div>
@@ -290,33 +331,46 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
           ))}
       </div>
 
-      {mediaItems[currentIndex]?.type === 'video' && (
+      {mediaItems[currentIndex]?.type === 'video' && !hasAudio && (
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setSoundEnabled(!soundEnabled);
+            const nextEnabled = !soundEnabled;
+            setSoundEnabled(nextEnabled);
             const v = videoRefs.current[currentIndex];
-            if (v && soundEnabled) {
+            if (!v) return;
+
+            if (!nextEnabled) {
               // going to muted
               try {
                 v.muted = true;
               } catch {
                 // ignore
               }
+              return;
             }
-            if (v && !soundEnabled) {
-              // going to sound on
-              try {
-                v.muted = false;
-                setNowPlayingVideoId(`${instanceIdRef.current}:${currentIndex}`);
-                v.play().catch(() => {});
-              } catch {
-                // ignore
-              }
+
+            // going to sound on
+            // Start playback muted (autoplay-safe), then unmute.
+            try {
+              v.muted = true;
+              setNowPlayingVideoId(`${instanceIdRef.current}:${currentIndex}`);
+              v
+                .play()
+                .then(() => {
+                  try {
+                    v.muted = false;
+                  } catch {
+                    // ignore
+                  }
+                })
+                .catch(() => {});
+            } catch {
+              // ignore
             }
           }}
-          className="absolute top-3 right-3 z-20 rounded-full bg-black/50 text-white p-2 backdrop-blur-sm"
+          className="absolute bottom-3 right-3 z-20 rounded-full bg-black/50 text-white p-2 backdrop-blur-sm"
           aria-label={!soundEnabled ? 'Activar sonido' : 'Silenciar'}
         >
           {!soundEnabled ? <VolumeX size={18} /> : <Volume2 size={18} />}
@@ -344,7 +398,7 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
             e.stopPropagation();
             void toggleMute();
           }}
-          className="absolute top-3 right-3 z-10 rounded-full bg-black/40 hover:bg-black/55 text-white p-2"
+          className="absolute bottom-3 right-3 z-10 rounded-full bg-black/40 hover:bg-black/55 text-white p-2"
           aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
         >
           {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}

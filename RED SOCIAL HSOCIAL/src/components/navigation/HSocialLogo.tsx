@@ -8,13 +8,20 @@ interface HSocialLogoProps {
   showText?: boolean;
   size?: "sm" | "md" | "lg";
   onClick?: () => void;
+  variant?: "default" | "brand";
 }
 
-export const HSocialLogo = ({ className = "", showText = true, size = "md", onClick }: HSocialLogoProps) => {
+export const HSocialLogo = ({ className = "", showText = true, size = "md", onClick, variant = "default" }: HSocialLogoProps) => {
   const sizeClasses = {
     sm: "h-6 w-6",
     md: "h-8 w-8",
     lg: "h-10 w-10",
+  };
+
+  const letterSizeClasses = {
+    sm: "text-base",
+    md: "text-lg",
+    lg: "text-xl",
   };
 
   const textSizeClasses = {
@@ -23,16 +30,20 @@ export const HSocialLogo = ({ className = "", showText = true, size = "md", onCl
     lg: "text-2xl",
   };
 
+  const logoBgClass = variant === "brand" ? "bg-blue-600" : "bg-foreground";
+  const logoTextClass = variant === "brand" ? "text-white" : "text-background";
+  const brandWordClass = variant === "brand" ? "text-blue-600 dark:text-blue-400" : "text-foreground";
+
   const content = (
     <div className={`flex items-center gap-1.5 group ${className}`}>
       {/* Logo minimalista blanco y negro empresarial */}
       <div
-        className={`${sizeClasses[size]} rounded-full bg-foreground flex items-center justify-center`}
+        className={`${sizeClasses[size]} rounded-full ${logoBgClass} flex items-center justify-center`}
       >
-        <span className="text-lg text-background font-bold">H</span>
+        <span className={`${letterSizeClasses[size]} ${logoTextClass} font-bold`}>H</span>
       </div>
       {showText && (
-        <span className={`${textSizeClasses[size]} font-bold text-foreground`}>Social</span>
+        <span className={`${textSizeClasses[size]} font-bold ${brandWordClass}`}>Social</span>
       )}
     </div>
   );

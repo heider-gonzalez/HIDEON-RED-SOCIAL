@@ -6,7 +6,6 @@ import { ImageModal } from "./ImageModal";
 import { VideoModal } from "./VideoModal";
 // PostPoll removed for performance
 import { Post } from "@/types/post";
-import { PostIdea } from "./PostIdea";
 import { EventCard } from "./EventCard";
 import { EventModal } from "./EventModal";
 import { usePollVoteMutation } from "@/hooks/post-mutations/use-poll-vote-mutation";
@@ -50,19 +49,6 @@ function PostContentComponent({ post, postId }: PostContentProps) {
   const demoUrl = proyectoDemoUrl || fallbackDemoUrl || projectShowcaseVideoUrl || projectShowcaseDemoUrl;
   const demoIsVideo = isVideoUrl(demoUrl);
 
-  // Debug logs detallados
-  console.log('🔍 PostContent Media Debug:', {
-    id: postId,
-    post_type: post.post_type,
-    has_media_urls: !!(post.media_urls && post.media_urls.length > 0),
-    proyectoDemoUrl,
-    fallbackDemoUrl,
-    projectShowcaseVideoUrl,
-    projectShowcaseDemoUrl,
-    finalDemoUrl: demoUrl,
-    demoIsVideo
-  });
-
   // 4. Determinar si mostrar media
   const hasMedia =
     !!post.media_url ||
@@ -87,9 +73,6 @@ function PostContentComponent({ post, postId }: PostContentProps) {
   
   // Check if the post has a poll
   const hasPoll = post.poll && post.poll.options?.length > 0;
-  
-  // Check if the post has idea
-  const hasIdea = !!post.idea;
 
   // Check if the post has marketplace
   const hasMarketplace = !!post.marketplace;
@@ -226,12 +209,6 @@ function PostContentComponent({ post, postId }: PostContentProps) {
               {Number(post.poll.total_votes || 0)} votos
             </div>
           </div>
-        </div>
-      )}
-      
-      {hasIdea && (
-        <div className="mt-4">
-          <PostIdea idea={post.idea} postId={postId} post={post} />
         </div>
       )}
 

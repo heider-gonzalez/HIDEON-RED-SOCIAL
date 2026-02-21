@@ -2,7 +2,9 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AudioRecorder } from "@/components/media/AudioRecorder";
-import { MousePointerClick, PlusCircle, Lightbulb, Mic, BarChartBig } from "lucide-react";
+import { MusicSelector } from "@/components/media/MusicSelector";
+import { InstagramAudioEditor } from "@/components/media/InstagramAudioEditor";
+import { MousePointerClick, PlusCircle, Lightbulb, Mic, BarChartBig, Music } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +22,7 @@ interface PostActionButtonsProps {
   isPending: boolean;
   isIdeaMode?: boolean;
   onAudioRecord?: () => void;
+  onMusicSelect?: (audioData: any) => void;
 }
 
 export function PostActionButtons({ 
@@ -28,30 +31,31 @@ export function PostActionButtons({
   onIdeaCreate, 
   isPending,
   isIdeaMode = false,
-  onAudioRecord
+  onAudioRecord,
+  onMusicSelect
 }: PostActionButtonsProps) {
-  const [showStoryCreator, setShowStoryCreator] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showMusicSelector, setShowMusicSelector] = useState(false);
+  const [showAudioEditor, setShowAudioEditor] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<any>(null);
 
-  // Get current user ID when component loads
-  useEffect(() => {
-    async function getUserId() {
-      const { data } = await supabase.auth.getUser();
-      if (data?.user) {
-        setCurrentUserId(data.user.id);
-      }
+  const handleMusicTrackSelect = (track: any, bestMoment?: any) => {
+    setSelectedTrack(track);
+    setShowMusicSelector(false);
+    setShowAudioEditor(true);
+  };
+
+  const handleAudioDataSelect = (audioData: any) => {
+    if (onMusicSelect) {
+      onMusicSelect(audioData);
     }
-    getUserId();
-  }, []);
+    setShowAudioEditor(false);
+    setSelectedTrack(null);
+  };
 
   const handleFileSelect = (files: File[] | null) => {
     if (files && files.length > 0) {
       onFileSelect(files[0]);
     }
-  };
-
-  const handleStoryClick = () => {
-    setShowStoryCreator(true);
   };
 
   return (
@@ -82,13 +86,14 @@ export function PostActionButtons({
               />
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <AttachmentInput
-                type="audio"
-                onAttachmentChange={handleFileSelect}
-                showLabel={true}
-                buttonVariant="ghost"
-                buttonClassName="w-full flex justify-start"
-              />
+              <Button 
+                variant="ghost" 
+                className="w-full flex justify-start"
+                onClick={() => setShowMusicSelector(true)}
+              >
+                <Music className="h-4 w-4 mr-2" />
+                Música
+              </Button>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onPollCreate}>
               <Button variant="ghost" className="w-full flex justify-start">
@@ -107,12 +112,6 @@ export function PostActionButtons({
                 </Button>
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={handleStoryClick}>
-              <Button variant="ghost" className="w-full flex justify-start">
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Historia
-              </Button>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -129,15 +128,15 @@ export function PostActionButtons({
           buttonClassName="h-10 w-10 p-0 text-primary"
           accept="image/*,video/*"
         />
-        <AttachmentInput
-          type="audio"
-          onAttachmentChange={handleFileSelect}
-          showLabel={false}
-          buttonSize="icon"
-          buttonVariant="ghost"
+        <Button 
+          variant="ghost" 
           disabled={isPending}
-          buttonClassName="h-10 w-10 p-0 text-muted-foreground"
-        />
+          onClick={() => setShowMusicSelector(true)}
+          className="h-10 w-10 p-0 text-muted-foreground"
+          title="Agregar música"
+        >
+          <Music className="h-4 w-4" />
+        </Button>
         <AudioRecorder onRecordingComplete={(blob, _durationSeconds) => onFileSelect(new File([blob], "audio.webm", { type: "audio/webm" }))} />
         <Button
           variant="ghost"
@@ -161,7 +160,31 @@ export function PostActionButtons({
         )}
       </div>
 
-      {/* Story creator removed - feature simplified */}
+      {/* Music Selector Modal */}
+      {showMusicSelector && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <MusicSelector
+              onTrackSelect={handleMusicTrackSelect}
+              onClose={() => setShowMusicSelector(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Audio Editor Modal */}
+      {showAudioEditor && selectedTrack && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <InstagramAudioEditor
+              track={selectedTrack}
+              videoDuration={30}
+              onAudioSelect={handleAudioDataSelect}
+              onClose={() => setShowAudioEditor(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
