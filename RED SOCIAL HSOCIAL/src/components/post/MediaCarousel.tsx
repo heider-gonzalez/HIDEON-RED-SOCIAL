@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Volume2, VolumeX } from "lucide-react";
 import { PostImage } from "@/components/ui/optimized-image";
 import { MediaLightbox } from "./MediaLightbox";
@@ -20,9 +21,11 @@ interface MediaCarouselProps {
   className?: string;
   audioUrl?: string;
   audioMetadata?: any | null;
+  reelsPostId?: string;
 }
 
-export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetadata }: MediaCarouselProps) {
+export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetadata, reelsPostId }: MediaCarouselProps) {
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxStartIndex, setLightboxStartIndex] = useState(0);
@@ -53,6 +56,10 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   }, [audioMetadata]);
 
   if (!mediaItems || mediaItems.length === 0) return null;
+
+  const imageItems = useMemo(() => {
+    return mediaItems.filter((i) => i.type === 'image');
+  }, [mediaItems]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -230,8 +237,23 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   const openAtIndex = (index: number) => {
     const item = mediaItems[index];
     if (!item) return;
+
+    if (item.type === 'video') {
+      if (reelsPostId) {
+        navigate(`/reels/${reelsPostId}`);
+        return;
+      }
+      // fallback: if no postId provided, open lightbox as before
+      setCurrentIndex(index);
+      setLightboxStartIndex(index);
+      setIsLightboxOpen(true);
+      return;
+    }
+
+    const imageIndex = imageItems.findIndex((img) => img.url === item.url);
+    if (imageIndex < 0) return;
     setCurrentIndex(index);
-    setLightboxStartIndex(index);
+    setLightboxStartIndex(imageIndex);
     setIsLightboxOpen(true);
   };
 
@@ -428,7 +450,7 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
       <MediaLightbox
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
-        items={mediaItems}
+        items={imageItems}
         startIndex={lightboxStartIndex}
       />
     </div>

@@ -155,6 +155,7 @@ function PostContentComponent({ post, postId }: PostContentProps) {
               mediaItems={mediaItems}
               audioUrl={post.audio_url || undefined}
               audioMetadata={post.audio_metadata || null}
+              reelsPostId={postId}
             />
           ) : null}
         </div>
