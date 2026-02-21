@@ -17,14 +17,6 @@ export function useReelsFeed() {
 
   // Filtrar solo posts con videos - simplificado para Supabase Storage
   const videosPosts = useMemo(() => {
-    console.log('🔍 Debug: Total posts received:', posts.length);
-    console.log('🔍 Debug: Posts sample:', posts.slice(0, 3).map(p => ({
-      id: p.id,
-      media_urls: p.media_urls,
-      media_type: p.media_type,
-      content: p.content?.substring(0, 50)
-    })));
-    
     const realVideos = posts.filter((post: Post) => {
       // Verificar que tenga media_urls array con contenido
       if (!post.media_urls || !Array.isArray(post.media_urls) || post.media_urls.length === 0) {
@@ -45,20 +37,11 @@ export function useReelsFeed() {
       const hasVideoType = post.media_type === 'video';
       
       const isVideo = hasVideoUrl || hasVideoType;
-      if (isVideo) {
-        console.log('✅ Video found:', {
-          id: post.id,
-          media_urls: post.media_urls,
-          media_type: post.media_type
-        });
-      }
-      
       return isVideo;
     });
 
     // Si no hay videos reales, añadir videos de demo para testing
     if (realVideos.length === 0 && posts.length === 0) {
-      console.log('🎬 Adding demo videos for testing');
       return [
         {
           id: 'demo-1',

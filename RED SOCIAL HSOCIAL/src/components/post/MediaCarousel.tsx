@@ -154,6 +154,14 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
 
     // Autoplay is usually allowed only when muted
     activeVideo.muted = true;
+    try {
+      activeVideo.setAttribute('muted', '');
+      activeVideo.setAttribute('autoplay', '');
+      activeVideo.setAttribute('playsinline', 'true');
+      activeVideo.setAttribute('webkit-playsinline', 'true');
+    } catch {
+      // ignore
+    }
     const t = window.setTimeout(() => {
       setNowPlayingVideoId(`${instanceIdRef.current}:${currentIndex}`);
       activeVideo
@@ -314,6 +322,17 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
                     playsInline
                     preload="metadata"
                     loop
+                    onLoadedMetadata={(e) => {
+                      const v = e.currentTarget;
+                      if (!isInView) return;
+                      // Ensure muted autoplay attempt after metadata is available (prod browsers can be stricter)
+                      try {
+                        v.muted = true;
+                        v.play().catch(() => {});
+                      } catch {
+                        // ignore
+                      }
+                    }}
                     ref={(el) => {
                       videoRefs.current[idx] = el;
                       if (el) {

@@ -1,14 +1,14 @@
 import { MessageCircle, Share2, MoreHorizontal, User, Briefcase, School, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { LikeButton } from './LikeButton';
-import { AudioPlayer } from '@/components/media/AudioPlayer';
 import { InstagramAudioPlayer } from '@/components/media/InstagramAudioPlayer';
 import { useUser } from '@/hooks/use-user';
 import { Post } from './PostFeed';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
+import { MediaLightbox, type LightboxMediaItem } from '@/components/post/MediaLightbox';
 
 export interface PostCardProps {
   post: Post;
@@ -41,6 +41,54 @@ export function PostCard({ post }: PostCardProps) {
   const primaryMediaUrl = post.media_url || 
                           (((post as any).media_urls && (post as any).media_urls.find((url: string) => url.match(/\.(mp4|webm|mov|ogg)$/i))) ||
                            ((post as any).media_urls && (post as any).media_urls[0]));
+
+  const mediaItems: LightboxMediaItem[] = useMemo(() => {
+    const urls = [
+      ...(Array.isArray((post as any).media_urls) ? (post as any).media_urls : []),
+      ...(post.media_url ? [post.media_url] : [])
+    ].filter(Boolean) as string[];
+
+    const uniq = Array.from(new Set(urls));
+    return uniq.map((url) => {
+      const isVid = Boolean(url.match(/\.(mp4|webm|mov|ogg)$/i));
+      return { url, type: isVid ? 'video' : 'image' };
+    });
+  }, [post]);
+
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxStart, setLightboxStart] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const inView = Boolean(entries[0]?.isIntersecting);
+        const v = videoRef.current;
+        if (!v) return;
+        if (!inView) {
+          try {
+            v.pause();
+            v.currentTime = 0;
+          } catch {
+            // ignore
+          }
+          return;
+        }
+        try {
+          v.muted = true;
+          v.play().catch(() => {});
+        } catch {
+          // ignore
+        }
+      },
+      { threshold: 0.6 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [primaryMediaUrl, isVideo]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -102,26 +150,45 @@ export function PostCard({ post }: PostCardProps) {
 
       {/* Media */}
       {primaryMediaUrl && (
-        <div className="border-t border-b border-gray-100 dark:border-gray-700">
+        <div ref={containerRef} className="border-t border-b border-gray-100 dark:border-gray-700">
           {isImage && (
             <img
               src={primaryMediaUrl}
               alt="Post media"
               className="w-full h-auto max-h-[500px] object-cover"
               loading="lazy"
+              onClick={() => {
+                setLightboxStart(0);
+                setLightboxOpen(true);
+              }}
             />
           )}
           {isVideo && (
             <video
+              ref={videoRef}
               src={primaryMediaUrl}
-              controls
-              className="w-full max-h-[500px]"
+              className="w-full max-h-[500px] cursor-pointer"
+              muted
+              playsInline
+              loop
+              preload="metadata"
+              onClick={() => {
+                setLightboxStart(0);
+                setLightboxOpen(true);
+              }}
             >
               Tu navegador no soporta el elemento de video.
             </video>
           )}
         </div>
       )}
+
+      <MediaLightbox
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        items={mediaItems}
+        startIndex={lightboxStart}
+      />
 
       {/* 🎵 Audio Player */}
       {(post as any).audio_url && (
