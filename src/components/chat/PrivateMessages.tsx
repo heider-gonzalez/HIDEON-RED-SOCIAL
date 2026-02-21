@@ -8,13 +8,14 @@ import { Send, Loader2, MessageCircle, Search, Globe, Users, MoreVertical, Trash
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { playUiSound } from "@/lib/ui-sounds";
 import { useArchivedChats } from "@/hooks/use-archived-chats";
 import { splitConversationsByMutualFollow } from "@/lib/chat/split-conversations";
 import { followUser } from "@/lib/api/followers/follow-actions";
+import { GlobalChat } from "@/components/chat/GlobalChat";
 
 import {
   DropdownMenu,
@@ -32,6 +33,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+const GLOBAL_CHANNEL_ID = "2f79759f-c53f-40ae-b786-59f6e69264a6";
 
 interface Message {
   id: string;
@@ -52,6 +55,7 @@ interface Conversation {
   last_message_at: string;
   unread_count: number;
   channel_id: string;
+  is_global?: boolean;
 }
 
 interface SearchResult {
@@ -77,7 +81,6 @@ export function PrivateMessages() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { archivedChats, handleChatLongPress, handleChatPressEnd, handleUnarchiveChat } = useArchivedChats();
   const [mutualFollowMap, setMutualFollowMap] = useState<Record<string, boolean>>({});
@@ -332,22 +335,52 @@ export function PrivateMessages() {
         new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
       );
 
-      setConversations(validConversations);
+      // Obtener último mensaje del chat global
+      const { data: globalLastMessage } = await (supabase as any)
+        .from("mensajes")
+        .select("contenido, created_at")
+        .eq("id_canal", GLOBAL_CHANNEL_ID)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const globalConversation: Conversation = {
+        id: "global",
+        username: "Chat Global",
+        avatar_url: null,
+        last_message: (globalLastMessage as any)?.contenido || "Únete a la conversación",
+        last_message_at: (globalLastMessage as any)?.created_at || new Date().toISOString(),
+        unread_count: 0,
+        channel_id: GLOBAL_CHANNEL_ID,
+        is_global: true,
+      };
+
+      // Chat Global fijado arriba
+      setConversations([globalConversation, ...validConversations]);
 
       // Si hay un parámetro ?user= en la URL, abrir esa conversación
       const userIdParam = searchParams.get("user");
       if (userIdParam && validConversations.find(c => c.id === userIdParam)) {
         setSelectedConversation(userIdParam);
       } else if (!selectedConversation) {
-        // Seleccionar la conversación privada más reciente (si existe)
-        setSelectedConversation(validConversations[0]?.id ?? null);
+        // Seleccionar la conversación privada más reciente (si existe), no el global
+        const recentConversation = validConversations.find(c => !c.is_global);
+        setSelectedConversation(recentConversation?.id ?? null);
       }
-    } catch (error) {
-      console.error("Error loading conversations:", error);
-    } finally {
-      setLoading(false);
-    }
+     } catch (error) {
+       console.error("Error loading conversations:", error);
+     } finally {
+       setLoading(false);
+     }
   };
+
+  const selectedConv = conversations.find(c => c.id === selectedConversation);
+  const selectedChannelId = useMemo(() => {
+    const conv = conversations.find((c) => c.id === selectedConversation);
+    if (!conv) return null;
+    if ((conv as Conversation).is_global) return null;
+    return conv.channel_id ?? null;
+  }, [conversations, selectedConversation]);
 
   // Cargar mensajes de una conversación
   const loadMessages = async (channelId: string) => {
@@ -579,12 +612,6 @@ export function PrivateMessages() {
     return base.filter((conv: any) => (conv.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
   }, [activeInboxTab, archivedConversations, solicitudesDeMensajes, conversacionesPrincipales, archivedChats, searchQuery]);
 
-  const selectedConv = conversations.find(c => c.id === selectedConversation);
-  const selectedChannelId = useMemo(() => {
-    const conv = conversations.find((c) => c.id === selectedConversation);
-    return conv?.channel_id ?? null;
-  }, [conversations, selectedConversation]);
-
   if (loading && conversations.length === 0) {
     return (
       <div className="flex items-center justify-center h-[600px]">
@@ -622,16 +649,6 @@ export function PrivateMessages() {
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold">Mensajes</h2>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/global-chat')}
-              className="h-8"
-            >
-              <Globe className="h-4 w-4 mr-2" />
-              Global
-            </Button>
           </div>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -726,22 +743,28 @@ export function PrivateMessages() {
                 <button
                   key={conv.id}
                   onClick={() => setSelectedConversation(conv.id)}
-                  onMouseDown={() => handleChatLongPress(conv.id)}
+                  onMouseDown={() => !conv.is_global && handleChatLongPress(conv.id)}
                   onMouseUp={handleChatPressEnd}
                   onMouseLeave={handleChatPressEnd}
-                  onTouchStart={() => handleChatLongPress(conv.id)}
+                  onTouchStart={() => !conv.is_global && handleChatLongPress(conv.id)}
                   onTouchEnd={handleChatPressEnd}
                   className={cn(
                     "w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left",
                     selectedConversation === conv.id && "bg-muted"
                   )}
                 >
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={conv.avatar_url || undefined} />
-                    <AvatarFallback>
-                      {conv.username[0]?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  {conv.is_global ? (
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Globe className="h-6 w-6 text-primary" />
+                    </div>
+                  ) : (
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={conv.avatar_url || undefined} />
+                      <AvatarFallback>
+                        {conv.username[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <p className="font-medium text-sm truncate">{conv.username}</p>
@@ -762,7 +785,7 @@ export function PrivateMessages() {
                     </p>
                   </div>
 
-                  {activeInboxTab === 'requests' && (
+                  {activeInboxTab === 'requests' && !conv.is_global && (
                     <div className="flex flex-col gap-2">
                       <Button
                         type="button"
@@ -815,7 +838,7 @@ export function PrivateMessages() {
                     </div>
                   )}
 
-                  {activeInboxTab === 'archived' && (
+                  {activeInboxTab === 'archived' && !conv.is_global && (
                     <Button
                       type="button"
                       size="sm"
@@ -842,16 +865,22 @@ export function PrivateMessages() {
           <>
             {/* Header del chat */}
             <div className="p-4 border-b border-border flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={selectedConv.avatar_url || undefined} />
-                <AvatarFallback>
-                  {selectedConv.username[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              {selectedConv.is_global ? (
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Globe className="h-5 w-5 text-primary" />
+                </div>
+              ) : (
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={selectedConv.avatar_url || undefined} />
+                  <AvatarFallback>
+                    {selectedConv.username[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
               <div>
                 <p className="font-medium">{selectedConv.username}</p>
                 <p className="text-xs text-muted-foreground">
-                  En línea
+                  {selectedConv.is_global ? "Conversación pública" : "En línea"}
                 </p>
               </div>
 
@@ -867,108 +896,116 @@ export function PrivateMessages() {
               </div>
             </div>
 
-            {/* Mensajes */}
-            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-              <div className="space-y-4">
-                {messages.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>
-                      {`Inicia una conversación con ${selectedConv.username}`}
-                    </p>
-                  </div>
-                ) : (
-                  messages.map((message) => {
-                    const isOwn = message.id_autor === currentUserId;
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn(
-                          "flex gap-3",
-                          isOwn ? "flex-row-reverse" : ""
-                        )}
-                      >
-                        <Avatar className="h-8 w-8 flex-shrink-0">
-                          <AvatarImage src={message.author?.avatar_url} />
-                          <AvatarFallback>
-                            {message.author?.username?.[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className={cn(
-                          "flex flex-col max-w-[70%]",
-                          isOwn ? "items-end" : ""
-                        )}>
-                          <div className={cn(
-                            "flex items-center gap-2 mb-1",
-                            isOwn ? "justify-end" : ""
-                          )}>
-                            <span className="text-xs font-medium">
-                              {message.author?.username}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(message.created_at), {
-                                addSuffix: true,
-                                locale: es,
-                              })}
-                            </span>
-                            {isOwn && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6 p-0">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    className="text-destructive focus:text-destructive"
-                                    onClick={() => requestDeleteMessage(message)}
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Eliminar
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </div>
-                          <div className={cn(
-                            "rounded-2xl px-4 py-2",
-                            isOwn
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted"
-                          )}>
-                            <p className="text-sm break-words">{message.contenido}</p>
-                          </div>
-                        </div>
+            {selectedConv.is_global ? (
+              <div className="flex-1 p-4">
+                <GlobalChat />
+              </div>
+            ) : (
+              <>
+                {/* Mensajes */}
+                <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+                  <div className="space-y-4">
+                    {messages.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-8">
+                        <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>
+                          {`Inicia una conversación con ${selectedConv.username}`}
+                        </p>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            </ScrollArea>
+                    ) : (
+                      messages.map((message) => {
+                        const isOwn = message.id_autor === currentUserId;
+                        return (
+                          <div
+                            key={message.id}
+                            className={cn(
+                              "flex gap-3",
+                              isOwn ? "flex-row-reverse" : ""
+                            )}
+                          >
+                            <Avatar className="h-8 w-8 flex-shrink-0">
+                              <AvatarImage src={message.author?.avatar_url} />
+                              <AvatarFallback>
+                                {message.author?.username?.[0]?.toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className={cn(
+                              "flex flex-col max-w-[70%]",
+                              isOwn ? "items-end" : ""
+                            )}>
+                              <div className={cn(
+                                "flex items-center gap-2 mb-1",
+                                isOwn ? "justify-end" : ""
+                              )}>
+                                <span className="text-xs font-medium">
+                                  {message.author?.username}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(message.created_at), {
+                                    addSuffix: true,
+                                    locale: es,
+                                  })}
+                                </span>
+                                {isOwn && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 p-0">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        className="text-destructive focus:text-destructive"
+                                        onClick={() => requestDeleteMessage(message)}
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Eliminar
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
+                              </div>
+                              <div className={cn(
+                                "rounded-2xl px-4 py-2",
+                                isOwn
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
+                              )}>
+                                <p className="text-sm break-words">{message.contenido}</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
 
-            {/* Input de mensaje */}
-            <form onSubmit={handleSendMessage} className="p-4 border-t border-border">
-              <div className="flex gap-2">
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Escribe un mensaje..."
-                  className="flex-1"
-                  disabled={sending}
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  disabled={!newMessage.trim() || sending}
-                >
-                  {sending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </form>
+                {/* Input de mensaje */}
+                <form onSubmit={handleSendMessage} className="p-4 border-t border-border">
+                  <div className="flex gap-2">
+                    <Input
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Escribe un mensaje..."
+                      className="flex-1"
+                      disabled={sending}
+                    />
+                    <Button
+                      type="submit"
+                      size="icon"
+                      disabled={!newMessage.trim() || sending}
+                    >
+                      {sending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </>
+            )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
