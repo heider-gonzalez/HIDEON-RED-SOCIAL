@@ -3,6 +3,7 @@ import { Briefcase, ExternalLink, Users, Target, Calendar, MessageCircle, Pin, P
 import type { Idea } from "@/types/post";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { usePremium } from "@/hooks/use-premium";
 import { usePinnedProjects } from "@/hooks/use-pinned-projects";
@@ -31,10 +32,8 @@ export function ProjectContent({ idea, postId, postOwnerId, projectStatus, techn
   const effectiveDemoUrl = demoUrl || idea.demo_url || null;
 
   useEffect(() => {
-    import("@/integrations/supabase/client").then(({ supabase }) => {
-      supabase.auth.getUser().then(({ data: { user } }) => {
-        setCurrentUserId(user?.id || null);
-      });
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUserId(user?.id || null);
     });
   }, []);
 
@@ -176,6 +175,12 @@ export function ProjectContent({ idea, postId, postOwnerId, projectStatus, techn
 
         {/* Botones de acción - Diseño mejorado */}
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+          <Button asChild variant="outline" className="w-full">
+            <Link to={`/project/${postId}`}>
+              Ver proyecto completo
+            </Link>
+          </Button>
+
           {(effectiveDemoUrl || idea.contact_link) && (
             <div className="flex gap-3">
               {idea.contact_link ? (

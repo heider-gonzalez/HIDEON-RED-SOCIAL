@@ -119,7 +119,11 @@ export function IdeaContent({ idea, content, postId, postOwnerId }: IdeaContentP
         <div className="space-y-2">
           <div className="pt-2 border-t border-border space-y-2">
             {canAccessIdeaChat && (
-              <Button asChild variant="outline" className="w-full">
+              <Button
+                asChild
+                variant="default"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 <Link to={`/idea/${postId}/chat`}>
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Chat de la idea
