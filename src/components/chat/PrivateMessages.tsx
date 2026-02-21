@@ -600,25 +600,161 @@ export function PrivateMessages() {
     return conversations.filter((c) => archivedChats.has(c.id));
   }, [conversations, archivedChats]);
 
-  const visibleConversations = useMemo(() => {
-    const base = activeInboxTab === 'archived'
-      ? archivedConversations
-      : activeInboxTab === 'requests'
-        ? solicitudesDeMensajes.filter((c) => !archivedChats.has((c as Conversation).id))
-        : conversacionesPrincipales.filter((c) => !archivedChats.has((c as Conversation).id));
+  // Componente para renderizar cada conversación en virtualización
+  const ConversationItem = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const conv = visibleConversations[index];
+    if (!conv) return null;
 
-    const globalConv = conversations.find((c) => c.is_global);
+    return (
+      <button
+        key={conv.id}
+        style={style}
+        onClick={() => setSelectedConversation(conv.id)}
+        onMouseDown={() => !conv.is_global && handleChatLongPress(conv.id)}
+        onMouseUp={handleChatPressEnd}
+        onMouseLeave={handleChatPressEnd}
+        onTouchStart={() => !conv.is_global && handleChatLongPress(conv.id)}
+        onTouchEnd={handleChatPressEnd}
+        className={cn(
+          "w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left border-b border-border/50",
+          selectedConversation === conv.id && "bg-muted"
+        )}
+      >
+        {conv.is_global ? (
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <Globe className="h-6 w-6 text-primary" />
+          </div>
+        ) : (
+          <Avatar className="h-12 w-12">
+            <AvatarImage src={conv.avatar_url || undefined} />
+            <AvatarFallback>
+              {conv.username[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <p className="font-medium text-sm truncate">{conv.username}</p>
+            {conv.unread_count > 0 && (
+              <span className="bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {conv.unread_count}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground truncate">
+            {conv.last_message}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {formatDistanceToNow(new Date(conv.last_message_at), {
+              addSuffix: true,
+              locale: es,
+            })}
+          </p>
+        </div>
 
-    const baseWithPinnedGlobal = globalConv
-      ? [globalConv, ...base.filter((c) => (c as Conversation).id !== globalConv.id)]
-      : base;
+        {activeInboxTab === 'requests' && !conv.is_global && (
+          <div className="flex flex-col gap-2">
+            <span
+              role="button"
+              tabIndex={0}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              onClick={(e) => {
+                e.stopPropagation();
+                setAcceptedRequests((prev) => {
+                  const next = new Set(prev);
+                  next.add(conv.id);
+                  return next;
+                });
 
-    if (!searchQuery.trim()) return baseWithPinnedGlobal;
+                followUser(conv.id).finally(() => {
+                  setActiveInboxTab('inbox');
+                });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setAcceptedRequests((prev) => {
+                    const next = new Set(prev);
+                    next.add(conv.id);
+                    return next;
+                  });
 
-    return baseWithPinnedGlobal.filter((conv: any) =>
-      (conv.username || '').toLowerCase().includes(searchQuery.toLowerCase())
+                  followUser(conv.id).finally(() => {
+                    setActiveInboxTab('inbox');
+                  });
+                }
+              }}
+            >
+              Aceptar
+            </span>
+            {archivedChats.has(conv.id) ? (
+              <span
+                role="button"
+                tabIndex={0}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleUnarchiveChat(conv.id);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleUnarchiveChat(conv.id);
+                  }
+                }}
+              >
+                Desarchivar
+              </span>
+            ) : (
+              <span
+                role="button"
+                tabIndex={0}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleChatLongPress(conv.id);
+                  setTimeout(() => handleChatPressEnd(), 0);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleChatLongPress(conv.id);
+                    setTimeout(() => handleChatPressEnd(), 0);
+                  }
+                }}
+              >
+                Archivar
+              </span>
+            )}
+          </div>
+        )}
+
+        {activeInboxTab === 'archived' && !conv.is_global && (
+          <span
+            role="button"
+            tabIndex={0}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleUnarchiveChat(conv.id);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                handleUnarchiveChat(conv.id);
+              }
+            }}
+          >
+            Desarchivar
+          </span>
+        )}
+      </button>
     );
-  }, [activeInboxTab, archivedConversations, solicitudesDeMensajes, conversacionesPrincipales, archivedChats, searchQuery, conversations]);
+  };
 
   if (loading && conversations.length === 0) {
     return (
@@ -740,80 +876,141 @@ export function PrivateMessages() {
         )}
 
         {/* Lista de conversaciones */}
-        <ScrollArea className="flex-1">
-          {visibleConversations.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground text-sm">
-              {searchQuery ? "No se encontraron conversaciones" : activeInboxTab === 'requests' ? "No tienes solicitudes" : activeInboxTab === 'archived' ? "No tienes chats archivados" : "No tienes conversaciones aún"}
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {visibleConversations.map((conv: any) => (
-                <button
-                  key={conv.id}
-                  onClick={() => setSelectedConversation(conv.id)}
-                  onMouseDown={() => !conv.is_global && handleChatLongPress(conv.id)}
-                  onMouseUp={handleChatPressEnd}
-                  onMouseLeave={handleChatPressEnd}
-                  onTouchStart={() => !conv.is_global && handleChatLongPress(conv.id)}
-                  onTouchEnd={handleChatPressEnd}
-                  className={cn(
-                    "w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left",
-                    selectedConversation === conv.id && "bg-muted"
-                  )}
-                >
-                  {conv.is_global ? (
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Globe className="h-6 w-6 text-primary" />
+        {isMobile ? (
+          <ScrollArea className="flex-1">
+            {visibleConversations.length === 0 ? (
+              <div className="p-4 text-center text-muted-foreground text-sm">
+                {searchQuery ? "No se encontraron conversaciones" : activeInboxTab === 'requests' ? "No tienes solicitudes" : activeInboxTab === 'archived' ? "No tienes chats archivados" : "No tienes conversaciones aún"}
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {visibleConversations.map((conv: any) => (
+                  <button
+                    key={conv.id}
+                    onClick={() => setSelectedConversation(conv.id)}
+                    onMouseDown={() => !conv.is_global && handleChatLongPress(conv.id)}
+                    onMouseUp={handleChatPressEnd}
+                    onMouseLeave={handleChatPressEnd}
+                    onTouchStart={() => !conv.is_global && handleChatLongPress(conv.id)}
+                    onTouchEnd={handleChatPressEnd}
+                    className={cn(
+                      "w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left",
+                      selectedConversation === conv.id && "bg-muted"
+                    )}
+                  >
+                    {conv.is_global ? (
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Globe className="h-6 w-6 text-primary" />
+                      </div>
+                    ) : (
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={conv.avatar_url || undefined} />
+                        <AvatarFallback>
+                          {conv.username[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-medium text-sm truncate">{conv.username}</p>
+                        {conv.unread_count > 0 && (
+                          <span className="bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            {conv.unread_count}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {conv.last_message}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatDistanceToNow(new Date(conv.last_message_at), {
+                          addSuffix: true,
+                          locale: es,
+                        })}
+                      </p>
                     </div>
-                  ) : (
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={conv.avatar_url || undefined} />
-                      <AvatarFallback>
-                        {conv.username[0]?.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="font-medium text-sm truncate">{conv.username}</p>
-                      {conv.unread_count > 0 && (
-                        <span className="bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                          {conv.unread_count}
+
+                    {activeInboxTab === 'requests' && !conv.is_global && (
+                      <div className="flex flex-col gap-2">
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAcceptedRequests((prev) => {
+                              const next = new Set(prev);
+                              next.add(conv.id);
+                              return next;
+                            });
+
+                            followUser(conv.id).finally(() => {
+                              setActiveInboxTab('inbox');
+                            });
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setAcceptedRequests((prev) => {
+                                const next = new Set(prev);
+                                next.add(conv.id);
+                                return next;
+                              });
+
+                              followUser(conv.id).finally(() => {
+                                setActiveInboxTab('inbox');
+                              });
+                            }
+                          }}
+                        >
+                          Aceptar
                         </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {conv.last_message}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(conv.last_message_at), {
-                        addSuffix: true,
-                        locale: es,
-                      })}
+                        {archivedChats.has(conv.id) ? (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnarchiveChat(conv.id);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleUnarchiveChat(conv.id);
+                              }
+                            }}
+                          >
+                            Desarchivar
+                          </span>
+                        ) : (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleChatLongPress(conv.id);
+                              setTimeout(() => handleChatPressEnd(), 0);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleChatLongPress(conv.id);
+                                setTimeout(() => handleChatPressEnd(), 0);
+                              }
+                            }}
+                          >
+                            Archivar
+                          </span>
+                        )}
+                      </div>
+                    )}
 
-                        followUser(conv.id).finally(() => {
-                          setActiveInboxTab('inbox');
-                        });
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setAcceptedRequests((prev) => {
-                            const next = new Set(prev);
-                            next.add(conv.id);
-                            return next;
-                          });
-
-                          followUser(conv.id).finally(() => {
-                            setActiveInboxTab('inbox');
-                          });
-                        }
-                      }}
-                    >
-                      Aceptar
-                    </span>
-                    {archivedChats.has(conv.id) ? (
+                    {activeInboxTab === 'archived' && !conv.is_global && (
                       <span
                         role="button"
                         tabIndex={0}
@@ -832,54 +1029,22 @@ export function PrivateMessages() {
                       >
                         Desarchivar
                       </span>
-                    ) : (
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleChatLongPress(conv.id);
-                          setTimeout(() => handleChatPressEnd(), 0);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleChatLongPress(conv.id);
-                            setTimeout(() => handleChatPressEnd(), 0);
-                          }
-                        }}
-                      >
-                        Archivar
-                      </span>
                     )}
-                  </div>
-                )}
-
-                {activeInboxTab === 'archived' && !conv.is_global && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleUnarchiveChat(conv.id);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleUnarchiveChat(conv.id);
-                      }
-                    }}
-                  >
-                    Desarchivar
-                  </span>
-                )}
-              </button>
-            ))}
-        </ScrollArea>
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        ) : (
+          <FixedSizeList
+            height={500} // Ajustar según espacio disponible
+            itemCount={visibleConversations.length}
+            itemSize={80}
+            itemData={visibleConversations}
+          >
+            {ConversationItem}
+          </FixedSizeList>
+        )}
       </div>
 
       {/* Área de chat */}
