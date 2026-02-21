@@ -1,5 +1,5 @@
 
-import { AttachmentInput } from "@/components/AttachmentInput";
+import { AttachmentInput } from "@/components/media/AttachmentInput";
 
 interface ImageButtonProps {
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;

@@ -27,11 +27,11 @@ export function MobileBottomNavigation({
   const isVisible = useScrollDirection();
 
   const iconStyles: Record<string, { bg: string; fg: string; activeBg: string; activeFg: string }> = {
-    "/": { bg: "bg-blue-100 dark:bg-blue-900/25", fg: "text-blue-600 dark:text-blue-300", activeBg: "bg-blue-200 dark:bg-blue-900/45", activeFg: "text-blue-700 dark:text-blue-200" },
-    "/home": { bg: "bg-blue-100 dark:bg-blue-900/25", fg: "text-blue-600 dark:text-blue-300", activeBg: "bg-blue-200 dark:bg-blue-900/45", activeFg: "text-blue-700 dark:text-blue-200" },
-    "/groups": { bg: "bg-emerald-100 dark:bg-emerald-900/25", fg: "text-emerald-600 dark:text-emerald-300", activeBg: "bg-emerald-200 dark:bg-emerald-900/45", activeFg: "text-emerald-700 dark:text-emerald-200" },
-    "/projects": { bg: "bg-cyan-100 dark:bg-cyan-900/25", fg: "text-cyan-600 dark:text-cyan-300", activeBg: "bg-cyan-200 dark:bg-cyan-900/45", activeFg: "text-cyan-700 dark:text-cyan-200" },
-    "/explore": { bg: "bg-violet-100 dark:bg-violet-900/25", fg: "text-violet-600 dark:text-violet-300", activeBg: "bg-violet-200 dark:bg-violet-900/45", activeFg: "text-violet-700 dark:text-violet-200" },
+    "/": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
+    "/home": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
+    "/groups": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
+    "/projects": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
+    "/explore": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
     "__action__": { bg: "bg-primary/10", fg: "text-primary", activeBg: "bg-primary/20", activeFg: "text-primary" },
   };
 
@@ -64,7 +64,7 @@ export function MobileBottomNavigation({
         return;
       }
 
-      setProfileAvatarUrl(data?.avatar_url ?? null);
+      setProfileAvatarUrl((data as any)?.avatar_url ?? null);
     };
 
     loadProfileAvatar();
@@ -112,7 +112,7 @@ export function MobileBottomNavigation({
     <>
       {!showPostModal && (
         <nav className={cn(
-          "fixed bottom-0 left-0 right-0 bg-background border-t border-border z-[60] md:hidden transition-transform duration-300",
+          "fixed bottom-0 left-0 right-0 bg-background border-t border-border z-[60] md:hidden transition-transform duration-300 pb-2",
           isVisible ? "translate-y-0" : "translate-y-full"
         )}>
         <div className="grid grid-cols-5 items-center h-14">

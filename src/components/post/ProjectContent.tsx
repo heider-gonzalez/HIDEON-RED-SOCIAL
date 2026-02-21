@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import { Briefcase, ExternalLink, Users, Target, Calendar, MessageCircle, Pin, PinOff, ChevronDown, ChevronUp, X, ZoomIn } from "lucide-react";
+import { Briefcase, ExternalLink, Users, Target, Calendar, MessageCircle, Pin, PinOff } from "lucide-react";
 import type { Idea } from "@/types/post";
-import { MentionsText } from "./MentionsText";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { usePremium } from "@/hooks/use-premium";
@@ -14,24 +12,19 @@ import { useQueryClient } from "@tanstack/react-query";
 
 interface ProjectContentProps {
   idea: Idea;
-  content?: string;
   postId: string;
   postOwnerId: string;
-  mediaUrls?: string[];
   projectStatus?: 'idea' | 'in_progress' | 'completed' | null;
   technologies?: string[] | null;
   demoUrl?: string | null;
 }
 
-export function ProjectContent({ idea, content, postId, postOwnerId, mediaUrls = [], projectStatus, technologies, demoUrl }: ProjectContentProps) {
+export function ProjectContent({ idea, postId, postOwnerId, projectStatus, technologies, demoUrl }: ProjectContentProps) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { isPremium } = usePremium();
   const { pinnedProjects } = usePinnedProjects(currentUserId);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [showFullDescription, setShowFullDescription] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const effectiveTechnologies = (technologies && technologies.length > 0)
     ? technologies
@@ -91,20 +84,6 @@ export function ProjectContent({ idea, content, postId, postOwnerId, mediaUrls =
     }
   };
 
-  const fullText = idea.description || content || '';
-  const shouldTruncate = fullText.length > 200;
-  const truncatedText = shouldTruncate ? fullText.substring(0, 200) + '...' : fullText;
-  const displayText = showFullDescription ? fullText : truncatedText;
-
-  const openImageModal = (index: number) => {
-    setSelectedImageIndex(index);
-    setShowImageModal(true);
-  };
-
-  const closeImageModal = () => {
-    setShowImageModal(false);
-  };
-
   return (
     <>
       <div className="px-0 md:px-4 pb-2">
@@ -144,72 +123,6 @@ export function ProjectContent({ idea, content, postId, postOwnerId, mediaUrls =
                 <PinOff className="h-4 w-4" />
               ) : (
                 <Pin className="h-4 w-4" />
-              )}
-            </Button>
-          )}
-        </div>
-
-        {/* Imagen del proyecto si existe - Diseño mejorado con clic para ampliar */}
-        {mediaUrls && mediaUrls.length > 0 && (
-          <div className="mb-4">
-            <div className="relative rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 group cursor-pointer"
-                 onClick={() => openImageModal(0)}>
-              <img
-                src={mediaUrls[0]}
-                alt={idea.title}
-                className="w-full h-56 sm:h-64 object-cover transition-transform duration-300 group-hover:scale-105"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-              {/* Overlay con información y botón de zoom */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-white text-sm font-medium">Vista previa del proyecto</p>
-                    <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
-                      <ZoomIn className="h-4 w-4 text-white" />
-                      <span className="text-white text-xs font-medium">Ampliar</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Indicador de múltiples imágenes */}
-              {mediaUrls.length > 1 && (
-                <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
-                  <span className="text-white text-xs font-medium">1/{mediaUrls.length}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Descripción del proyecto con "Ver más" */}
-        <div className="mb-4">
-          <div className="prose prose-sm max-w-none dark:prose-invert">
-            <div className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              <MentionsText content={displayText} />
-            </div>
-          </div>
-          
-          {/* Botón "Ver más" */}
-          {shouldTruncate && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowFullDescription(!showFullDescription)}
-              className="mt-3 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-0 h-auto font-medium"
-            >
-              {showFullDescription ? (
-                <>
-                  Ver menos
-                  <ChevronUp className="h-4 w-4 ml-1" />
-                </>
-              ) : (
-                <>
-                  Ver más
-                  <ChevronDown className="h-4 w-4 ml-1" />
-                </>
               )}
             </Button>
           )}
@@ -262,6 +175,12 @@ export function ProjectContent({ idea, content, postId, postOwnerId, mediaUrls =
 
         {/* Botones de acción - Diseño mejorado */}
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+          <Button asChild variant="outline" className="w-full">
+            <Link to={`/project/${postId}`}>
+              Ver proyecto completo
+            </Link>
+          </Button>
+
           {(effectiveDemoUrl || idea.contact_link) && (
             <div className="flex gap-3">
               {idea.contact_link ? (
@@ -294,77 +213,6 @@ export function ProjectContent({ idea, content, postId, postOwnerId, mediaUrls =
           )}
         </div>
       </div>
-
-      {/* Modal para ver imagen completa */}
-      {showImageModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
-             onClick={closeImageModal}>
-          <div className="relative max-w-6xl max-h-full w-full h-full flex items-center justify-center">
-            {/* Botón de cerrar */}
-            <button
-              onClick={closeImageModal}
-              className="absolute top-4 right-4 z-10 bg-white/10 backdrop-blur-sm rounded-full p-2 hover:bg-white/20 transition-colors"
-            >
-              <X className="h-5 w-5 text-white" />
-            </button>
-
-            {/* Imagen en tamaño completo */}
-            <img
-              src={mediaUrls[selectedImageIndex]}
-              alt={`${idea.title} - Imagen ${selectedImageIndex + 1}`}
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-
-            {/* Navegación entre imágenes si hay múltiples */}
-            {mediaUrls.length > 1 && (
-              <>
-                {/* Botón anterior */}
-                {selectedImageIndex > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedImageIndex(selectedImageIndex - 1);
-                    }}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 backdrop-blur-sm rounded-full p-2 hover:bg-white/20 transition-colors"
-                  >
-                    <ChevronDown className="h-5 w-5 text-white rotate-90" />
-                  </button>
-                )}
-
-                {/* Botón siguiente */}
-                {selectedImageIndex < mediaUrls.length - 1 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedImageIndex(selectedImageIndex + 1);
-                    }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 backdrop-blur-sm rounded-full p-2 hover:bg-white/20 transition-colors"
-                  >
-                    <ChevronDown className="h-5 w-5 text-white -rotate-90" />
-                  </button>
-                )}
-
-                {/* Indicador de imágenes */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                  {mediaUrls.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedImageIndex(index);
-                      }}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === selectedImageIndex ? 'bg-white' : 'bg-white/50'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </>
   );
 }

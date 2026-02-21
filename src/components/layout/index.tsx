@@ -1,9 +1,9 @@
 
 import React, { useEffect } from "react";
-import { Sidebar } from "./Sidebar";
-import { Header } from "./Header";
+import { LegacySidebar } from "./LegacySidebar";
+import { LegacyHeader } from "./LegacyHeader";
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function LegacyLayout({ children }: { children: React.ReactNode }) {
   const isDesktop =
     typeof window !== "undefined" &&
     typeof window.matchMedia !== "undefined" &&
@@ -30,15 +30,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Main Sidebar */}
-      <Sidebar>
+      <LegacySidebar>
         <div></div>
-      </Sidebar>
+      </LegacySidebar>
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        <Header>
+        <LegacyHeader>
           <div></div>
-        </Header>
+        </LegacyHeader>
         <main className="flex-1 p-4 lg:p-6">
           {children}
         </main>

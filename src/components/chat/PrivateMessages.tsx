@@ -164,7 +164,7 @@ export function PrivateMessages() {
         throw rpcError;
       }
 
-      const { data: user1Channels, error: searchError } = await supabase
+      const { data: user1Channels, error: searchError } = await (supabase as any)
         .from("miembros_canal")
         .select(`
           id_canal,
@@ -177,8 +177,8 @@ export function PrivateMessages() {
 
       if (user1Channels && user1Channels.length > 0) {
         for (const memberChannel of user1Channels) {
-          const channelId = memberChannel.id_canal;
-          const { data: members } = await supabase
+          const channelId = (memberChannel as any).id_canal;
+          const { data: members } = await (supabase as any)
             .from("miembros_canal")
             .select("id_usuario")
             .eq("id_canal", channelId);
@@ -215,7 +215,7 @@ export function PrivateMessages() {
 
     setIsDeleting(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('mensajes')
         .delete()
         .eq('id', messageToDelete.id)
@@ -273,7 +273,7 @@ export function PrivateMessages() {
       setLoading(true);
 
       // Obtener último mensaje del chat global
-      const { data: globalLastMessage } = await supabase
+      const { data: globalLastMessage } = await (supabase as any)
         .from("mensajes")
         .select("contenido, created_at")
         .eq("id_canal", GLOBAL_CHANNEL_ID)
@@ -294,7 +294,7 @@ export function PrivateMessages() {
       };
 
       // Obtener todos los canales privados donde el usuario es miembro
-      const { data: userChannels, error: channelsError } = await supabase
+      const { data: userChannels, error: channelsError } = await (supabase as any)
         .from("miembros_canal")
         .select(`
           id_canal,
@@ -312,7 +312,7 @@ export function PrivateMessages() {
         privateChannels.map(async (memberChannel: any) => {
           const channelId = memberChannel.id_canal;
 
-          const { data: otherMembers, error: membersError } = await supabase
+          const { data: otherMembers, error: membersError } = await (supabase as any)
             .from("miembros_canal")
             .select("id_usuario")
             .eq("id_canal", channelId)
@@ -322,7 +322,7 @@ export function PrivateMessages() {
 
           const otherUserId = otherMembers[0].id_usuario;
 
-          const { data: profile, error: profileError } = await supabase
+          const { data: profile, error: profileError } = await (supabase as any)
             .from("profiles")
             .select("id, username, avatar_url")
             .eq("id", otherUserId)
@@ -330,7 +330,7 @@ export function PrivateMessages() {
 
           if (profileError || !profile) return null;
 
-          const { data: lastMessage } = await supabase
+          const { data: lastMessage } = await (supabase as any)
             .from("mensajes")
             .select("id, contenido, created_at")
             .eq("id_canal", channelId)
@@ -376,7 +376,7 @@ export function PrivateMessages() {
   // Cargar mensajes de una conversación
   const loadMessages = async (channelId: string) => {
     try {
-      const { data: messagesData, error } = await supabase
+      const { data: messagesData, error } = await (supabase as any)
         .from("mensajes")
         .select(`
           id,
@@ -394,7 +394,7 @@ export function PrivateMessages() {
       
       let profilesMap: Record<string, { username: string; avatar_url: string }> = {};
       if (authorIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
+        const { data: profiles, error: profilesError } = await (supabase as any)
           .from("profiles")
           .select("id, username, avatar_url")
           .in("id", authorIds);
@@ -438,7 +438,7 @@ export function PrivateMessages() {
 
     setSending(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("mensajes")
         .insert({
           contenido: newMessage.trim(),
@@ -570,6 +570,15 @@ export function PrivateMessages() {
       });
     }
   }, [searchParams.get("user"), currentUserId]);
+
+  useEffect(() => {
+    const draft = searchParams.get("draft");
+    const userIdParam = searchParams.get("user");
+    if (!draft) return;
+    if (!userIdParam) return;
+    if (selectedConversation !== userIdParam) return;
+    setNewMessage(draft);
+  }, [searchParams, selectedConversation]);
 
   const { conversacionesPrincipales, solicitudesDeMensajes } = useMemo(() => {
     return splitConversationsByMutualFollow(conversations, {
@@ -869,6 +878,17 @@ export function PrivateMessages() {
                   {selectedConv.is_global ? "Conversación pública" : "En línea"}
                 </p>
               </div>
+
+              <div className="ml-auto flex items-center">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedConversation(null)}
+                >
+                  Salir
+                </Button>
+              </div>
             </div>
 
             {/* Mensajes */}
@@ -990,9 +1010,9 @@ export function PrivateMessages() {
       {isMobile && selectedConversation && (
         <div className="fixed inset-0 z-60 bg-background flex flex-col">
           <div className="p-4 border-b border-border flex items-center gap-3">
-            <button onClick={() => setSelectedConversation(null)} className="p-2">
-              Volver
-            </button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedConversation(null)}>
+              Salir
+            </Button>
             {selectedConv?.is_global ? (
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Globe className="h-5 w-5 text-primary" />

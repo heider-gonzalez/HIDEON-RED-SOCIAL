@@ -120,6 +120,56 @@ async function enrichPosts(
     // ignore
   }
 
+  // Fetch comment reactions for all posts in one query
+  const commentReactionsByCommentId: Record<string, { count: number; by_type: Record<string, number> }> = {};
+  try {
+    if (postIds.length > 0) {
+      const { data: commentReactions, error: commentReactionsError } = await supabase
+        .from("comment_reactions")
+        .select("comment_id, reaction_type")
+        .in("comment_id", postIds);
+
+      if (commentReactionsError) throw commentReactionsError;
+
+      (commentReactions || []).forEach((r: any) => {
+        const commentId = String(r.comment_id);
+        const type = String(r.reaction_type || '');
+        if (!commentId || !type) return;
+
+        if (!commentReactionsByCommentId[commentId]) {
+          commentReactionsByCommentId[commentId] = { count: 0, by_type: {} };
+        }
+
+        commentReactionsByCommentId[commentId].count += 1;
+        commentReactionsByCommentId[commentId].by_type[type] = (commentReactionsByCommentId[commentId].by_type[type] || 0) + 1;
+      });
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  // Fetch current user's comment reactions for all posts in one query
+  const userCommentReactionByCommentId: Record<string, string> = {};
+  try {
+    if (user && postIds.length > 0) {
+      const { data: userCommentReactions, error: userCommentReactionsError } = await supabase
+        .from("comment_reactions")
+        .select("comment_id, reaction_type")
+        .eq("user_id", user.id)
+        .in("comment_id", postIds);
+
+      if (userCommentReactionsError) throw userCommentReactionsError;
+
+      (userCommentReactions || []).forEach((r: any) => {
+        if (r?.comment_id && r?.reaction_type) {
+          userCommentReactionByCommentId[String(r.comment_id)] = String(r.reaction_type);
+        }
+      });
+    }
+  } catch (e) {
+    // ignore
+  }
+
   const postsWithUserReactions = await Promise.all((data || []).map(async (post: any) => {
     const postWithExtras = { ...post };
 
@@ -172,6 +222,10 @@ async function enrichPosts(
     postWithExtras.shares_count = sharesCountsByPostId[pid] || 0;
     postWithExtras.reactions_by_type = reactionsByPostId[pid]?.by_type || {};
     postWithExtras.reactions_count = reactionsByPostId[pid]?.count || 0;
+    postWithExtras.reactions = {
+      count: reactionsByPostId[pid]?.count || 0,
+      by_type: reactionsByPostId[pid]?.by_type || {},
+    };
     postWithExtras.user_reaction = userReactionByPostId[pid] || null;
 
     // Comments count from joined relation
@@ -180,10 +234,39 @@ async function enrichPosts(
       postWithExtras.comments_count ||
       0;
 
+    // Enrich comments with reactions if they exist
+    if (postWithExtras.comments && Array.isArray(postWithExtras.comments)) {
+      postWithExtras.comments = enrichComments(postWithExtras.comments, commentReactionsByCommentId, userCommentReactionByCommentId);
+    }
+
     return postWithExtras;
   }));
 
   return postsWithUserReactions;
+}
+
+// Function to enrich comments with reactions
+async function enrichComments(
+  comments: any[],
+  commentReactionsByCommentId: Record<string, { count: number; by_type: Record<string, number> }>,
+  userCommentReactionByCommentId: Record<string, string>
+) {
+  return comments.map(comment => {
+    const commentId = String(comment.id);
+    const enrichedComment = { ...comment };
+    
+    // Add reaction data
+    enrichedComment.reactions_by_type = commentReactionsByCommentId[commentId]?.by_type || {};
+    enrichedComment.likes_count = commentReactionsByCommentId[commentId]?.count || 0;
+    enrichedComment.user_reaction = userCommentReactionByCommentId[commentId] || null;
+    
+    // Recursively enrich replies
+    if (comment.replies && Array.isArray(comment.replies)) {
+      enrichedComment.replies = enrichComments(comment.replies, commentReactionsByCommentId, userCommentReactionByCommentId);
+    }
+    
+    return enrichedComment;
+  });
 }
 
 export async function getPosts(userId?: string, groupId?: string, companyId?: string) {
@@ -303,7 +386,8 @@ export async function getPostsPage(params: {
     .select(`
       *,
       profiles:profiles(id, username, avatar_url, career),
-      comments:comments(count)
+      comments:comments(count),
+      media_urls
     `);
 
   if (userId) query = query.eq('user_id', userId);
@@ -665,6 +749,68 @@ export async function deletePost(postId: string) {
     return { success: true };
   } catch (error) {
     console.error("Error deleting post:", error);
+    throw error;
+  }
+}
+
+// Comment reactions API functions
+export async function addCommentReaction(commentId: string, reactionType: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No user logged in");
+
+    // Check if user already reacted to this comment
+    const { data: existingReaction } = await supabase
+      .from("comment_reactions")
+      .select("*")
+      .eq("comment_id", commentId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (existingReaction) {
+      // Update existing reaction
+      const { error } = await supabase
+        .from("comment_reactions")
+        .update({ reaction_type: reactionType })
+        .eq("id", existingReaction.id);
+
+      if (error) throw error;
+    } else {
+      // Add new reaction
+      const { error } = await supabase
+        .from("comment_reactions")
+        .insert({
+          comment_id: commentId,
+          user_id: user.id,
+          reaction_type: reactionType
+        });
+
+      if (error) throw error;
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error adding comment reaction:", error);
+    throw error;
+  }
+}
+
+export async function removeCommentReaction(commentId: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No user logged in");
+
+    const { error } = await supabase
+      .from("comment_reactions")
+      .delete()
+      .eq("comment_id", commentId)
+      .eq("user_id", user.id);
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error removing comment reaction:", error);
     throw error;
   }
 }

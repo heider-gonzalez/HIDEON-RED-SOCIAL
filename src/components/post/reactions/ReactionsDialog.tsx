@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { reactionIcons } from "./ReactionIcons";
+import { normalizeReactionType, reactionIcons } from "./ReactionIcons";
 import { getMutualFriends } from "@/lib/friends/get-mutual-friends";
 import { useAuth } from "@/hooks/use-auth";
 import { ReactionUserItem } from "./ReactionUserItem";
@@ -85,7 +85,8 @@ export function ReactionsDialog({ postId, open, onOpenChange }: ReactionsDialogP
   };
 
   const getReactionEmoji = (type: string) => {
-    return reactionIcons[type as keyof typeof reactionIcons]?.emoji || "❤️";
+    const normalizedType = normalizeReactionType(type);
+    return reactionIcons[normalizedType]?.emoji || "❤️";
   };
 
   return (

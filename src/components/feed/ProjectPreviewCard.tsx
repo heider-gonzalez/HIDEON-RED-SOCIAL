@@ -123,7 +123,7 @@ export function ProjectPreviewCard({ project }: ProjectPreviewCardProps) {
         </div>
 
         {/* Botón Ver Proyecto */}
-        <Link to={`/projects/${project.post_id}`}>
+        <Link to={`/project/${project.post_id}`}>
           <Button className="w-full" variant="default">
             Ver Proyecto →
           </Button>

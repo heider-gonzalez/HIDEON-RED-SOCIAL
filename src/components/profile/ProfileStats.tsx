@@ -1,11 +1,9 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Users, Briefcase, Heart, MessageCircle, Share, Building, TrendingUp, Award, Crown, BarChart3 } from "lucide-react";
+import { Eye, Users, Briefcase, Heart, MessageCircle, Building, TrendingUp, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { usePremium } from "@/hooks/use-premium";
 import type { Profile } from "@/pages/Profile";
 
 interface ProfileStatsProps {
@@ -37,7 +35,6 @@ export function ProfileStats({
   const [extendedStats, setExtendedStats] = useState<ExtendedStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { isPremium } = usePremium();
 
   useEffect(() => {
     if (profile?.id) {
@@ -139,12 +136,6 @@ export function ProfileStats({
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm">Estadísticas</CardTitle>
-              {isPremium && (
-                <Badge variant="secondary" className="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0">
-                  <Crown className="h-3 w-3 mr-1" />
-                  Premium
-                </Badge>
-              )}
             </div>
           </CardHeader>
           <CardContent className="pt-0">

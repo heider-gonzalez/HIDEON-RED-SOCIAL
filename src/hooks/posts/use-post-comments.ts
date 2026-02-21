@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchPostComments } from "@/lib/api/posts/queries";
 import { ReactionType } from "@/types/database/social.types";
 import { Comment } from "@/types/post";
+import { normalizeReactionType } from "@/components/post/reactions/ReactionIcons";
+import { useReactionMutations } from "@/hooks/post-mutations/use-reaction-mutations";
 
 // Helper function to ensure reaction_type is a valid ReactionType
 function normalizeReactions(comments: any[]): Comment[] {
@@ -26,17 +28,6 @@ function normalizeReactions(comments: any[]): Comment[] {
   });
 }
 
-// Function to ensure a reaction type string is a valid ReactionType
-function normalizeReactionType(type: string): ReactionType {
-  // List of valid reaction types (only love now)
-  const validTypes: ReactionType[] = ["love"];
-  
-  // Return the type if valid, or default to "love"
-  return validTypes.includes(type as ReactionType) 
-    ? type as ReactionType 
-    : "love";
-}
-
 /**
  * Hook for managing post comments functionality
  */
@@ -46,6 +37,8 @@ export function usePostComments(
   setReplyTo: (value: { id: string; username: string } | null) => void,
   setNewComment: (value: string) => void
 ) {
+  const { toggleCommentReaction } = useReactionMutations(postId);
+
   const { data: rawComments = [] } = useQuery({
     queryKey: ["comments", postId],
     queryFn: () => fetchPostComments(postId),
@@ -56,8 +49,7 @@ export function usePostComments(
   const comments = normalizeReactions(rawComments);
   
   const handleCommentReaction = (commentId: string, type: ReactionType) => {
-    // This function is a placeholder in the original code
-    // We'll keep it for API consistency
+    toggleCommentReaction({ commentId, type });
   };
   
   const handleReply = (id: string, username: string) => {

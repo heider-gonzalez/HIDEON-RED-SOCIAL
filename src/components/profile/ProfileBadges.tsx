@@ -80,12 +80,11 @@ export function ProfileBadges({ profile }: ProfileBadgesProps) {
 
   const getBadgePriority = (badgeType: string) => {
     const priorityMap: Record<string, number> = {
-      premium: 1,
-      special: 2,
-      verified: 3,
-      achievement: 4,
-      milestone: 5,
-      expert: 6,
+      special: 1,
+      verified: 2,
+      achievement: 3,
+      milestone: 4,
+      expert: 5,
     };
     return priorityMap[badgeType] || 999;
   };
@@ -124,9 +123,9 @@ export function ProfileBadges({ profile }: ProfileBadgesProps) {
   }
 
   // Ordenar badges por prioridad
-  const sortedBadges = [...badges].sort((a, b) => 
-    getBadgePriority(a.badge_type) - getBadgePriority(b.badge_type)
-  );
+  const sortedBadges = badges
+    .filter((b) => b.badge_type !== 'premium')
+    .sort((a, b) => getBadgePriority(a.badge_type) - getBadgePriority(b.badge_type));
 
   return (
     <Card>
@@ -135,27 +134,8 @@ export function ProfileBadges({ profile }: ProfileBadgesProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Badge Premium destacado */}
-          {sortedBadges.filter(b => b.badge_type === 'premium').map((badge) => (
-            <div key={badge.id} className="flex items-center gap-3 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg">
-              <div className="p-3 bg-gradient-to-r from-yellow-400 to-amber-400 rounded-full text-white">
-                {getBadgeIcon(badge.badge_icon)}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-yellow-900">{badge.badge_name}</h4>
-                  <Badge variant="premium" className="text-xs">Premium</Badge>
-                </div>
-                <p className="text-sm text-yellow-700">{badge.badge_description}</p>
-                <p className="text-xs text-yellow-600 mt-1">
-                  Obtenida: {new Date(badge.earned_date).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-          ))}
-
           {/* Badges Especiales */}
-          {sortedBadges.filter(b => b.badge_type === 'special' && b.badge_type !== 'premium').map((badge) => (
+          {sortedBadges.filter(b => b.badge_type === 'special').map((badge) => (
             <div key={badge.id} className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
               <div className="p-2 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full text-white">
                 {getBadgeIcon(badge.badge_icon)}
@@ -198,13 +178,7 @@ export function ProfileBadges({ profile }: ProfileBadgesProps) {
           <div className="mt-4 pt-4 border-t">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Total de insignias:</span>
-              <span className="font-semibold">{badges.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm mt-1">
-              <span className="text-muted-foreground">Badges Premium:</span>
-              <span className="font-semibold text-yellow-600">
-                {badges.filter(b => b.badge_type === 'premium').length}
-              </span>
+              <span className="font-semibold">{sortedBadges.length}</span>
             </div>
             <div className="flex items-center justify-between text-sm mt-1">
               <span className="text-muted-foreground">Logros desbloqueados:</span>

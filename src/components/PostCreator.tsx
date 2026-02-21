@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { X } from "lucide-react";
+import { X, Music } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { mobileToasts } from "@/components/ui/mobile-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AttachmentInput } from "./AttachmentInput";
-import { AttachmentPreview } from "./AttachmentPreview";
+import { AttachmentInput } from "@/components/media/AttachmentInput";
+import { AttachmentPreview } from "@/components/media/AttachmentPreview";
+import { MusicSelector } from "@/components/media/MusicSelector";
+import { InstagramAudioEditor } from "@/components/media/InstagramAudioEditor";
 import { VisibilitySelector } from "./post/VisibilitySelector";
 import {
   Select,
@@ -42,6 +44,10 @@ export interface Proyecto {
   required_skills: string[];
   status: 'planificacion' | 'desarrollo' | 'finalizado';
   contact_link?: string;
+  demo_url?: string;
+  github_url?: string;
+  impact?: string;
+  stack?: string[];
   max_participants: number;
 }
 
@@ -121,6 +127,10 @@ export function PostCreator({
     required_skills: [],
     status: 'planificacion',
     contact_link: "",
+    demo_url: "",
+    github_url: "",
+    impact: "",
+    stack: [],
     max_participants: 5
   });
   const [evento, setEvento] = useState<EventForm>({
@@ -134,6 +144,12 @@ export function PostCreator({
     gradient_color: 'gradient-1',
     banner_file: null
   });
+
+  // Audio selection state
+  const [showMusicSelector, setShowMusicSelector] = useState(false);
+  const [showAudioEditor, setShowAudioEditor] = useState(false);
+  const [selectedAudioTrack, setSelectedAudioTrack] = useState<any>(null);
+  const [selectedAudioData, setSelectedAudioData] = useState<any>(null);
 
   const [userGroups, setUserGroups] = useState<
     Array<{ group_id: string; group_name: string; status?: string }>
@@ -307,6 +323,22 @@ export function PostCreator({
     setFilePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleMusicTrackSelect = (track: any, bestMoment?: any) => {
+    setSelectedAudioTrack(track);
+    setShowMusicSelector(false);
+    setShowAudioEditor(true);
+  };
+
+  const handleAudioDataSelect = (audioData: any) => {
+    setSelectedAudioData(audioData);
+    setShowAudioEditor(false);
+  };
+
+  const removeAudio = () => {
+    setSelectedAudioTrack(null);
+    setSelectedAudioData(null);
+  };
+
   const removeAllAttachments = () => {
     setSelectedFiles([]);
     setFilePreviews([]);
@@ -459,6 +491,10 @@ export function PostCreator({
             required_skills: proyecto.required_skills,
             status: proyecto.status,
             contact_link: proyecto.contact_link || '',
+            demo_url: proyecto.demo_url || '',
+            github_url: proyecto.github_url || '',
+            impact: proyecto.impact || '',
+            stack: Array.isArray(proyecto.stack) ? proyecto.stack : [],
             max_participants: proyecto.max_participants
           }
         };
@@ -487,6 +523,9 @@ export function PostCreator({
       queryClient.invalidateQueries({ queryKey: ["personalized-feed"] });
       queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
       queryClient.invalidateQueries({ queryKey: ["project-posts"] });
+
+      // Some infinite queries won't refetch immediately on invalidate; force a refetch
+      queryClient.refetchQueries({ queryKey: ["posts"], exact: false });
 
       try {
         window.dispatchEvent(new Event('hsocial:home_refresh'));
@@ -714,6 +753,77 @@ export function PostCreator({
         </div>
       )}
 
+      {/* Music Selector Modal */}
+      {showMusicSelector && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <MusicSelector
+              onTrackSelect={handleMusicTrackSelect}
+              onClose={() => setShowMusicSelector(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Audio Editor Modal */}
+      {showAudioEditor && selectedAudioTrack && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <InstagramAudioEditor
+              track={selectedAudioTrack}
+              bestMoment={selectedAudioTrack.bestMoment}
+              videoDuration={30}
+              onAudioSelect={handleAudioDataSelect}
+              onClose={() => setShowAudioEditor(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Footer with Actions */}
+      {postType === 'regular' && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Música de fondo</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMusicSelector(true)}
+              className="text-xs"
+            >
+              {selectedAudioData ? 'Cambiar música' : 'Agregar música'}
+            </Button>
+          </div>
+          
+          {selectedAudioData && (
+            <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center">
+                    <Music className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">{selectedAudioData.track.title}</div>
+                    <div className="text-xs text-gray-500">{selectedAudioData.track.artist}</div>
+                    <div className="text-xs text-purple-600">
+                      {Math.floor(selectedAudioData.duration)}s seleccionados
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeAudio}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Botón para agregar más archivos */}
       {postType === 'regular' && selectedFiles.length > 0 && selectedFiles.length < 10 && (
         <div>
@@ -836,6 +946,26 @@ export function PostCreator({
               onChange={(e) => setProyecto({ ...proyecto, description: e.target.value })}
             />
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Stack tecnologías usadas</label>
+            <input
+              type="text"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Ej: Next.js, Supabase, Tailwind"
+              value={(proyecto.stack || []).join(', ')}
+              onChange={(e) =>
+                setProyecto({
+                  ...proyecto,
+                  stack: e.target.value
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                })
+              }
+            />
+            <p className="text-xs text-muted-foreground">Esto se muestra como chips en la tarjeta del proyecto.</p>
+          </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Habilidades requeridas</label>
             <input
@@ -857,6 +987,40 @@ export function PostCreator({
               <option value="desarrollo">En desarrollo</option>
               <option value="finalizado">Finalizado</option>
             </select>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Demo (URL opcional)</label>
+              <input
+                type="url"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="https://demo.tuapp.com"
+                value={proyecto.demo_url || ""}
+                onChange={(e) => setProyecto({ ...proyecto, demo_url: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">GitHub (URL opcional)</label>
+              <input
+                type="url"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="https://github.com/usuario/repo"
+                value={proyecto.github_url || ""}
+                onChange={(e) => setProyecto({ ...proyecto, github_url: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Impacto (métrica corta)</label>
+            <input
+              type="text"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Ej: 1,200 usuarios · +25% conversion · -40% tiempo"
+              value={proyecto.impact || ""}
+              onChange={(e) => setProyecto({ ...proyecto, impact: e.target.value })}
+            />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Enlace de contacto (opcional)</label>

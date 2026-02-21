@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ReactionType } from "@/types/database/social.types";
+import { normalizeReactionType } from "@/components/post/reactions/ReactionIcons";
 
 interface ReactionResult {
   success: boolean;
@@ -18,7 +19,13 @@ export async function toggleReactionOptimized(
   reactionType: ReactionType = 'love'
 ): Promise<ReactionResult> {
   try {
-    const { data, error } = await supabase.rpc('add_reaction_optimized', {
+    // Para comentarios, usar la API directa sin restricciones de auto-reacción
+    if (commentId) {
+      return await toggleCommentReactionDirect(commentId, reactionType);
+    }
+    
+    // Para posts, mantener la función RPC original
+    const { data, error } = await (supabase as any).rpc('add_reaction_optimized', {
       p_post_id: postId || null,
       p_comment_id: commentId || null,
       p_reaction_type: reactionType
@@ -43,6 +50,77 @@ export async function toggleReactionOptimized(
 }
 
 /**
+ * Función directa para reacciones de comentarios sin restricciones de auto-reacción
+ */
+async function toggleCommentReactionDirect(
+  commentId: string,
+  reactionType: ReactionType
+): Promise<ReactionResult> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Usuario no autenticado' };
+    }
+
+    // Verificar si ya existe una reacción del usuario a este comentario
+    const { data: existingReaction } = await supabase
+      .from('comment_reactions')
+      .select('*')
+      .eq('comment_id', commentId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (existingReaction) {
+      // Si la reacción es la misma, eliminarla
+      if (existingReaction.reaction_type === reactionType) {
+        const { error } = await supabase
+          .from('comment_reactions')
+          .delete()
+          .eq('comment_id', commentId)
+          .eq('user_id', user.id);
+
+        if (error) {
+          return { success: false, error: error.message };
+        }
+
+        return { success: true, action: 'removed', reaction_type: null };
+      } else {
+        // Si es diferente, actualizarla
+        const { error } = await supabase
+          .from('comment_reactions')
+          .update({ reaction_type: reactionType })
+          .eq('comment_id', commentId)
+          .eq('user_id', user.id);
+
+        if (error) {
+          return { success: false, error: error.message };
+        }
+
+        return { success: true, action: 'added', reaction_type: reactionType };
+      }
+    } else {
+      // Agregar nueva reacción
+      const { error } = await supabase
+        .from('comment_reactions')
+        .insert({
+          comment_id: commentId,
+          user_id: user.id,
+          reaction_type: reactionType
+        });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, action: 'added', reaction_type: reactionType };
+    }
+  } catch (error: any) {
+    console.error('Error in toggleCommentReactionDirect:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Obtener la reacción actual del usuario para un post
  */
 export async function getUserPostReaction(postId: string): Promise<ReactionType | null> {
@@ -50,7 +128,7 @@ export async function getUserPostReaction(postId: string): Promise<ReactionType 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('reactions')
       .select('reaction_type')
       .eq('post_id', postId)
@@ -62,7 +140,9 @@ export async function getUserPostReaction(postId: string): Promise<ReactionType 
       return null;
     }
 
-    return data?.reaction_type as ReactionType || null;
+    const raw = (data as any)?.reaction_type;
+    if (!raw) return null;
+    return normalizeReactionType(String(raw)) as ReactionType;
   } catch (error) {
     console.error('Error in getUserPostReaction:', error);
     return null;
@@ -77,7 +157,7 @@ export async function getUserCommentReaction(commentId: string): Promise<Reactio
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('reactions')
       .select('reaction_type')
       .eq('comment_id', commentId)
@@ -89,7 +169,9 @@ export async function getUserCommentReaction(commentId: string): Promise<Reactio
       return null;
     }
 
-    return data?.reaction_type as ReactionType || null;
+    const raw = (data as any)?.reaction_type;
+    if (!raw) return null;
+    return normalizeReactionType(String(raw)) as ReactionType;
   } catch (error) {
     console.error('Error in getUserCommentReaction:', error);
     return null;

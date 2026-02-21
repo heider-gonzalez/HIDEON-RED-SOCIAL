@@ -3,6 +3,7 @@ import { useCallback } from "react";
 import { CommentHeader } from "./CommentHeader";
 import { CommentContent } from "./CommentContent";
 import { CommentFooter } from "./CommentFooter";
+import { CommentReactionSummary } from "./CommentReactionSummary";
 import { ReportCommentDialog } from "./ReportCommentDialog";
 import { CommentActions } from "./CommentActions";
 import type { Comment } from "@/types/post";
@@ -44,8 +45,22 @@ export function SingleComment({
     console.log("Edit comment:", comment.id);
   }, [comment.id]);
 
+  const reactionSummary = comment.reactions_by_type && Object.keys(comment.reactions_by_type).length > 0 ? (
+    <div className="rounded-full border border-border bg-background/90 px-2 py-0.5 shadow-sm">
+      <CommentReactionSummary
+        reactionsByType={comment.reactions_by_type}
+        totalCount={comment.likes_count || 0}
+        compact={true}
+      />
+    </div>
+  ) : null;
+
   return (
-    <div id={`comment-${comment.id}`} className={`flex flex-col gap-1 ${isReply ? "ml-8" : ""}`}>
+    <div
+      id={`comment-${comment.id}`}
+      className={`relative flex flex-col gap-1 ${isReply ? "ml-8" : ""}`}
+    >
+      {isReply && <div className="absolute -left-3 top-4 h-px w-3 bg-border" />}
       {/* Header with avatar and author */}
       <CommentHeader
         userId={comment.user_id}
@@ -60,7 +75,8 @@ export function SingleComment({
         <CommentContent 
           content={comment.content} 
           media={comment.media_url} 
-          mediaType={comment.media_type} 
+          mediaType={comment.media_type}
+          reactionSummary={reactionSummary}
         />
         
         <div className="flex items-center gap-2 mt-1">
@@ -73,8 +89,6 @@ export function SingleComment({
             readOnly={readOnly}
           />
           
-          <div className="flex-grow"></div>
-
           {!readOnly && <ReportCommentDialog comment={comment} />}
 
           {!readOnly && (
@@ -86,7 +100,8 @@ export function SingleComment({
         </div>
 
         {comment.replies && comment.replies.length > 0 && !hideReplies && (
-          <div className="mt-2 space-y-2">
+          <div className="relative mt-2 space-y-2">
+            <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
             {comment.replies.map((reply) => (
               <SingleComment
                 key={reply.id}

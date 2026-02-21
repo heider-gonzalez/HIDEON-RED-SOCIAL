@@ -12,6 +12,7 @@ interface HoverReactionButtonProps {
   onReactionClick: (type: ReactionType) => void;
   postType?: string;
   isSubmitting?: boolean;
+  reactionCount?: number;
 }
 
 export function HoverReactionButton({
@@ -19,7 +20,8 @@ export function HoverReactionButton({
   userReaction,
   onReactionClick,
   postType: _postType,
-  isSubmitting = false
+  isSubmitting = false,
+  reactionCount = 0
 }: HoverReactionButtonProps) {
   const [animatingReaction, setAnimatingReaction] = useState<ReactionType | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -178,6 +180,11 @@ export function HoverReactionButton({
         <span className={`text-sm font-medium ${hasReacted ? currentColor : ''}`}>
           {hasReacted ? reactionData.label : "Reaccionar"}
         </span>
+        {reactionCount > 0 && (
+          <span className={`text-sm ml-2 ${hasReacted ? currentColor : 'text-muted-foreground'}`}>
+            {reactionCount}
+          </span>
+        )}
       </Button>
     </div>
   );

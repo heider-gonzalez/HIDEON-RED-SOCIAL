@@ -57,7 +57,8 @@ export async function createProject(data: ProjectFormData, files?: File | File[]
         seeking_collaborators: data.seeking_collaborators,
         collaboration_roles: data.team_members,
         achievements: data.achievements ? [data.achievements] : [],
-        industry: data.category
+        industry: data.category,
+        is_academic: data.is_academic
       })
       .select()
       .single();

@@ -6,7 +6,6 @@ import { ImageModal } from "./ImageModal";
 import { VideoModal } from "./VideoModal";
 // PostPoll removed for performance
 import { Post } from "@/types/post";
-import { PostIdea } from "./PostIdea";
 import { EventCard } from "./EventCard";
 import { EventModal } from "./EventModal";
 import { usePollVoteMutation } from "@/hooks/post-mutations/use-poll-vote-mutation";
@@ -30,28 +29,50 @@ function PostContentComponent({ post, postId }: PostContentProps) {
 
   const { submitVote, isPending: isVoting } = usePollVoteMutation(postId);
   
-  // Check if the post has media (single or multiple)
-  const hasMedia = !!post.media_url || (post.media_urls && post.media_urls.length > 0);
+  // 1. Extraer todas las posibles URLs de video/demo
+  const proyectoDemoUrl = String((post as any)?.post_metadata?.proyecto?.demo_url || "").trim();
+  const fallbackDemoUrl = String((post as any)?.demo_url || "").trim();
+  const projectShowcaseVideoUrl = String(post.project_showcases?.[0]?.video_url || "").trim();
+  const projectShowcaseDemoUrl = String(post.project_showcases?.[0]?.demo_url || "").trim();
   
-  // Preparar items para MediaCarousel
+  // 2. Definir función de detección de video (alineada con ProjectCard)
+  const isVideoUrl = (url: string) => {
+    if (!url) return false;
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv', '.m4v'];
+    const lowerUrl = url.toLowerCase();
+    return videoExtensions.some(ext => lowerUrl.includes(ext)) || 
+           lowerUrl.includes('video') || 
+           lowerUrl.includes('stream');
+  };
+
+  // 3. Buscar el primer video válido entre los metadatos
+  const demoUrl = proyectoDemoUrl || fallbackDemoUrl || projectShowcaseVideoUrl || projectShowcaseDemoUrl;
+  const demoIsVideo = isVideoUrl(demoUrl);
+
+  // 4. Determinar si mostrar media
+  const hasMedia =
+    !!post.media_url ||
+    (post.media_urls && post.media_urls.length > 0) ||
+    demoIsVideo;
+  
+  // 5. Preparar items para MediaCarousel
   const mediaItems: Array<{ url: string; type: 'image' | 'video' }> = [];
+  
   if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
-    // Múltiples archivos desde media_urls
-    post.media_urls.forEach((url: string, index: number) => {
-      const type = post.media_type?.startsWith('video') || url.match(/\.(mp4|webm|ogg)$/i) ? 'video' : 'image';
+    post.media_urls.forEach((url: string) => {
+      const type = post.media_type?.startsWith('video') || isVideoUrl(url) ? 'video' : 'image';
       mediaItems.push({ url, type });
     });
   } else if (post.media_url) {
-    // Un solo archivo desde media_url (compatibilidad)
-    const type = post.media_type?.startsWith('video') || post.media_url.match(/\.(mp4|webm|ogg)$/i) ? 'video' : 'image';
+    const type = post.media_type?.startsWith('video') || isVideoUrl(post.media_url) ? 'video' : 'image';
     mediaItems.push({ url: post.media_url, type });
+  } else if (demoIsVideo) {
+    // Si no hay media_urls, usamos el video encontrado en metadatos
+    mediaItems.push({ url: demoUrl, type: 'video' });
   }
   
   // Check if the post has a poll
   const hasPoll = post.poll && post.poll.options?.length > 0;
-  
-  // Check if the post has idea
-  const hasIdea = !!post.idea;
 
   // Check if the post has marketplace
   const hasMarketplace = !!post.marketplace;
@@ -129,48 +150,13 @@ function PostContentComponent({ post, postId }: PostContentProps) {
       
       {hasMedia && !hasMarketplace && (
         <div className="mt-2 mb-0 w-full">
-          {mediaItems.length > 1 ? (
-            // Múltiples archivos: usar MediaCarousel estilo LinkedIn
-            <MediaCarousel mediaItems={mediaItems} />
-          ) : mediaItems.length === 1 ? (
-            // Un solo archivo: mostrar directamente
-            <div className="w-full">
-              {mediaItems[0].type === 'image' ? (
-                <div className="w-full overflow-hidden h-[320px] sm:h-[420px]">
-                  <PostImage
-                    src={mediaItems[0].url}
-                    alt="Contenido multimedia del post"
-                    className="w-full h-full object-cover rounded-none cursor-zoom-in"
-                    onClick={() => setIsImageModalOpen(true)}
-                  />
-                </div>
-              ) : (
-                <video
-                  src={mediaItems[0].url}
-                  className="w-full max-h-[420px] object-contain rounded-none cursor-pointer"
-                  onClick={() => {
-                    // Treat single video posts as Reels to provide the requested vertical viewer experience
-                    navigate(`/reels/${post.id}`);
-                  }}
-                  onError={(e) => {
-                    console.error('Error cargando video:', e);
-                    const target = e.target as HTMLVideoElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="w-full h-32 bg-muted rounded-lg flex items-center justify-center">
-                          <p class="text-muted-foreground text-sm">No se pudo cargar el video</p>
-                        </div>
-                      `;
-                    }
-                  }}
-                  controls
-                  preload="metadata"
-                  crossOrigin="anonymous"
-                />
-              )}
-            </div>
+          {mediaItems.length >= 1 ? (
+            <MediaCarousel
+              mediaItems={mediaItems}
+              audioUrl={post.audio_url || undefined}
+              audioMetadata={post.audio_metadata || null}
+              reelsPostId={postId}
+            />
           ) : null}
         </div>
       )}
@@ -224,12 +210,6 @@ function PostContentComponent({ post, postId }: PostContentProps) {
               {Number(post.poll.total_votes || 0)} votos
             </div>
           </div>
-        </div>
-      )}
-      
-      {hasIdea && (
-        <div className="mt-4">
-          <PostIdea idea={post.idea} postId={postId} post={post} />
         </div>
       )}
 

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { reactionIcons, type ReactionType } from "./ReactionIcons";
+import { normalizeReactionType, reactionIcons, type ReactionType } from "./ReactionIcons";
 import { Loader2 } from "lucide-react";
 
 interface Reaction {
@@ -80,14 +80,15 @@ export function ReactionsListDialog({ postId, open, onOpenChange }: ReactionsLis
   const getReactionCounts = () => {
     const counts: Record<string, number> = {};
     reactions.forEach((r) => {
-      counts[r.reaction_type] = (counts[r.reaction_type] || 0) + 1;
+      const t = normalizeReactionType(r.reaction_type);
+      counts[t] = (counts[t] || 0) + 1;
     });
     return counts;
   };
 
   const filteredReactions = activeTab === "all" 
     ? reactions 
-    : reactions.filter(r => r.reaction_type === activeTab);
+    : reactions.filter(r => normalizeReactionType(r.reaction_type) === activeTab);
 
   const counts = getReactionCounts();
   const totalCount = reactions.length;
@@ -111,12 +112,13 @@ export function ReactionsListDialog({ postId, open, onOpenChange }: ReactionsLis
               Todas {totalCount}
             </TabsTrigger>
             {Object.entries(counts).map(([type, count]) => {
-              const reaction = reactionIcons[type as ReactionType];
+              const normalizedType = normalizeReactionType(type);
+              const reaction = reactionIcons[normalizedType];
               if (!reaction) return null;
               return (
                 <TabsTrigger 
-                  key={type}
-                  value={type}
+                  key={normalizedType}
+                  value={normalizedType}
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
                 >
                   <span className="mr-1">{reaction.emoji}</span> {count}
@@ -137,7 +139,7 @@ export function ReactionsListDialog({ postId, open, onOpenChange }: ReactionsLis
             ) : (
               <div className="space-y-3">
                 {filteredReactions.map((reaction) => {
-                  const reactionData = reactionIcons[reaction.reaction_type];
+                  const reactionData = reactionIcons[normalizeReactionType(reaction.reaction_type)];
                   return (
                     <div key={`${reaction.user_id}-${reaction.created_at}`} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">

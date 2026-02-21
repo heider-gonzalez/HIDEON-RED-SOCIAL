@@ -91,20 +91,15 @@ export default function PrivacyPolicy() {
                     <span className="font-medium">Contenido que publicas</span>: ideas, proyectos, comentarios, reacciones, guardados y follows.
                   </li>
                   <li>
-                    <span className="font-medium">Archivos y portafolio</span>: foto de perfil, bio y, si eres Premium Pro, CV u otros adjuntos
-                    que decidas subir.
+                    <span className="font-medium">Archivos y portafolio</span>: foto de perfil, bio y archivos que decidas subir.
                   </li>
                   <li>
                     <span className="font-medium">Datos de uso</span>: páginas visitadas dentro de la app, interacciones y tiempo de uso.
                   </li>
                   <li>
-                    <span className="font-medium">Analytics</span>: métricas de vistas de perfil y engagement (algunas funciones son exclusivas
-                    de Premium Pro).
+                    <span className="font-medium">Analytics</span>: métricas de vistas de perfil y engagement.
                   </li>
                 </ul>
-                <p className="text-muted-foreground">
-                  Nota: los datos de pago no los almacenamos nosotros; los procesa MercadoPago.
-                </p>
               </CardContent>
             </Card>
           </section>
@@ -122,12 +117,12 @@ export default function PrivacyPolicy() {
                   <li>Permitir colaboración (equipos, chats, interacciones).</li>
                   <li>Mejorar la experiencia, seguridad y rendimiento de la plataforma.</li>
                   <li>
-                    Entregarte funciones Premium Pro (por ejemplo verificación universitaria, CV adjunto, analytics avanzados).
+                    Entregarte funciones de la plataforma y mantener el servicio funcionando.
                   </li>
                   <li>Responder solicitudes de soporte y gestionar reportes.</li>
                 </ul>
                 <p className="text-muted-foreground">
-                  Ejemplo: si habilitas Premium, podemos mostrarte analytics de tu perfil (vistas, alcance) y de tus proyectos.
+                  Ejemplo: podemos mostrarte métricas básicas de tu perfil (vistas, alcance) y de tus proyectos.
                 </p>
               </CardContent>
             </Card>
@@ -179,9 +174,6 @@ export default function PrivacyPolicy() {
                 <ul className="list-disc pl-5 space-y-1">
                   <li>
                     <span className="font-medium">Supabase</span>: hosting, base de datos y autenticación.
-                  </li>
-                  <li>
-                    <span className="font-medium">MercadoPago</span>: procesamiento de pagos para Premium Pro.
                   </li>
                   <li>
                     <span className="font-medium">Cloudflare</span>: CDN y seguridad (por ejemplo, protección contra ataques).

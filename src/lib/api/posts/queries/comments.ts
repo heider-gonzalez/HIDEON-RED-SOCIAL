@@ -29,8 +29,11 @@ export async function fetchPostComments(postId: string) {
       }));
     }
 
+    const { data: auth } = await supabase.auth.getUser();
+    const currentUserId = (auth as any)?.user?.id || null;
+
     // Fetch comments without reactions embed to avoid ambiguity
-    let { data: comments, error } = await supabase
+    let { data: comments, error } = await (supabase as any)
       .from("comments")
       .select(`
         *,
@@ -55,7 +58,7 @@ export async function fetchPostComments(postId: string) {
     const commentIds = comments.map(c => c.id);
 
     // Fetch reactions for all comments separately
-    const { data: reactions } = await supabase
+    const { data: reactions } = await (supabase as any)
       .from("reactions")
       .select("id, comment_id, reaction_type, user_id")
       .in("comment_id", commentIds);
@@ -71,11 +74,20 @@ export async function fetchPostComments(postId: string) {
       });
     }
 
-    // Attach reactions to comments
-    const commentsWithReactions = comments.map(comment => ({
-      ...comment,
-      reactions: reactionsByComment[comment.id] || []
-    }));
+    // Attach reactions + computed fields to comments
+    const commentsWithReactions = (comments as any[]).map((comment: any) => {
+      const commentReactions = reactionsByComment[comment.id] || [];
+      const userReaction = currentUserId
+        ? (commentReactions.find((r: any) => r.user_id === currentUserId)?.reaction_type ?? null)
+        : null;
+
+      return {
+        ...comment,
+        reactions: commentReactions,
+        likes_count: commentReactions.length,
+        user_reaction: userReaction,
+      };
+    });
 
     return commentsWithReactions;
   } catch (error) {
@@ -89,7 +101,7 @@ export async function createComment(postId: string, content: string, parentId?: 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("comments")
       .insert({
         content,

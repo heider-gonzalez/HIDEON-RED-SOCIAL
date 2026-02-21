@@ -24,7 +24,7 @@ export function NavigationItem({ link, isActive }: { link: NavigationLink; isAct
       }`}
       aria-label={link.label}
     >
-      <Icon strokeWidth={1.5} className="w-6 h-6" />
+      <Icon strokeWidth={isActive ? 2 : 1.5} className="w-6 h-6" />
       {!link.hideLabel && !isMobile && <span className="ml-2">{link.label}</span>}
       {link.badge && (
         <Badge 

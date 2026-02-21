@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { PROJECT_CATEGORIES, type ProjectFormData } from '@/types/project';
 
 interface ProjectBasicInfoStepProps {
@@ -114,6 +115,23 @@ Colaboradores, feedback, validación, difusión, apoyo económico, etc.`}
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      {/* Academic Project Toggle */}
+      <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+        <div className="space-y-1">
+          <Label htmlFor="is_academic" className="text-sm font-medium cursor-pointer">
+            🎓 Proyecto Académico/Universitario
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Marca si este proyecto es parte de una materia, semillero, tesis o investigación académica
+          </p>
+        </div>
+        <Switch
+          id="is_academic"
+          checked={formData.is_academic}
+          onCheckedChange={(checked) => updateFormData({ is_academic: checked })}
+        />
       </div>
 
       {/* Duration */}

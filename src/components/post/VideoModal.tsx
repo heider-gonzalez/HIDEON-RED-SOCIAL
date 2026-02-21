@@ -60,18 +60,7 @@ export function VideoModal({ isOpen, onClose, videoUrl, altText = "Video" }: Vid
         <DialogDescription className="sr-only">
           Reproductor de video con controles de volumen
         </DialogDescription>
-        <div className="p-2 flex items-center justify-between bg-black/10 dark:bg-white/5">
-          <div className="flex gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={toggleMute}
-              className="text-foreground hover:bg-accent hover:text-accent-foreground"
-              aria-label={isMuted ? "Activar sonido" : "Silenciar"}
-            >
-              {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-            </Button>
-          </div>
+        <div className="p-2 flex items-center justify-end bg-black/10 dark:bg-white/5">
           <div className="flex gap-2">
             <Button 
               variant="ghost" 
@@ -103,7 +92,7 @@ export function VideoModal({ isOpen, onClose, videoUrl, altText = "Video" }: Vid
           </div>
         </div>
         <div 
-          className="flex-1 flex items-center justify-center overflow-auto bg-black/80 dark:bg-black/90"
+          className="relative flex-1 flex items-center justify-center overflow-auto bg-black/80 dark:bg-black/90"
           onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
           }}
@@ -118,6 +107,19 @@ export function VideoModal({ isOpen, onClose, videoUrl, altText = "Video" }: Vid
           >
             Tu navegador no soporta el elemento de video.
           </video>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleMute();
+            }}
+            className="absolute bottom-4 right-4 z-20 rounded-full bg-black/50 text-white hover:bg-black/70"
+            aria-label={isMuted ? "Activar sonido" : "Silenciar"}
+          >
+            {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

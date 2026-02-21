@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { ActionsButtons } from "./actions/ActionsButtons";
 import { PostActivitySummary } from "./PostActivitySummary";
@@ -8,6 +7,7 @@ import { Post } from "@/types/post";
 import { Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeReactionType } from "./reactions/ReactionIcons";
 
 interface PostActionsProps {
   post: Post;
@@ -85,11 +85,15 @@ export function PostActions({
   const reactionsByType: Record<string, number> = {};
   if (Array.isArray(post.reactions)) {
     post.reactions.forEach((reaction: any) => {
-      const type = reaction.reaction_type || reaction.type || 'love';
+      const rawType = reaction.reaction_type || reaction.type || 'love';
+      const type = normalizeReactionType(rawType);
       reactionsByType[type] = (reactionsByType[type] || 0) + 1;
     });
   } else if (post.reactions?.by_type) {
-    Object.assign(reactionsByType, post.reactions.by_type);
+    Object.entries(post.reactions.by_type).forEach(([rawType, count]) => {
+      const type = normalizeReactionType(rawType);
+      reactionsByType[type] = (reactionsByType[type] || 0) + (Number(count) || 0);
+    });
   }
 
   if (Object.keys(reactionsByType).length === 0 && (post.reactions_count || 0) > 0) {

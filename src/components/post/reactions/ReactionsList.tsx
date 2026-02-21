@@ -1,5 +1,5 @@
 import React from "react";
-import { reactionIcons, type ReactionType } from "./ReactionIcons";
+import { normalizeReactionType, reactionIcons, type ReactionType } from "./ReactionIcons";
 
 interface ReactionsListProps {
   reactions: Record<string, number>;
@@ -26,14 +26,15 @@ export function ReactionsList({
   return (
     <div className={`flex items-center gap-2 flex-wrap ${className}`}>
       {sortedReactions.map(([type, count]) => {
-        const reaction = reactionIcons[type as ReactionType];
+        const normalizedType = normalizeReactionType(type);
+        const reaction = reactionIcons[normalizedType];
         if (!reaction) return null;
 
         const { icon: Icon, color, label, emoji } = reaction;
 
         return (
           <div
-            key={type}
+            key={normalizedType}
             className="flex items-center gap-1 bg-muted/50 rounded-full px-2 py-1 text-xs"
             title={`${count} ${label}`}
           >

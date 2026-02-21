@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AttachmentPreview } from "@/components/AttachmentPreview";
+import { AttachmentPreview } from "@/components/media/AttachmentPreview";
 import { ImageModal } from "./post/ImageModal";
 import { VideoModal } from "./post/VideoModal";
 import { File as FileIcon, Download } from "lucide-react";

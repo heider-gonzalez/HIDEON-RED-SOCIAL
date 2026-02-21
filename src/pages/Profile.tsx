@@ -7,6 +7,8 @@ import { ProfileLayout } from "@/components/profile/ProfileLayout";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfo } from "@/components/profile/ProfileInfo";
 import { ProfileContent } from "@/components/profile/ProfileContent";
+import { PinnedProjectsSection } from "@/components/profile/PinnedProjectsSection";
+import { ProfileProfessionalCard } from "@/components/profile/ProfileProfessionalCard";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,6 +20,9 @@ export type Profile = {
   bio: string | null;
   avatar_url: string | null;
   cover_url: string | null;
+  intro_audio_url?: string | null;
+  intro_audio_duration_seconds?: number | null;
+  intro_audio_is_active?: boolean;
   location: string | null;
   education: string | null;
   career: string | null;
@@ -49,12 +54,16 @@ export default function Profile() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
+  const debug = import.meta.env.DEV;
 
   const handleProfileUpdate = (updatedProfile: Profile) => {
+    console.log('Updating profile state:', updatedProfile);
     setProfile(updatedProfile);
     // Invalidate profile queries to refresh data on next load
     queryClient.invalidateQueries({ queryKey: ['profile'] });
     queryClient.invalidateQueries({ queryKey: ['profiles'] });
+    // Also invalidate specific profile queries
+    queryClient.invalidateQueries({ queryKey: ['profile', updatedProfile.id] });
   };
 
   useEffect(() => {
@@ -81,7 +90,7 @@ export default function Profile() {
         const [profileResult, followersResult, followingResult, postsResult, heartsResult] = await Promise.all([
           supabase
             .from('profiles')
-            .select('*')
+            .select('id, username, bio, avatar_url, cover_url, intro_audio_url, intro_audio_duration_seconds, intro_audio_is_active, career, semester, birth_date, relationship_status, account_type, company_name, institution_name, academic_role, created_at, updated_at, last_seen, status')
             .eq('id', profileId)
             .single(),
           // Seguidores: usuarios que siguen a este perfil (following_id = profileId)
@@ -108,11 +117,24 @@ export default function Profile() {
         const { count: postsCount, error: postsError } = postsResult;
         const { count: heartsCount, error: heartsError } = heartsResult;
 
+        if (debug) {
+          const profileDataAny = profileData as any;
+          console.log('=== DEPURACIÓN PROFUNDA ===');
+          console.log('Profile ID buscado:', profileId);
+          console.log('Profile Error:', profileError);
+          console.log('Profile Data crudo:', profileData);
+          console.log('Profile Data keys:', profileDataAny ? Object.keys(profileDataAny) : 'No data');
+          console.log('Career en profileData:', profileDataAny?.career ?? 'undefined');
+          console.log('Semester en profileData:', profileDataAny?.semester ?? 'undefined');
+          console.log('Tipo de profileData:', typeof profileData);
+          console.log('========================');
+        }
+
         // Si el perfil no existe, crearlo automáticamente para el usuario actual
         if (profileError && profileError.code === 'PGRST116' && user?.id === profileId) {
           console.log('Profile not found, creating profile for user:', user?.id);
           try {
-            const { data: newProfileData, error: createError } = await supabase
+            const { data: newProfileData, error: createError } = await (supabase as any)
               .from('profiles')
               .insert({
                 id: user.id,
@@ -120,20 +142,14 @@ export default function Profile() {
                 bio: null,
                 avatar_url: user.user_metadata?.avatar_url || null,
                 cover_url: null,
-                location: null,
-                education: null,
                 career: null,
                 semester: null,
                 birth_date: null,
                 relationship_status: null,
-                account_type: 'personal',
+                account_type: 'person',
                 company_name: null,
                 institution_name: null,
                 academic_role: null,
-                followers_count: 0,
-                following_count: 0,
-                posts_count: 0,
-                hearts_count: 0,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
                 last_seen: null,
@@ -153,8 +169,11 @@ export default function Profile() {
                 bio: typedProfileData.bio,
                 avatar_url: typedProfileData.avatar_url,
                 cover_url: typedProfileData.cover_url,
-                location: null,
-                education: null,
+                intro_audio_url: (typedProfileData as any)?.intro_audio_url ?? null,
+                intro_audio_duration_seconds: (typedProfileData as any)?.intro_audio_duration_seconds ?? null,
+                intro_audio_is_active: (typedProfileData as any)?.intro_audio_is_active ?? false,
+                location: null, // Campo no existe en BD
+                education: null, // Campo no existe en BD
                 career: typedProfileData.career,
                 semester: typedProfileData.semester,
                 birth_date: typedProfileData.birth_date,
@@ -233,8 +252,11 @@ export default function Profile() {
           bio: typedProfileData.bio,
           avatar_url: typedProfileData.avatar_url,
           cover_url: typedProfileData.cover_url,
-          location: null,
-          education: null,
+          intro_audio_url: (typedProfileData as any)?.intro_audio_url ?? null,
+          intro_audio_duration_seconds: (typedProfileData as any)?.intro_audio_duration_seconds ?? null,
+          intro_audio_is_active: (typedProfileData as any)?.intro_audio_is_active ?? false,
+          location: null, // Campo no existe en BD, mantener null
+          education: null, // Campo no existe en BD, mantener null
           career: typedProfileData.career,
           semester: typedProfileData.semester,
           birth_date: typedProfileData.birth_date,
@@ -252,6 +274,9 @@ export default function Profile() {
         };
 
         console.log('Profile loaded successfully:', newProfile);
+        console.log('Profile - Career value:', newProfile.career);
+        console.log('Profile - Semester value:', newProfile.semester);
+        console.log('Profile - All profile data:', JSON.stringify(newProfile, null, 2));
         setProfile(newProfile);
       } catch (err) {
         console.error('Error in loadProfile:', err);
@@ -302,6 +327,11 @@ export default function Profile() {
           <div className="space-y-4 px-2 sm:px-4 py-4">
             <div className={`grid grid-cols-1 ${!isMobile ? 'md:grid-cols-3' : ''} gap-4`}>
               <div className={`${!isMobile ? 'md:col-span-1' : ''}`}>
+                <ProfileProfessionalCard profile={profile} isOwner={currentUserId === profile.id} />
+                <PinnedProjectsSection
+                  profileId={profile.id}
+                  isOwner={currentUserId === profile.id}
+                />
                 <ProfileInfo profile={profile} />
               </div>
               <div className={`${!isMobile ? 'md:col-span-2' : ''}`}>

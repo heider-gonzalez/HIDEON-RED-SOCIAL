@@ -2,12 +2,14 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Feed } from "@/components/feed/Feed";
-import { Grid, Lightbulb, FolderOpen, FolderKanban, Briefcase, Award, FileText, ExternalLink } from "lucide-react";
+import { Grid, Lightbulb, FolderKanban, Award, FileText } from "lucide-react";
 import { PinnedProjectsSection } from "./PinnedProjectsSection";
 import { ProfilePortfolio } from "./ProfilePortfolio";
 import { ProfileBadges } from "./ProfileBadges";
 import { ProfileStats } from "./ProfileStats";
 import type { Profile } from "@/pages/Profile";
+import { useSearchParams } from "react-router-dom";
+import { ProfileAchievementsSection } from "./ProfileAchievementsSection";
 
 interface ProfileContentProps {
   profileId: string;
@@ -26,8 +28,23 @@ export function ProfileContent({
   postsCount,
   followingCount
 }: ProfileContentProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const allowedTabs = new Set(["posts", "ideas", "projects", "portfolio", "achievements"]);
+  const tabParam = searchParams.get("tab");
+  const currentTab = tabParam && allowedTabs.has(tabParam) ? tabParam : "posts";
+
   return (
-    <Tabs defaultValue="posts" className="w-full">
+    <Tabs
+      value={currentTab}
+      className="w-full"
+      onValueChange={(value) => {
+        const next = new URLSearchParams(searchParams);
+        if (value === "posts") next.delete("tab");
+        else next.set("tab", value);
+        setSearchParams(next, { replace: true });
+      }}
+    >
       <TabsList className="w-full justify-start bg-transparent border-b rounded-none h-auto p-0">
         <TabsTrigger 
           value="posts" 
@@ -44,27 +61,11 @@ export function ProfileContent({
           <span className="hidden sm:inline">Ideas</span>
         </TabsTrigger>
         <TabsTrigger 
-          value="files"
-          className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
-        >
-          <FolderOpen className="h-4 w-4" />
-          <span className="hidden sm:inline">Archivos</span>
-        </TabsTrigger>
-
-        <TabsTrigger 
           value="projects"
           className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
         >
           <FolderKanban className="h-4 w-4" />
           <span className="hidden sm:inline">Proyectos</span>
-        </TabsTrigger>
-
-        <TabsTrigger 
-          value="services"
-          className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
-        >
-          <Briefcase className="h-4 w-4" />
-          <span className="hidden sm:inline">Servicios</span>
         </TabsTrigger>
 
         <TabsTrigger 
@@ -76,11 +77,11 @@ export function ProfileContent({
         </TabsTrigger>
 
         <TabsTrigger 
-          value="stats"
+          value="achievements"
           className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
         >
           <Award className="h-4 w-4" />
-          <span className="hidden sm:inline">Estadísticas</span>
+          <span className="hidden sm:inline">Logros</span>
         </TabsTrigger>
       </TabsList>
       
@@ -92,30 +93,28 @@ export function ProfileContent({
         <Feed userId={profileId} />
       </TabsContent>
       
-      <TabsContent value="files" className="mt-0">
-        <Card className="p-8">
-          <p className="text-center text-muted-foreground">No hay archivos disponibles</p>
-        </Card>
-      </TabsContent>
-
       <TabsContent value="projects" className="mt-0">
         <PinnedProjectsSection profileId={profileId} isOwner={isOwner} />
-      </TabsContent>
-
-      <TabsContent value="services" className="mt-0">
-        <Card className="p-8">
-          <p className="text-center text-muted-foreground">
-            Próximamente podrás publicar servicios y recibir solicitudes.
-          </p>
-        </Card>
       </TabsContent>
 
       <TabsContent value="portfolio" className="mt-0">
         <ProfilePortfolio profile={profile} isOwner={isOwner} />
       </TabsContent>
 
-      <TabsContent value="stats" className="mt-0">
-        <div className="h-0" />
+      <TabsContent value="achievements" className="mt-0">
+        <div className="space-y-4 py-4">
+          <ProfileAchievementsSection profileId={profileId} isOwner={isOwner} />
+          <ProfileBadges profile={profile} />
+          <ProfileStats
+            profile={profile}
+            followersCount={followersCount}
+            postsCount={postsCount}
+            followingCount={followingCount}
+          />
+          <Card className="p-4">
+            <ProfilePortfolio profile={profile} isOwner={isOwner} />
+          </Card>
+        </div>
       </TabsContent>
     </Tabs>
   );

@@ -116,7 +116,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-screen bg-black flex items-center justify-center snap-start"
+      className="relative w-full h-[100svh] bg-black flex items-center justify-center snap-start"
     >
       {/* Video o mensaje de error */}
       {hasError ? (
@@ -175,14 +175,19 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
         onMuteToggle={toggleMute}
       />
 
-      {/* Indicador de estado de volumen (esquina inferior izquierda) */}
-      <div className="absolute bottom-20 left-4 pointer-events-none">
-        {isMuted ? (
-          <VolumeX className="h-5 w-5 text-white/70" />
-        ) : (
-          <Volume2 className="h-5 w-5 text-white/70" />
-        )}
-      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleMute();
+          showSliderTemporarily();
+        }}
+        className="absolute bottom-20 right-4 z-50 rounded-full bg-black/50 text-white hover:bg-black/70"
+        aria-label={isMuted ? "Activar sonido" : "Silenciar"}
+      >
+        {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+      </Button>
 
       {/* User info and content */}
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">

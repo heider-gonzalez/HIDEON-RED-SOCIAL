@@ -1,12 +1,10 @@
 
-import { useState } from "react";
-// Removed StoryPrivacySettings - stories feature removed
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { PrivacyControls } from "@/components/settings/PrivacyControls";
 
 export default function PrivacySettings() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
@@ -22,14 +20,13 @@ export default function PrivacySettings() {
         <h1 className="text-2xl font-bold">Privacidad</h1>
       </div>
 
-      <div className="space-y-4">
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">
-            Las configuraciones de privacidad han sido simplificadas para mejorar el rendimiento de la app.
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold mb-1">Configuración de privacidad</h2>
+          <p className="text-muted-foreground text-sm mb-4">
+            Controla quién puede ver tu información y cómo se muestra tu perfil.
           </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Toda la información se mantiene privada por defecto.
-          </p>
+          <PrivacyControls />
         </div>
       </div>
     </div>

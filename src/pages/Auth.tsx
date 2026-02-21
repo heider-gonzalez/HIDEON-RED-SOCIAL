@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { SimplifiedRegistration } from "@/components/auth/SimplifiedRegistration";
+import { RegisterForm } from "@/components/auth/RegisterForm";
 import { AcademicOnboardingModal } from "@/components/onboarding/AcademicOnboardingModal";
 import { CheckCircle } from "lucide-react";
 import { RecoveryTokenHandler } from "@/components/auth/RecoveryTokenHandler";
@@ -114,9 +114,13 @@ export default function Auth() {
         {authMode === 'login' ? (
           <LoginForm loading={loading} setLoading={setLoading} />
         ) : (
-          <SimplifiedRegistration 
+          <RegisterForm 
             loading={loading} 
             setLoading={setLoading} 
+            sendVerificationEmail={async (email, username) => {
+              // Implementar lógica de envío si es necesario
+              console.log('Verification email would be sent to:', email, username);
+            }}
           />
         )}
 

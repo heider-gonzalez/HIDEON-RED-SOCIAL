@@ -10,6 +10,7 @@ interface ReactionMenuProps {
   setActiveReaction: (reaction: ReactionType | null) => void;
   onReactionSelected: (type: ReactionType) => void;
   onPointerLeave: () => void;
+  compact?: boolean; // Nueva prop para versión compacta
 }
 
 export function ReactionMenu({
@@ -18,6 +19,7 @@ export function ReactionMenu({
   setActiveReaction,
   onReactionSelected,
   onPointerLeave,
+  compact = false, // Valor por defecto
 }: ReactionMenuProps) {
   if (!show) return null;
 
@@ -28,7 +30,8 @@ export function ReactionMenu({
       className={cn(
         "flex items-center gap-1.5",
         "bg-white dark:bg-gray-900 border border-border rounded-2xl",
-        "px-3 py-2.5 shadow-xl transition-all duration-200",
+        compact ? "px-2 py-1.5" : "px-3 py-2.5",
+        "shadow-xl transition-all duration-200",
         "flex-nowrap min-w-max",
         show ? "opacity-100 scale-100" : "opacity-0 scale-95",
       )}
@@ -41,7 +44,8 @@ export function ReactionMenu({
           <button
             key={type}
             className={cn(
-              "flex flex-col items-center gap-0.5 p-1.5 rounded-lg transition-all duration-150",
+              "flex flex-col items-center gap-0.5 rounded-lg transition-all duration-150",
+              compact ? "p-1" : "p-1.5",
               "hover:bg-muted/50 flex-shrink-0",
               isActive && "bg-muted",
             )}
@@ -51,7 +55,8 @@ export function ReactionMenu({
           >
             <span
               className={cn(
-                "text-2xl leading-none block transition-transform duration-150",
+                "leading-none block transition-transform duration-150",
+                compact ? "text-lg" : "text-2xl",
                 // ESCALA DEL EMOJI al hacer hover o al estar activo.
                 (isActive || activeReaction === type) && "scale-125",
               )}
@@ -59,7 +64,13 @@ export function ReactionMenu({
               {reaction.emoji}
             </span>
 
-            <span className="text-[9px] font-medium text-muted-foreground whitespace-nowrap">{reaction.label}</span>
+            {compact ? (
+              <span className="text-[8px] font-medium text-muted-foreground whitespace-nowrap">
+                {reaction.label.length > 8 ? reaction.label.substring(0, 6) + '...' : reaction.label}
+              </span>
+            ) : (
+              <span className="text-[9px] font-medium text-muted-foreground whitespace-nowrap">{reaction.label}</span>
+            )}
           </button>
         );
       })}

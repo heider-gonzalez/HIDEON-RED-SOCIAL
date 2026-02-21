@@ -10,6 +10,7 @@ import { PostWrapper } from "./post/PostWrapper";
 import { useState, useEffect } from "react";
 import { IdeaContent } from "./post/IdeaContent";
 import { ProjectContent } from "./post/ProjectContent";
+import { ProyectoPostContent } from "./post/ProyectoPostContent";
 import { PostOptionsMenu } from "./post/actions/PostOptionsMenu";
 import { EventCard } from "./events/EventCard";
 import { EventDetailModal } from "./events/EventDetailModal";
@@ -27,6 +28,24 @@ interface PostProps {
   hideComments?: boolean;
   isHidden?: boolean;
   initialShowComments?: boolean;
+}
+
+function ProyectoPostView({ post }: { post: PostType }) {
+  const proyecto = (post as any)?.post_metadata?.proyecto;
+  if (!proyecto) {
+    return (
+      <div className="px-0 md:px-4 pb-2">
+        <PostContent post={post} postId={post.id} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-0 md:px-4 pb-2">
+      <PostContent post={post} postId={post.id} />
+      <ProyectoPostContent profileId={post.user_id} proyecto={proyecto} />
+    </div>
+  );
 }
 
 export function Post({ post, hideComments = false, isHidden = false, initialShowComments = false }: PostProps) {
@@ -87,7 +106,11 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
 
   // Resumen de reacciones (para contadores)
   const reactionsByType: Record<string, number> = {};
-  if (Array.isArray(post.reactions)) {
+  
+  // Priorizar el formato canonical del API (reactions_by_type)
+  if (post.reactions_by_type && typeof post.reactions_by_type === 'object') {
+    Object.assign(reactionsByType, post.reactions_by_type);
+  } else if (Array.isArray(post.reactions)) {
     post.reactions.forEach((reaction: any) => {
       const type = reaction.reaction_type || reaction.type || "love";
       reactionsByType[type] = (reactionsByType[type] || 0) + 1;
@@ -133,6 +156,7 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
   const isEventPost = post.post_type === 'academic_event';
   // Determinar si es un proyecto
   const isProjectPost = post.post_type === 'project';
+  const isProyectoPost = post.post_type === 'proyecto';
   // Determinar si la publicación está fijada
   const isPinned = post.is_pinned;
 
@@ -140,7 +164,6 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
 
   const onCommentsClick = toggleComments;
   const onShareClick = shouldBlockInteractions ? showDemoCta : () => setShowShareModal(true);
-  const onSendClick = shouldBlockInteractions ? showDemoCta : () => setShowSendModal(true);
   const onReactionClick = shouldBlockInteractions ? () => showDemoCta() : onReaction;
 
   useEffect(() => {
@@ -206,6 +229,8 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
         <EventPostView post={post} />
       ) : isProjectPost ? (
         <ProjectPostView post={post} />
+      ) : isProyectoPost ? (
+        <ProyectoPostView post={post} />
       ) : (
         <StandardPostView post={post} />
       )}
@@ -227,7 +252,6 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
         onReaction={onReactionClick}
         onComment={onCommentsClick}
         onShare={onShareClick}
-        onSend={onSendClick}
         commentsExpanded={showComments}
       />
       
@@ -257,6 +281,10 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
         isOpen={showShareModal} 
         onClose={() => setShowShareModal(false)} 
         post={post} 
+        onSend={() => {
+          setShowShareModal(false);
+          setShowSendModal(true);
+        }}
       />
 
       {/* Send Modal */}
@@ -402,9 +430,9 @@ function IdeaPostView({ post }: { post: PostType }) {
   
   return (
     <div className="px-0 md:px-4 pb-2">
+      <PostContent post={post} postId={post.id} />
       <IdeaContent 
         idea={post.idea} 
-        content={post.content || ''}
         postId={post.id}
         postOwnerId={post.user_id}
       />
@@ -418,12 +446,11 @@ function ProjectPostView({ post }: { post: PostType }) {
   
   return (
     <div className="px-0 md:px-4 pb-2">
+      <PostContent post={post} postId={post.id} />
       <ProjectContent 
         idea={post.idea} 
-        content={post.content || ''}
         postId={post.id}
         postOwnerId={post.user_id}
-        mediaUrls={post.media_urls || undefined}
         projectStatus={post.project_status}
         technologies={post.technologies}
         demoUrl={post.demo_url}

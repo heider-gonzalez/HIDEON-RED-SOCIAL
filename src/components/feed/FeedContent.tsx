@@ -3,6 +3,7 @@ import { PeopleYouMayKnow } from "@/components/friends/PeopleYouMayKnow";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Post } from "@/types/post";
 import { memo, useMemo } from "react";
+import { FeedReelsSection } from "./FeedReelsSection";
 
 interface FeedContentProps {
   posts: Post[];
@@ -23,6 +24,7 @@ export const FeedContent = memo(function FeedContent({
   const feedNodes = useMemo(() => {
     const nodes: JSX.Element[] = [];
     let insertedPeople = false;
+    let insertedReels = false;
 
     // Distribute posts with recommendations
     for (let i = 0; i < allPosts.length; i++) {
@@ -38,6 +40,15 @@ export const FeedContent = memo(function FeedContent({
           />
         </div>
       );
+
+      if (!insertedReels && (isMobile ? i === 2 : i === 1)) {
+        insertedReels = true;
+        nodes.push(
+          <div key="feed-reels" className="w-full">
+            <FeedReelsSection posts={allPosts} />
+          </div>
+        );
+      }
 
       // Add People You May Know after 5 posts on desktop, after 6 on mobile
       if (!insertedPeople && (isMobile ? i === 6 : i === 4)) {

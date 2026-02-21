@@ -14,6 +14,7 @@ interface RegisterFormProps {
 }
 
 export function RegisterForm({ loading, setLoading, sendVerificationEmail }: RegisterFormProps) {
+  const [showCareerError, setShowCareerError] = useState(false);
   const {
     email,
     setEmail,
@@ -68,6 +69,7 @@ export function RegisterForm({ loading, setLoading, sendVerificationEmail }: Reg
           semester={semester}
           setSemester={setSemester}
           loading={loading}
+          showCareerError={showCareerError}
         />
         
         <div className="flex items-start space-x-2">
@@ -82,7 +84,7 @@ export function RegisterForm({ loading, setLoading, sendVerificationEmail }: Reg
           </label>
         </div>
         
-        <Button type="submit" className="w-full" disabled={loading || !acceptsPolicy}>
+        <Button type="submit" className="w-full" disabled={loading || !acceptsPolicy || !career.trim()}>
           {loading ? "Cargando..." : "Crear cuenta"}
         </Button>
       </form>

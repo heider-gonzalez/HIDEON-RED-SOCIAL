@@ -7,16 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useChatSystem } from "@/hooks/use-chat-system";
+import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { supabase } from "@/integrations/supabase/client";
-
-interface RecentConversation {
-  id: string;
-  username: string;
-  avatar_url: string | null;
-  last_message: string;
-  unread_count: number;
-  updated_at: string;
-}
 
 interface MessageNotificationButtonProps {
   currentUserId?: string;
@@ -24,70 +16,23 @@ interface MessageNotificationButtonProps {
 }
 
 export function MessageNotificationButton({ currentUserId, className }: MessageNotificationButtonProps) {
-  const { openChat, getTotalUnreadCount } = useChatSystem();
+  const { openChat } = useChatSystem();
   const [showConversations, setShowConversations] = useState(false);
-  const [recentConversations, setRecentConversations] = useState<RecentConversation[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { unreadMessages, loading, getTotalUnreadCount, markAsRead } = useUnreadMessages(currentUserId);
 
   const totalUnread = getTotalUnreadCount();
 
-  const loadRecentConversations = async () => {
-    if (!currentUserId) return;
+  const handleOpenChat = (message: any) => {
+    // Mark messages as read
+    markAsRead(message.sender_id);
     
-    setLoading(true);
-    try {
-      // This is a simplified version - in a real app you'd have a proper messages table
-      // For now, we'll load friends as potential conversations
-      // Get friendships where user is involved
-      const { data: friendships, error } = await supabase
-        .from('friendships')
-        .select('id, user_id, friend_id, status')
-        .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`)
-        .eq('status', 'accepted')
-        .limit(10);
-
-      if (error) throw error;
-
-      // Fetch profiles separately
-      const conversations = await Promise.all((friendships || []).map(async (friendship) => {
-        const friendUserId = friendship.user_id === currentUserId ? friendship.friend_id : friendship.user_id;
-        
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id, username, avatar_url')
-          .eq('id', friendUserId)
-          .single();
-
-        if (!profile) return null;
-
-        return {
-          id: profile.id,
-          username: profile.username || '',
-          avatar_url: profile.avatar_url,
-          last_message: "Toca para iniciar conversación",
-          unread_count: Math.random() > 0.7 ? Math.floor(Math.random() * 3) + 1 : 0,
-          updated_at: new Date().toISOString()
-        };
-      }));
-
-      setRecentConversations(conversations.filter(Boolean) as RecentConversation[]);
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-    } finally {
-      setLoading(false);
-    }
+    // Open chat window
+    openChat(message.sender_id, message.sender_username, message.sender_avatar);
+    setShowConversations(false);
   };
 
   const handleToggleConversations = () => {
-    if (!showConversations && currentUserId) {
-      loadRecentConversations();
-    }
     setShowConversations(!showConversations);
-  };
-
-  const handleOpenChat = (conversation: RecentConversation) => {
-    openChat(conversation.id, conversation.username, conversation.avatar_url);
-    setShowConversations(false);
   };
 
   return (
@@ -154,35 +99,35 @@ export function MessageNotificationButton({ currentUserId, className }: MessageN
                     </div>
                   ))}
                 </div>
-              ) : recentConversations.length > 0 ? (
+              ) : unreadMessages.length > 0 ? (
                 <div className="py-2">
-                  {recentConversations.map((conversation) => (
+                  {unreadMessages.map((message) => (
                     <div
-                      key={conversation.id}
-                      onClick={() => handleOpenChat(conversation)}
+                      key={message.sender_id}
+                      onClick={() => handleOpenChat(message)}
                       className="flex items-center space-x-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors"
                     >
                       <div className="relative">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={conversation.avatar_url || undefined} />
+                          <AvatarImage src={message.sender_avatar || undefined} />
                           <AvatarFallback>
-                            {conversation.username?.[0]?.toUpperCase()}
+                            {message.sender_username?.[0]?.toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        {conversation.unread_count > 0 && (
+                        {message.unread_count > 0 && (
                           <div className="absolute -top-1 -right-1 h-5 w-5 bg-primary rounded-full flex items-center justify-center">
                             <span className="text-xs text-primary-foreground font-medium">
-                              {conversation.unread_count}
+                              {message.unread_count}
                             </span>
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">
-                          {conversation.username}
+                          {message.sender_username}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {conversation.last_message}
+                          {message.message_content}
                         </p>
                       </div>
                     </div>

@@ -5,6 +5,7 @@ import { ReactionType } from "@/types/database/social.types";
 import type { Post } from "@/types/post";
 import { Button } from "@/components/ui/button";
 import { usePostReactions } from "@/hooks/posts/use-post-reactions";
+import { normalizeReactionType } from "./reactions/ReactionIcons";
 
 interface ReactionButtonsProps {
   post: Post;
@@ -17,26 +18,48 @@ export function ReactionButtons({ post, onReaction }: ReactionButtonsProps) {
     return null;
   }
 
+  // Debug: Log raw reactions data
+  console.log('🔍 ReactionButtons Debug - Raw post data:', {
+    postId: post.id,
+    postType: post.post_type,
+    reactions: post.reactions,
+    reactionsLength: Array.isArray(post.reactions) ? post.reactions.length : 0,
+    reactionsType: typeof post.reactions
+  });
+
   // Simplificar el procesamiento de reacciones
   const reactionsByType: Record<string, number> = {};
 
   if (Array.isArray(post.reactions)) {
+    console.log('🔍 Processing array reactions:', post.reactions);
     post.reactions.forEach((reaction: any) => {
       const type = (reaction?.reaction_type || reaction?.type) as ReactionType | undefined;
+      console.log('🔍 Processing reaction:', { reaction, type });
       if (type) {
-        reactionsByType[type] = (reactionsByType[type] || 0) + 1;
+        const normalizedType = normalizeReactionType(type);
+        reactionsByType[normalizedType] = (reactionsByType[normalizedType] || 0) + 1;
       }
     });
   } else if (post.reactions && typeof post.reactions === 'object') {
+    console.log('🔍 Processing object reactions:', post.reactions);
     const byType = (post.reactions as any).by_type;
     if (byType && typeof byType === 'object') {
       Object.entries(byType).forEach(([type, count]) => {
-        reactionsByType[type] = Number(count) || 0;
+        const normalizedType = normalizeReactionType(type);
+        reactionsByType[normalizedType] = (reactionsByType[normalizedType] || 0) + (Number(count) || 0);
       });
     }
   }
 
   const hasReactions = Object.values(reactionsByType).reduce((sum, count) => sum + count, 0) > 0;
+
+  // Debug: Log processed reactions
+  console.log('🔍 ReactionButtons Debug - Processed reactions:', {
+    postId: post.id,
+    reactionsByType,
+    hasReactions,
+    totalReactions: Object.values(reactionsByType).reduce((sum, count) => sum + count, 0)
+  });
 
   return (
     <div className="flex items-center justify-start">

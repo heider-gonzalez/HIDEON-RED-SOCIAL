@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 // Console removal is now handled by Terser configuration
 
@@ -10,13 +9,18 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:10000',
+        changeOrigin: true,
+      },
+    },
     // Headers removidos para evitar conflictos con el servidor de Vite
     // Vite maneja automáticamente los tipos MIME correctos
   },
   plugins: [
     react(),
-    mode === 'development' && componentTagger(),
-  ].filter(Boolean),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -26,7 +30,7 @@ export default defineConfig(({ mode }) => ({
   base: mode === 'production' ? '/' : '/',
   build: {
     // Production optimizations
-    minify: 'esbuild',
+    minify: 'terser',
     sourcemap: false,
     assetsInlineLimit: 0, // Prevent inline assets that can cause MIME issues
     terserOptions: {
@@ -39,33 +43,31 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return;
-
-          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
-            return 'vendor';
-          }
-          if (id.includes('node_modules/react-router') || id.includes('node_modules/@remix-run/router')) {
-            return 'router';
-          }
-
-          if (id.includes('node_modules/@supabase/')) return 'supabase';
-          if (id.includes('node_modules/@tanstack/')) return 'query';
-
-          if (id.includes('node_modules/recharts/') || id.includes('node_modules/d3-')) return 'charts';
-
-          if (id.includes('node_modules/@radix-ui/')) return 'radix';
-          if (id.includes('node_modules/@floating-ui/')) return 'floating';
-          if (id.includes('node_modules/@hookform/')) return 'forms';
-          if (id.includes('node_modules/zod/')) return 'zod';
-
-          if (id.includes('node_modules/framer-motion/')) return 'animations';
-          if (id.includes('node_modules/lucide-react/')) return 'icons';
-
-          if (id.includes('node_modules/date-fns/')) return 'date';
-          if (id.includes('node_modules/lodash-es/')) return 'lodash';
-
-          return 'vendor-other';
+        entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+        chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+        assetFileNames: `assets/[name]-[hash]-${Date.now()}.[ext]`,
+        manualChunks: {
+          // Core vendor libraries
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          
+          // Database and query management
+          supabase: ['@supabase/supabase-js'],
+          query: ['@tanstack/react-query'],
+          
+          // UI component libraries
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-avatar'],
+          radix: ['@radix-ui/react-toast', '@radix-ui/react-tabs', '@radix-ui/react-select'],
+          
+          // Animation and styling
+          animations: ['framer-motion'],
+          icons: ['lucide-react'],
+          
+          // Charts library - heavy, should be separate chunk
+          charts: ['recharts'],
+          
+          // Utilities
+          utils: ['date-fns', 'lodash-es', 'clsx', 'class-variance-authority'],
         },
       },
     },

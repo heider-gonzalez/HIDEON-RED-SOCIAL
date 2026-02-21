@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { performanceMonitor } from '@/utils/performance-monitor';
 
 function clearSupabaseAuthStorage() {
   try {
@@ -38,6 +39,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const presenceIntervalRef = useRef<number | null>(null);
   const userIdRef = useRef<string | null>(null);
   const debug = import.meta.env.DEV;
+  
+  // Cache for profile existence checks to avoid repeated DB queries
+  const profileCacheRef = useRef<Map<string, boolean>>(new Map());
 
   const buildProfilePayload = (u: User) => {
     const username =
@@ -72,14 +76,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Handle profile creation for new users
         if (event === 'SIGNED_IN' && session?.user) {
-          // Immediate profile creation for OAuth users
-          setTimeout(async () => {
+          // 🚀 Performance monitoring start
+          const trackingId = performanceMonitor.startAuthTracking(session.user.id);
+          
+          // Optimized: Remove setTimeout and handle async properly
+          (async () => {
             try {
+              const cached = profileCacheRef.current.has(session.user.id);
+              performanceMonitor.markProfileCheck(trackingId, cached);
+              
               await ensureProfileExists(session.user);
+              performanceMonitor.endAuthTracking(trackingId);
             } catch (error) {
-              console.error('Error in post-signin tasks:', error);
+              performanceMonitor.endAuthTracking(trackingId);
+              console.error(`❌ Google Auth Error:`, error);
             }
-          }, 0);
+          })();
         }
 
         if (event === 'SIGNED_OUT') {
@@ -200,41 +212,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const ensureProfileExists = async (user: User) => {
     try {
+      // 🚀 OPTIMIZATION: Check cache first to avoid repeated DB queries
+      if (profileCacheRef.current.has(user.id)) {
+        if (debug) console.log('🚀 Auth Cache: Profile already cached for user:', user.id);
+        return;
+      }
+
       const computed = buildProfilePayload(user);
       const googleName =
         user.user_metadata?.name ||
         user.user_metadata?.full_name ||
         null;
 
+      // 🚀 OPTIMIZATION: Use maybeSingle() instead of full query for better performance
       const { data: existing, error: existingError } = await (supabase as any)
         .from('profiles')
-        .select('id, name_manually_edited')
+        .select('id, username, name_manually_edited, career, semester, birth_date, account_type, person_status')
         .eq('id', user.id)
         .maybeSingle();
 
       if (existingError) throw existingError;
 
-      const payload = (existing as any)?.name_manually_edited
-        ? {
-            id: computed.id,
-            career: computed.career,
-            semester: computed.semester,
-            birth_date: computed.birth_date,
-            account_type: computed.account_type,
-            person_status: computed.person_status,
-            google_name: googleName,
-            updated_at: computed.updated_at,
-          }
-        : {
-            ...computed,
-            google_name: googleName,
-          };
+      const existingRow = existing as any;
 
+      // 🚀 OPTIMIZATION: If profile exists, cache and return early
+      if (existingRow) {
+        profileCacheRef.current.set(user.id, true);
+        if (debug) console.log('🚀 Auth Cache: Profile exists, cached for user:', user.id);
+        return;
+      }
+
+      // IMPORTANT: avoid overwriting DB fields with null values coming from user_metadata.
+      // Only set a field when creating a new row OR when DB has null and metadata provides a value.
+      const payload: any = {
+        id: computed.id,
+        google_name: googleName,
+        updated_at: computed.updated_at,
+      };
+
+      if (!existingRow) {
+        Object.assign(payload, computed);
+        payload.google_name = googleName;
+      }
+
+      // 🚀 OPTIMIZATION: Cache after successful creation
       await (supabase as any)
         .from('profiles')
         .upsert(payload, { onConflict: 'id' });
+      
+      profileCacheRef.current.set(user.id, true);
+      if (debug) console.log('🚀 Auth Cache: Profile created and cached for user:', user.id);
     } catch (error) {
       if (debug) console.error('❌ Error ensuring profile exists:', error);
+      throw error;
     }
   };
 

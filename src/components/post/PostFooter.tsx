@@ -1,10 +1,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { AttachmentInput } from "@/components/AttachmentInput";
+import { AttachmentInput } from "@/components/media/AttachmentInput";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { BarChartBig, ImageIcon, SparklesIcon, Video, BookOpen } from "lucide-react";
-import { AudioRecorder } from "@/components/AudioRecorder";
+import { AudioRecorder } from "@/components/media/AudioRecorder";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Visibility } from "@/lib/api/posts/types";
 
@@ -20,7 +20,7 @@ interface PostFooterProps {
   onVisibilityChange: (value: Visibility) => void;
   isIdeaMode: boolean;
   isMarketplaceMode: boolean;
-  onAudioRecordingComplete: (audioBlob: Blob) => void;
+  onAudioRecordingComplete: (audioBlob: Blob, durationSeconds?: number) => void;
 }
 
 export function PostFooter({

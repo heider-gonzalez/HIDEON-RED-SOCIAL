@@ -1,6 +1,6 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, ThumbsUp, Send, Repeat2 } from "lucide-react";
+import { MessageCircle, ThumbsUp, Share2 } from "lucide-react";
 import { Post } from "@/types/post";
 import { ReactionType } from "@/types/database/social.types";
 import { reactionIcons } from "../reactions/ReactionIcons";
@@ -14,7 +14,6 @@ interface ActionsButtonsProps {
   userReaction: ReactionType | null;
   onComment: () => void;
   onShare?: () => void;
-  onSend?: () => void;
   compact?: boolean;
   handleReaction?: (type: ReactionType) => void;
   post?: Post;
@@ -31,7 +30,6 @@ export function ActionsButtons({
   postId,
   onComment,
   onShare,
-  onSend,
   compact = false,
   post,
   onReaction,
@@ -41,6 +39,13 @@ export function ActionsButtons({
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const closeReactionsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerMovedRef = useRef(false);
+  const DRAG_THRESHOLD_PX = 10;
+  const lastWheelAtRef = useRef(0);
+  const hoverOpenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const WHEEL_GUARD_MS = 220;
+  const HOVER_OPEN_DELAY_MS = 160;
 
   const handleAuthRequired = useCallback(() => {
     if (!isAuthenticated) {
@@ -84,6 +89,8 @@ export function ActionsButtons({
   });
 
   const handleReactionButtonClick = useCallback(() => {
+    if (pointerMovedRef.current) return;
+    if (Date.now() - lastWheelAtRef.current < WHEEL_GUARD_MS) return;
     const reactionType = userReaction || 'love';
     handleReactionClick(reactionType);
     setAnimatingReaction(reactionType);
@@ -103,6 +110,20 @@ export function ActionsButtons({
       closeReactionsTimeoutRef.current = null;
     }
   }, []);
+
+  const cancelHoverOpen = useCallback(() => {
+    if (hoverOpenTimeoutRef.current) {
+      clearTimeout(hoverOpenTimeoutRef.current);
+      hoverOpenTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      cancelHoverOpen();
+      cancelCloseReactions();
+    };
+  }, [cancelCloseReactions, cancelHoverOpen]);
 
   const scheduleCloseReactions = useCallback(() => {
     cancelCloseReactions();
@@ -125,11 +146,19 @@ export function ActionsButtons({
         {/* Reaction button */}
         <div
           className="relative flex-1"
+          onWheelCapture={() => {
+            lastWheelAtRef.current = Date.now();
+          }}
           onMouseEnter={() => {
+            if (Date.now() - lastWheelAtRef.current < WHEEL_GUARD_MS) return;
             cancelCloseReactions();
-            setShowReactions(true);
+            cancelHoverOpen();
+            hoverOpenTimeoutRef.current = setTimeout(() => {
+              setShowReactions(true);
+            }, HOVER_OPEN_DELAY_MS);
           }}
           onMouseLeave={() => {
+            cancelHoverOpen();
             scheduleCloseReactions();
           }}
         >
@@ -156,16 +185,40 @@ export function ActionsButtons({
             className={`w-full ${baseActionClass} ${hasReacted ? activeClass : inactiveClass}`}
             onClick={handleReactionButtonClick} 
             onPointerDown={(e) => {
+              pointerDownRef.current = { x: e.clientX, y: e.clientY };
+              pointerMovedRef.current = false;
               if (e.pointerType !== 'mouse') {
                 handlePressStart();
               }
             }}
+            onPointerMove={(e) => {
+              const start = pointerDownRef.current;
+              if (!start) return;
+              const dx = e.clientX - start.x;
+              const dy = e.clientY - start.y;
+              if (!pointerMovedRef.current && Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) {
+                pointerMovedRef.current = true;
+                setShowReactions(false);
+                setActiveReaction(null);
+              }
+            }}
             onPointerUp={(e) => {
+              pointerDownRef.current = null;
+              if (pointerMovedRef.current) {
+                pointerMovedRef.current = false;
+                return;
+              }
+              if (Date.now() - lastWheelAtRef.current < WHEEL_GUARD_MS) return;
               if (e.pointerType !== 'mouse') {
                 handlePressEnd();
               }
             }}
             onPointerLeave={(e) => {
+              pointerDownRef.current = null;
+              if (pointerMovedRef.current) {
+                pointerMovedRef.current = false;
+                return;
+              }
               if (e.pointerType !== 'mouse') {
                 handlePressEnd();
               }
@@ -176,10 +229,10 @@ export function ActionsButtons({
                 {reactionData.emoji}
               </span>
             ) : (
-              <ThumbsUp className="h-5 w-5" strokeWidth={1.75} />
+              <ThumbsUp className="h-5 w-5" strokeWidth={hasReacted ? 2 : 1.5} />
             )}
             <span className="text-sm font-medium hidden sm:inline">
-              {hasReacted && reactionData ? reactionData.label : 'Me gusta'}
+              {hasReacted && reactionData ? reactionData.label : reactionIcons.love.label}
             </span>
           </Button>
         </div>
@@ -194,7 +247,7 @@ export function ActionsButtons({
             onComment();
           }}
         >
-          <MessageCircle className="h-5 w-5" strokeWidth={1.75} />
+          <MessageCircle className="h-5 w-5" strokeWidth={1.5} />
           <span className="text-sm font-medium hidden sm:inline">Comentar</span>
         </Button>
         
@@ -208,22 +261,8 @@ export function ActionsButtons({
             onShare?.();
           }}
         >
-          <Repeat2 className="h-5 w-5" strokeWidth={1.75} />
-          <span className="text-sm font-medium hidden sm:inline">Volver a publicar</span>
-        </Button>
-        
-        {/* Send button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`flex-1 ${baseActionClass} ${inactiveClass}`}
-          onClick={() => {
-            if (handleAuthRequired()) return;
-            onSend?.();
-          }}
-        >
-          <Send className="h-5 w-5" strokeWidth={1.75} />
-          <span className="text-sm font-medium hidden sm:inline">Enviar</span>
+          <Share2 className="h-5 w-5" strokeWidth={1.5} />
+          <span className="text-sm font-medium hidden sm:inline">Compartir</span>
         </Button>
       </div>
     </div>

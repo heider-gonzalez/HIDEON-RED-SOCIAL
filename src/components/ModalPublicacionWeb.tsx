@@ -1,7 +1,12 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar } from 'lucide-react';
+import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar, Music, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { AudioPlayer } from '@/components/media/AudioPlayer';
+import { AudioWaveform } from '@/components/media/AudioWaveform';
+import { MusicSelector } from '@/components/media/MusicSelector';
+import { InstagramAudioEditor } from '@/components/media/InstagramAudioEditor';
+import type { MusicTrack } from '@/lib/api/music/music-library';
 import {
   Select,
   SelectContent,
@@ -12,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 import { uploadMediaFile, getMediaType } from "@/lib/api/posts/storage";
+import { uploadAudioFile, getAudioDuration } from "@/lib/api/posts/audio-storage";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { FirstPostBadge } from '@/components/badges/FirstPostBadge';
@@ -29,12 +35,13 @@ interface ModalPublicacionWebProps {
   initialContent?: string;
   initialMedia?: File | null;
   initialMediaType?: string | null;
+  editingProject?: any; // For editing existing projects
 }
 
  async function sendIdeaPublishedAutoMessage(recipientUserId: string) {
    try {
      if (!recipientUserId) return;
-     const { error } = await supabase.rpc('send_idea_published_dm', {
+     const { error } = await (supabase as any).rpc('send_idea_published_dm', {
        recipient_user_id: recipientUserId,
      });
      if (error) {
@@ -56,6 +63,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   initialContent = '',
   initialMedia = null,
   initialMediaType = null,
+  editingProject,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -79,6 +87,32 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [content, setContent] = useState(initialContent);
   const [selectedFiles, setSelectedFiles] = useState<File[]>(initialMedia ? [initialMedia] : []);
   const [filePreviews, setFilePreviews] = useState<string[]>(initialMedia ? [URL.createObjectURL(initialMedia)] : []);
+  
+  // 🎵 Audio support for Instagram-style music posts
+  const [selectedAudioFile, setSelectedAudioFile] = useState<File | null>(null);
+  const [audioPreview, setAudioPreview] = useState<string>('');
+  const [audioMetadata, setAudioMetadata] = useState<{
+    name: string;
+    duration: number;
+    size: number;
+    type: string;
+  } | null>(null);
+
+  const [showMusicSelector, setShowMusicSelector] = useState(false);
+  const [showAudioEditor, setShowAudioEditor] = useState(false);
+  const [selectedAudioTrack, setSelectedAudioTrack] = useState<MusicTrack | null>(null);
+  const [selectedAudioData, setSelectedAudioData] = useState<null | {
+    track: MusicTrack;
+    startTime: number;
+    endTime: number;
+    audioUrl: string;
+    duration: number;
+  }>(null);
+  
+  // 🎵 Audio clip selection state
+  const [audioClipStart, setAudioClipStart] = useState(0);
+  const [audioClipEnd, setAudioClipEnd] = useState(30);
+  const [showWaveformEditor, setShowWaveformEditor] = useState(false);
   const [showPostTypeMenu, setShowPostTypeMenu] = useState(false);
   const [selectedPostType, setSelectedPostType] = useState<PostType>(null);
   const [privacy, setPrivacy] = useState('Público');
@@ -93,7 +127,30 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [projectDescription, setProjectDescription] = useState('');
   const [projectStatus, setProjectStatus] = useState<'idea' | 'in_progress' | 'completed'>('in_progress');
   const [projectTechnologies, setProjectTechnologies] = useState<string[]>([]);
+  const [projectObjectives, setProjectObjectives] = useState('');
+  const [projectTeamMembers, setProjectTeamMembers] = useState<string[]>([]);
+  const [projectGithubUrl, setProjectGithubUrl] = useState('');
+  const [teamMemberInput, setTeamMemberInput] = useState('');
   const [projectDemoUrl, setProjectDemoUrl] = useState('');
+
+  // Populate form fields when editing a project
+  useEffect(() => {
+    if (editingProject) {
+      setProjectTitle(editingProject.title || '');
+      setProjectDescription(editingProject.description || '');
+      setProjectStatus(
+        editingProject.status === 'development' ? 'in_progress' : 
+        editingProject.status === 'completed' ? 'completed' : 'idea'
+      );
+      setProjectTechnologies(editingProject.technologies || []);
+      setProjectObjectives(editingProject.objectives || '');
+      setProjectTeamMembers(editingProject.team_members || []);
+      setProjectGithubUrl(editingProject.github_url || '');
+      setProjectDemoUrl(editingProject.additional_links?.[0] || '');
+      setContent(editingProject.description || '');
+      setSelectedPostType('proyecto');
+    }
+  }, [editingProject]);
   const [techInput, setTechInput] = useState('');
 
   const [pollQuestion, setPollQuestion] = useState('');
@@ -134,7 +191,98 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       setSelectedFiles([]);
       setFilePreviews([]);
     }
-  }, [initialContent, initialMedia]);
+    
+    // 🎵 Reset audio state when modal closes
+    if (!isVisible) {
+      setSelectedAudioFile(null);
+      setAudioPreview('');
+      setAudioMetadata(null);
+      setSelectedAudioTrack(null);
+      setSelectedAudioData(null);
+      setShowWaveformEditor(false);
+      setShowMusicSelector(false);
+      setShowAudioEditor(false);
+    }
+  }, [initialContent, initialMedia, isVisible]);
+
+  const handleMusicTrackSelect = (track: MusicTrack) => {
+    setSelectedAudioFile(null);
+    setAudioPreview('');
+    setAudioMetadata(null);
+    setSelectedAudioTrack(track);
+    setShowMusicSelector(false);
+    setShowAudioEditor(true);
+  };
+
+  const handleAudioDataSelect = (audioData: {
+    track: MusicTrack;
+    startTime: number;
+    endTime: number;
+    audioUrl: string;
+    duration: number;
+  }) => {
+    setSelectedAudioData(audioData);
+    setSelectedAudioTrack(audioData.track);
+    setAudioClipStart(audioData.startTime);
+    setAudioClipEnd(audioData.endTime);
+    setShowAudioEditor(false);
+
+    toast({
+      title: 'Música añadida',
+      description: `${audioData.track.title} • ${audioData.track.artist}`,
+    });
+  };
+
+  // 🎵 Audio file processing function
+  const handleAudioFileSelect = (file: File) => {
+    if (!file.type.startsWith('audio/')) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un archivo de audio válido (MP3, WAV, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Error", 
+        description: "El archivo de audio es demasiado grande. Máximo 10MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedAudioFile(file);
+    setAudioPreview(URL.createObjectURL(file));
+
+    // Get audio metadata
+    const audio = new Audio();
+    audio.addEventListener('loadedmetadata', () => {
+      setAudioMetadata({
+        name: file.name,
+        duration: audio.duration,
+        size: file.size,
+        type: file.type,
+      });
+    });
+    audio.src = URL.createObjectURL(file);
+
+    toast({
+      title: "Audio añadido",
+      description: `${file.name} listo para usar como música de fondo`,
+    });
+  };
+
+  // 🎵 Remove audio file
+  const removeAudioFile = () => {
+    setSelectedAudioFile(null);
+    setAudioPreview('');
+    setAudioMetadata(null);
+    setSelectedAudioTrack(null);
+    setSelectedAudioData(null);
+  };
 
   useEffect(() => {
     if (!isVisible) return;
@@ -148,7 +296,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           return;
         }
 
-        const { data, error } = await supabase.rpc('get_user_groups', {
+        const { data, error } = await (supabase as any).rpc('get_user_groups', {
           user_id_param: user.id,
         });
         if (error) throw error;
@@ -258,7 +406,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       return Boolean(serviceCategory.trim()) && Boolean(content.trim() || selectedFiles.length > 0);
     }
     return Boolean(content.trim() || selectedFiles.length > 0);
-  }, [content, selectedFiles.length, selectedPostType, ideaTitle, ideaDescription, projectTitle, projectDescription, projectStatus, projectTechnologies, projectDemoUrl, pollQuestion, pollOptions, eventTitle, eventDescription, eventStartDate, eventLocationType, eventMeetingLink, eventLocation, serviceCategory]);
+  }, [content, selectedFiles.length, selectedPostType, ideaTitle, ideaDescription, projectTitle, projectDescription, projectStatus, projectTechnologies, projectObjectives, projectTeamMembers, projectGithubUrl, projectDemoUrl, pollQuestion, pollOptions, eventTitle, eventDescription, eventStartDate, eventLocationType, eventMeetingLink, eventLocation, serviceCategory]);
 
   const handlePublish = async () => {
     if (effectivePublishing) return;
@@ -277,11 +425,62 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       }
 
       const mediaUrls: string[] = [];
+      let audioUrl: string | null = null;
+      let audioMetadata: any = null;
 
+      // Upload media files (images/videos)
       if (selectedFiles.length > 0) {
         for (const f of selectedFiles) {
           const url = await uploadMediaFile(f);
           if (url) mediaUrls.push(url);
+        }
+      }
+
+      if (selectedAudioData) {
+        audioUrl = selectedAudioData.audioUrl;
+        audioMetadata = {
+          source: 'music_library',
+          track_id: selectedAudioData.track.id,
+          title: selectedAudioData.track.title,
+          artist: selectedAudioData.track.artist,
+          album: selectedAudioData.track.album || null,
+          cover_art_url: selectedAudioData.track.cover_art_url || null,
+          duration: selectedAudioData.track.duration,
+          startTime: selectedAudioData.startTime,
+          endTime: selectedAudioData.endTime,
+        };
+      } else if (selectedAudioFile) {
+        // Upload audio file if selected
+        try {
+          const duration = await getAudioDuration(selectedAudioFile);
+          const audioResult = await uploadAudioFile(selectedAudioFile, user.id, {
+            name: selectedAudioFile.name,
+            duration: duration,
+            size: selectedAudioFile.size,
+            type: selectedAudioFile.type,
+            startTime: audioClipStart,
+            endTime: audioClipEnd,
+          });
+          
+          audioUrl = audioResult.url;
+          audioMetadata = audioResult.metadata;
+          
+          console.log('✅ Audio uploaded successfully:', {
+            url: audioUrl,
+            metadata: audioMetadata
+          });
+          
+          toast({
+            title: 'Audio subido',
+            description: 'Música de fondo añadida correctamente',
+          });
+        } catch (error) {
+          console.error('❌ Audio upload failed:', error);
+          toast({
+            title: 'Error al subir audio',
+            description: 'No se pudo subir el archivo de audio',
+            variant: 'destructive'
+          });
         }
       }
 
@@ -355,6 +554,12 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         postData.media_urls = mediaUrls;
       }
 
+      // 🎵 Add audio data if uploaded
+      if (audioUrl) {
+        postData.audio_url = audioUrl;
+        postData.audio_metadata = audioMetadata;
+      }
+
       if (selectedPostType === 'idea') {
         postData.post_type = 'idea';
         postData.idea = {
@@ -370,8 +575,10 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           description: projectDescription.trim(),
           category: 'Otro',
           resources_needed: projectTechnologies,
-          expected_impact: '',
+          expected_impact: projectObjectives.trim(),
           demo_url: projectDemoUrl.trim() || null,
+          github_url: projectGithubUrl.trim() || null,
+          team_members: projectTeamMembers,
           participants: [],
         };
         postData.project_status = projectStatus;
@@ -399,20 +606,35 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         postData.post_type = 'regular';
       }
 
-      const { data: insertedPost, error: insertError } = await supabase
-        .from('posts')
-        .insert(postData)
-        .select('id')
-        .maybeSingle();
+      let result;
+      if (editingProject) {
+        // Update existing project
+        const { data: updatedPost, error: updateError } = await (supabase as any)
+          .from('posts')
+          .update(postData)
+          .eq('id', editingProject.id)
+          .select('id')
+          .maybeSingle();
+        
+        if (updateError) throw updateError;
+        result = { data: updatedPost, error: null };
+      } else {
+        // Insert new project
+        result = await (supabase as any)
+          .from('posts')
+          .insert(postData)
+          .select('id')
+          .maybeSingle();
+      }
 
-      let insertedPostId = insertedPost?.id as string | undefined;
+      let insertedPostId = (result.data as any)?.id as string | undefined;
 
-      if (insertError) {
+      if (result.error) {
         // Ignore conflict errors (duplicate key) but log for debugging
-        if (insertError.code === '23505' || insertError.message?.includes('duplicate key')) {
-          console.warn('Post insert conflict (likely duplicate), ignoring:', insertError);
+        if (result.error.code === '23505' || result.error.message?.includes('duplicate key')) {
+          console.warn('Post insert conflict (likely duplicate), ignoring:', result.error);
           // Try to fetch existing post by user+content to continue flow
-          const { data: existingPost } = await supabase
+          const { data: existingPost } = await (supabase as any)
             .from('posts')
             .select('id')
             .eq('user_id', user.id)
@@ -420,13 +642,13 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
             .maybeSingle();
           if (existingPost?.id) {
             // Use existing post ID for downstream logic
-            insertedPostId = existingPost.id;
+            insertedPostId = (existingPost as any).id;
           } else {
             // If we can't find the post, still throw to surface the error
-            throw insertError;
+            throw result.error;
           }
         } else {
-          throw insertError;
+          throw result.error;
         }
       }
 
@@ -472,7 +694,10 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       queryClient.invalidateQueries({ queryKey: ['posts', undefined, undefined, undefined, 'infinite'] });
 
       onPublish?.(content, selectedPostType, selectedFiles[0] || null);
-      toast({ title: 'Publicado', description: 'Tu publicación se creó correctamente' });
+      toast({ 
+        title: editingProject ? 'Proyecto actualizado' : 'Publicado', 
+        description: editingProject ? 'Tu proyecto se actualizó correctamente' : 'Tu publicación se creó correctamente' 
+      });
       onClose();
     } catch (error: any) {
       console.error('Error publishing from ModalPublicacionWeb:', error);
@@ -630,7 +855,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               </button>
               
               {showPrivacyMenu && (
-                <div className="absolute left-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800">
+                <div className="absolute left-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 z-50">
                   <button
                     onClick={() => handlePrivacySelect('Público')}
                     className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
@@ -674,7 +899,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 disabled={isLoadingCompanies || selectedPostType === 'evento'}
               >
                 <SelectTrigger className="h-9 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                  <SelectValue placeholder="Mi perfil" />
+                  <SelectValue placeholder="Mi perfil / Empresa" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="profile">Mi perfil</SelectItem>
@@ -695,10 +920,10 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 disabled={isLoadingGroups || userGroups.length === 0 || Boolean(selectedCompanyId)}
               >
                 <SelectTrigger className="h-9 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
-                  <SelectValue placeholder="Mi perfil" />
+                  <SelectValue placeholder="Grupo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="profile">Mi perfil</SelectItem>
+                  <SelectItem value="profile">Sin grupo</SelectItem>
                   {userGroups.map((g) => (
                     <SelectItem key={g.group_id} value={g.group_id}>
                       {g.group_name}
@@ -729,9 +954,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Publicando...
+                  {editingProject ? 'Actualizando...' : 'Publicando...'}
                 </span>
-              ) : 'Publicar'}
+              ) : (editingProject ? 'Actualizar' : 'Publicar')}
             </Button>
           </div>
         </div>
@@ -827,6 +1052,20 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 </Select>
               </div>
               
+              {/* Campo Objetivos del proyecto */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Objetivos del proyecto:
+                </label>
+                <textarea
+                  value={projectObjectives}
+                  onChange={(e) => setProjectObjectives(e.target.value)}
+                  placeholder="¿Cuáles son los objetivos principales de este proyecto? ¿Qué impacto esperas lograr?"
+                  rows={3}
+                  className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+              </div>
+              
               {/* Campo Tecnologías */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -888,6 +1127,83 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     Máximo 8 tecnologías
                   </p>
                 )}
+              </div>
+              
+              {/* Campo Miembros del equipo */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Miembros del equipo (opcional):
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {projectTeamMembers.map((member, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm"
+                    >
+                      {member}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProjectTeamMembers(prev => prev.filter((_, i) => i !== index));
+                        }}
+                        className="ml-1 text-green-600 hover:text-green-800 dark:text-green-300 dark:hover:text-green-100"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={teamMemberInput}
+                    onChange={(e) => setTeamMemberInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && teamMemberInput.trim()) {
+                        e.preventDefault();
+                        if (projectTeamMembers.length < 5 && !projectTeamMembers.includes(teamMemberInput.trim())) {
+                          setProjectTeamMembers(prev => [...prev, teamMemberInput.trim()]);
+                          setTeamMemberInput('');
+                        }
+                      }
+                    }}
+                    placeholder="Ej: Ana García, Carlos Rodríguez..."
+                    className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9"
+                    onClick={() => {
+                      if (teamMemberInput.trim() && projectTeamMembers.length < 5 && !projectTeamMembers.includes(teamMemberInput.trim())) {
+                        setProjectTeamMembers(prev => [...prev, teamMemberInput.trim()]);
+                        setTeamMemberInput('');
+                      }
+                    }}
+                    disabled={!teamMemberInput.trim() || projectTeamMembers.length >= 5}
+                  >
+                    Agregar
+                  </Button>
+                </div>
+                {projectTeamMembers.length >= 5 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Máximo 5 miembros
+                  </p>
+                )}
+              </div>
+              
+              {/* Campo URL GitHub */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  URL de GitHub (opcional):
+                </label>
+                <input
+                  type="url"
+                  value={projectGithubUrl}
+                  onChange={(e) => setProjectGithubUrl(e.target.value)}
+                  placeholder="https://github.com/usuario/proyecto"
+                  className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                />
               </div>
               
               {/* Campo URL Demo */}
@@ -1108,6 +1424,108 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               </div>
             </div>
           )}
+
+          {/* 🎵 Audio File Section */}
+          {(selectedAudioFile || selectedAudioData) && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">
+                  🎵 Música de fondo
+                </span>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (selectedAudioData && selectedAudioData.track) {
+                        setSelectedAudioTrack(selectedAudioData.track);
+                        setShowAudioEditor(true);
+                        return;
+                      }
+                      setShowWaveformEditor(!showWaveformEditor);
+                    }}
+                    className="text-xs h-7"
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    {selectedAudioData ? 'Editar' : (showWaveformEditor ? 'Ocultar editor' : 'Recortar audio')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeAudioFile}
+                    className="text-xs h-7"
+                  >
+                    Eliminar audio
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Waveform Editor */}
+              {showWaveformEditor && selectedAudioFile && (
+                <div className="mb-4">
+                  <AudioWaveform
+                    audioFile={selectedAudioFile}
+                    startTime={audioClipStart}
+                    endTime={audioClipEnd}
+                    onClipSelect={(start, end) => {
+                      setAudioClipStart(start);
+                      setAudioClipEnd(end);
+                    }}
+                    maxDuration={60}
+                  />
+                </div>
+              )}
+              
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Music className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {selectedAudioData
+                        ? `${selectedAudioData.track.title} • ${selectedAudioData.track.artist}`
+                        : (selectedAudioFile ? selectedAudioFile.name : '')}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {selectedAudioData
+                        ? `Clip: ${Math.floor(selectedAudioData.startTime)}s - ${Math.floor(selectedAudioData.endTime)}s (${Math.floor(selectedAudioData.endTime - selectedAudioData.startTime)}s)`
+                        : (audioMetadata && selectedAudioFile
+                          ? `Clip: ${Math.floor(audioClipStart)}s - ${Math.floor(audioClipEnd)}s (${Math.floor(audioClipEnd - audioClipStart)}s) • ${(selectedAudioFile.size / 1024 / 1024).toFixed(1)} MB`
+                          : 'Procesando...')
+                      }
+                    </div>
+                  </div>
+                </div>
+                
+                {(audioPreview || selectedAudioData?.audioUrl) && (
+                  <div className="mt-3">
+                    <AudioPlayer
+                      audioUrl={selectedAudioData?.audioUrl || audioPreview}
+                      metadata={selectedAudioData
+                        ? {
+                            name: selectedAudioData.track.title,
+                            duration: selectedAudioData.endTime - selectedAudioData.startTime,
+                            size: 0,
+                            type: 'audio/mpeg',
+                          }
+                        : (audioMetadata
+                          ? {
+                              ...audioMetadata,
+                              duration: audioClipEnd - audioClipStart,
+                            }
+                          : undefined)
+                      }
+                      autoPlay={false}
+                      loop={false}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bottom Bar */}
@@ -1125,6 +1543,17 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
             />
             <ImageIcon className="h-5 w-5" />
           </label>
+          
+          {/* 🎵 Audio Upload Button */}
+          <button
+            type="button"
+            onClick={() => setShowMusicSelector(true)}
+            className={cn(
+              "cursor-pointer rounded-full p-2 text-purple-500 hover:bg-gray-100 dark:hover:bg-gray-700 ml-1"
+            )}
+          >
+            <Music className="h-5 w-5" />
+          </button>
           
           <div className="flex-1"></div>
           
@@ -1195,6 +1624,30 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         </div>
         </form>
       </div>
+
+      {showMusicSelector && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <MusicSelector
+              onTrackSelect={handleMusicTrackSelect}
+              onClose={() => setShowMusicSelector(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showAudioEditor && selectedAudioTrack && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <InstagramAudioEditor
+              track={selectedAudioTrack}
+              videoDuration={30}
+              onAudioSelect={handleAudioDataSelect}
+              onClose={() => setShowAudioEditor(false)}
+            />
+          </div>
+        </div>
+      )}
       
       {/* First Post Badge Modal */}
       <FirstPostBadge 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { reactionIcons } from "./ReactionIcons";
+import { normalizeReactionType, reactionIcons } from "./ReactionIcons";
 import { ReactionsListDialog } from "./ReactionsListDialog";
 
 interface ReactionSummaryProps {
@@ -24,7 +24,8 @@ export function ReactionSummary({ reactions, postId }: ReactionSummaryProps) {
 
   // Obtener los emojis de las reacciones más populares (máximo 5)
   const topReactionEmojis = sortedReactions.slice(0, 5).map(([type]) => {
-    const reaction = reactionIcons[type as keyof typeof reactionIcons];
+    const normalizedType = normalizeReactionType(type);
+    const reaction = reactionIcons[normalizedType];
     return reaction?.emoji || "❤️";
   });
 

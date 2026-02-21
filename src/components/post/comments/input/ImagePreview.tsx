@@ -1,5 +1,5 @@
 
-import { AttachmentPreview } from "@/components/AttachmentPreview";
+import { AttachmentPreview } from "@/components/media/AttachmentPreview";
 
 interface ImagePreviewProps {
   imagePreview: string | null;

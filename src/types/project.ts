@@ -15,6 +15,7 @@ export interface Project {
   documentation_url?: string;
   is_open_source: boolean;
   seeking_collaborators: boolean;
+  is_academic?: boolean;
   author_id: string;
   author?: {
     id: string;
@@ -34,6 +35,8 @@ export interface Project {
   likes_count: number;
   comments_count: number;
   views_count: number;
+  user_reaction?: string | null;
+  reactions?: any[]; 
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +54,7 @@ export interface ProjectFormData {
   category: string;
   professor: string;
   duration: string;
+  is_academic: boolean;
   
   // Step 2: Technical Details
   technologies: string[];

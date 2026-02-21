@@ -3,7 +3,6 @@ import {
   Bell,
   Bookmark,
   Briefcase,
-  BarChart3,
   Compass,
   Home,
   MessageCircle,
@@ -29,23 +28,14 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   const { unreadNotifications, newPosts, handleHomeClick, handleNotificationClick } = useNavigation();
   const [userProfile, setUserProfile] = useState<any>(null);
 
-  const iconStyles: Record<string, { bg: string; fg: string; activeBg: string; activeFg: string }> = {
-    "/followers": { bg: "bg-sky-100 dark:bg-sky-900/25", fg: "text-sky-600 dark:text-sky-300", activeBg: "bg-sky-200 dark:bg-sky-900/45", activeFg: "text-sky-700 dark:text-sky-200" },
-    "/messages": { bg: "bg-indigo-100 dark:bg-indigo-900/25", fg: "text-indigo-600 dark:text-indigo-300", activeBg: "bg-indigo-200 dark:bg-indigo-900/45", activeFg: "text-indigo-700 dark:text-indigo-200" },
-    "/notifications": { bg: "bg-amber-100 dark:bg-amber-900/25", fg: "text-amber-600 dark:text-amber-300", activeBg: "bg-amber-200 dark:bg-amber-900/45", activeFg: "text-amber-700 dark:text-amber-200" },
-    "/friends": { bg: "bg-teal-100 dark:bg-teal-900/25", fg: "text-teal-600 dark:text-teal-300", activeBg: "bg-teal-200 dark:bg-teal-900/45", activeFg: "text-teal-700 dark:text-teal-200" },
-    "/": { bg: "bg-blue-100 dark:bg-blue-900/25", fg: "text-blue-600 dark:text-blue-300", activeBg: "bg-blue-200 dark:bg-blue-900/45", activeFg: "text-blue-700 dark:text-blue-200" },
-    "/home": { bg: "bg-blue-100 dark:bg-blue-900/25", fg: "text-blue-600 dark:text-blue-300", activeBg: "bg-blue-200 dark:bg-blue-900/45", activeFg: "text-blue-700 dark:text-blue-200" },
-    "/explore": { bg: "bg-violet-100 dark:bg-violet-900/25", fg: "text-violet-600 dark:text-violet-300", activeBg: "bg-violet-200 dark:bg-violet-900/45", activeFg: "text-violet-700 dark:text-violet-200" },
-    "/groups": { bg: "bg-emerald-100 dark:bg-emerald-900/25", fg: "text-emerald-600 dark:text-emerald-300", activeBg: "bg-emerald-200 dark:bg-emerald-900/45", activeFg: "text-emerald-700 dark:text-emerald-200" },
-    "/projects": { bg: "bg-cyan-100 dark:bg-cyan-900/25", fg: "text-cyan-600 dark:text-cyan-300", activeBg: "bg-cyan-200 dark:bg-cyan-900/45", activeFg: "text-cyan-700 dark:text-cyan-200" },
-    "/analytics": { bg: "bg-rose-100 dark:bg-rose-900/25", fg: "text-rose-600 dark:text-rose-300", activeBg: "bg-rose-200 dark:bg-rose-900/45", activeFg: "text-rose-700 dark:text-rose-200" },
-    "/reels": { bg: "bg-fuchsia-100 dark:bg-fuchsia-900/25", fg: "text-fuchsia-600 dark:text-fuchsia-300", activeBg: "bg-fuchsia-200 dark:bg-fuchsia-900/45", activeFg: "text-fuchsia-700 dark:text-fuchsia-200" },
-    "/saved": { bg: "bg-pink-100 dark:bg-pink-900/25", fg: "text-pink-600 dark:text-pink-300", activeBg: "bg-pink-200 dark:bg-pink-900/45", activeFg: "text-pink-700 dark:text-pink-200" },
-    "/groups/create": { bg: "bg-slate-100 dark:bg-slate-800/50", fg: "text-slate-700 dark:text-slate-200", activeBg: "bg-slate-200 dark:bg-slate-700/60", activeFg: "text-slate-800 dark:text-slate-100" },
-  };
+  const iconStyles: Record<string, { bg: string; fg: string; activeBg: string; activeFg: string }> = {};
 
-  const defaultIconStyle = { bg: "bg-muted", fg: "text-[#65676B] dark:text-slate-300", activeBg: "bg-primary/10", activeFg: "text-primary" };
+  const defaultIconStyle = {
+    bg: "bg-transparent",
+    fg: "text-muted-foreground",
+    activeBg: "bg-primary",
+    activeFg: "text-primary-foreground",
+  };
 
   const getIconStyle = (path: string) => iconStyles[path] ?? defaultIconStyle;
 
@@ -61,7 +51,6 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
     { icon: Compass, label: "Explorar", path: "/explore" },
     { icon: Users, label: "Grupos", path: "/groups" },
     { icon: Briefcase, label: "Proyectos", path: "/projects" },
-    { icon: BarChart3, label: "Analytics Pro", path: "/analytics" },
     { icon: Video, label: "Reels", path: "/reels" },
     { icon: Bookmark, label: "Guardados", path: "/saved" },
   ];
@@ -124,7 +113,7 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
               {({ isActive }) => {
                 const style = getIconStyle(item.path);
                 const iconWrapperClassName = cn(
-                  "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ease-out shadow-sm ring-1 ring-black/5 dark:ring-white/10 group-hover:shadow-md group-hover:scale-[1.03] group-hover:brightness-95 group-active:scale-[0.99]",
+                  "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ease-out ring-1 ring-border/60 dark:ring-border/50 group-hover:shadow-sm group-hover:scale-[1.03] group-active:scale-[0.99]",
                   isActive ? style.activeBg : style.bg
                 );
                 const iconClassName = cn(
@@ -175,7 +164,7 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
             {({ isActive }) => {
               const style = getIconStyle(item.path);
               const iconWrapperClassName = cn(
-                "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ease-out shadow-sm ring-1 ring-black/5 dark:ring-white/10 group-hover:shadow-md group-hover:scale-[1.03] group-hover:brightness-95 group-active:scale-[0.99]",
+                "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ease-out ring-1 ring-border/60 dark:ring-border/50 group-hover:shadow-sm group-hover:scale-[1.03] group-active:scale-[0.99]",
                 isActive ? style.activeBg : style.bg
               );
               const iconClassName = cn(
@@ -231,7 +220,7 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
               <>
                 <span
                   className={cn(
-                    "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ease-out shadow-sm ring-1 ring-black/5 dark:ring-white/10 group-hover:shadow-md group-hover:scale-[1.03] group-hover:brightness-95 group-active:scale-[0.99]",
+                    "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ease-out ring-1 ring-border/60 dark:ring-border/50 group-hover:shadow-sm group-hover:scale-[1.03] group-active:scale-[0.99]",
                     isActive ? style.activeBg : style.bg
                   )}
                 >

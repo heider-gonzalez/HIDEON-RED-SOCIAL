@@ -11,6 +11,7 @@ const initialFormData: ProjectFormData = {
   category: '',
   professor: '',
   duration: '',
+  is_academic: false,
   
   // Step 2: Technical Details
   technologies: [],

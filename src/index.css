@@ -5,6 +5,14 @@
 
 @layer base {
   :root {
+    /* Safe area para dispositivos móviles - detecta automáticamente el tamaño del reloj */
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    
     /* H Social - Blanco, Azul y Negro */
     --background: 210 20% 98%; /* Blanco puro #FFFFFF */
     --foreground: 222 47% 11%; /* Negro puro #000000 */
@@ -43,6 +51,22 @@
     --facebook-text-secondary: 215 16% 35%; /* #65676B */
     --facebook-hover: 210 20% 96%; /* #F0F2F5 */
     --facebook-active: 210 20% 94%; /* #E4E6EA */
+  }
+
+  body {
+    padding-top: var(--safe-area-inset-top);
+    padding-bottom: var(--safe-area-inset-bottom);
+    padding-left: var(--safe-area-inset-left);
+    padding-right: var(--safe-area-inset-right);
+    /* Esto asegura que el fondo ocupe toda la pantalla */
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    margin: 0;
+    overflow-x: hidden;
+  }
+
+  html {
+    height: -webkit-fill-available;
   }
 
 @keyframes reaction-funny-pop {
@@ -156,6 +180,44 @@
   
   body {
     @apply bg-background text-foreground antialiased;
+    /* En Chrome esto será 0px. En tu App será el tamaño del reloj y la barra inferior */
+    padding-top: var(--sat) !important;
+    padding-bottom: var(--sab) !important;
+    
+    /* Esto asegura que el fondo blanco cubra todo el espacio */
+    background-color: #ffffff;
+    min-height: 100vh;
+  }
+  
+  /* Safe area para dispositivos móviles (status bar, notch, etc.) */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  .safe-area-all {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  
+  /* Si tienes una barra de navegación fija arriba (header), también dale el padding */
+  header, .navbar-fixed-top {
+    padding-top: var(--safe-area-inset-top) !important;
+  }
+  
+  /* Si tienes un menú fijo abajo (el de Inicio, Grupos, etc.) */
+  .footer, .bottom-nav {
+    padding-bottom: var(--sab) !important;
   }
   
   /* Bloquear selección de texto excepto en el contenido de posts */

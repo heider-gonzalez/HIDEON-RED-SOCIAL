@@ -22,6 +22,15 @@ export function useRegister(setLoading: (loading: boolean) => void, sendVerifica
     setLoading(true);
 
     try {
+      if (!career.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Carrera requerida",
+          description: "Por favor escribe tu carrera o profesión para continuar.",
+        });
+        return;
+      }
+
       // Registro simplificado - solo campos básicos
       const { error, data } = await supabase.auth.signUp({
         email,
@@ -32,7 +41,7 @@ export function useRegister(setLoading: (loading: boolean) => void, sendVerifica
             account_type: accountType,
             person_status: accountType === 'person' ? (personStatus || null) : null,
             company_name: accountType === 'company' ? (companyName || username || null) : null,
-            career: career || null,
+            career: career.trim(),
             semester: semester || null,
             gender: gender || null,
             institution_name: institutionName || null,
@@ -51,7 +60,7 @@ export function useRegister(setLoading: (loading: boolean) => void, sendVerifica
           username,
           account_type: accountType,
           person_status: accountType === 'person' ? (personStatus || null) : null,
-          career: career || null,
+          career: career.trim(),
           semester: semester || null,
           gender: gender || null,
           institution_name: institutionName || null,

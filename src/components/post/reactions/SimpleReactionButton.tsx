@@ -1,7 +1,7 @@
-import { Handshake, Lightbulb, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SimpleReactionType } from "@/types/database/reaction.types";
 import { cn } from "@/lib/utils";
+import { reactionIcons, type ReactionType } from "./ReactionIcons";
 
 interface SimpleReactionButtonProps {
   postId: string;
@@ -10,11 +10,7 @@ interface SimpleReactionButtonProps {
   onReactionClick: (type: SimpleReactionType) => void;
 }
 
-const reactionConfig = {
-  love: { icon: ThumbsUp, label: "Me gusta", color: "text-blue-600" },
-  awesome: { icon: Lightbulb, label: "Interesante", color: "text-amber-600" },
-  incredible: { icon: Handshake, label: "Apoyo", color: "text-emerald-600" },
-};
+const reactionTypes: ReactionType[] = ["love", "awesome", "incredible", "funny", "surprised"];
 
 export function SimpleReactionButton({
   postId,
@@ -25,15 +21,17 @@ export function SimpleReactionButton({
   
   const totalReactions = Object.values(reactions).reduce((sum, count) => sum + count, 0);
   
-  const CurrentIcon = userReaction ? reactionConfig[userReaction].icon : ThumbsUp;
-  const currentColor = userReaction ? reactionConfig[userReaction].color : "";
+  const currentReactionType = (userReaction || "love") as ReactionType;
+  const currentReaction = reactionIcons[currentReactionType];
+  const CurrentIcon = currentReaction.icon;
+  const currentColor = userReaction ? currentReaction.color : "";
 
   return (
     <div className="flex items-center gap-2">
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => onReactionClick(userReaction === 'love' ? 'love' : 'love')}
+        onClick={() => onReactionClick((userReaction || 'love') as SimpleReactionType)}
         className={cn(
           "gap-2 hover:bg-accent",
           userReaction && currentColor
@@ -47,14 +45,14 @@ export function SimpleReactionButton({
 
       {/* Quick reaction options on hover */}
       <div className="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {(Object.keys(reactionConfig) as SimpleReactionType[]).map((type) => {
-          const { icon: Icon, label, color } = reactionConfig[type];
+        {reactionTypes.map((type) => {
+          const { icon: Icon, label, color } = reactionIcons[type];
           return (
             <Button
               key={type}
               variant="ghost"
               size="sm"
-              onClick={() => onReactionClick(type)}
+              onClick={() => onReactionClick(type as SimpleReactionType)}
               className={cn("h-8 w-8 p-0", userReaction === type && color)}
               title={label}
             >

@@ -20,6 +20,13 @@ export interface Post {
   media_url?: string | null;
   media_urls?: string[] | null; // Array de URLs para múltiples archivos
   media_type?: string | null;
+  audio_url?: string | null; // 🎵 Audio file URL for background music
+  audio_metadata?: {
+    name: string;
+    duration: number; // in seconds
+    size: number; // in bytes
+    type: string; // audio/mp3, audio/wav, etc.
+  } | null; // 🎵 Audio metadata for Instagram-style music posts
   service_category?: string | null;
   visibility: 'public' | 'friends' | 'private' | 'incognito';
   created_at: string;
@@ -38,6 +45,8 @@ export interface Post {
   marketplace?: Marketplace | null;
   event?: Event | null;
   post_type?: string | null;
+  post_metadata?: any;
+  project_showcases?: any[];
   is_pinned?: boolean | null;
   reactions?: ReactionSummary | any[]; // Allow both formats for flexibility
   reactions_count?: number;
@@ -175,6 +184,7 @@ export interface Comment {
   user_reaction?: string | null;
   likes_count?: number; // Add missing property
   replies?: Comment[]; // Add missing property for nested comments
+  reactions_by_type?: Record<string, number>; // Add reactions summary for comments
 }
 
 export interface CreatePostData {

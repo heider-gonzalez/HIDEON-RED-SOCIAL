@@ -21,11 +21,11 @@ export function FormValidationMessage({
       case "error":
         return <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />;
       case "success":
-        return <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />;
+        return <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />;
       case "warning":
-        return <AlertCircle className="h-4 w-4 text-yellow-500 flex-shrink-0" />;
+        return <AlertCircle className="h-4 w-4 text-primary flex-shrink-0" />;
       case "info":
-        return <AlertCircle className="h-4 w-4 text-blue-500 flex-shrink-0" />;
+        return <AlertCircle className="h-4 w-4 text-primary flex-shrink-0" />;
       default:
         return null;
     }

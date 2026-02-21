@@ -13,7 +13,12 @@ import { MenuOptions } from "./MenuOptions";
 import { useUserProfile } from "./hooks/useUserProfile";
 import { UserProfileDropdown } from "./UserProfileDropdown";
 
-export function UserMenu() {
+interface UserMenuProps {
+  triggerClassName?: string;
+  iconClassName?: string;
+}
+
+export function UserMenu({ triggerClassName, iconClassName }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const { username, avatarUrl, userId, isLoading } = useUserProfile();
   const { toast } = useToast();
@@ -55,9 +60,9 @@ export function UserMenu() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-full"
+          className={triggerClassName ?? "h-8 w-8 rounded-full"}
         >
-          <Menu className="h-4 w-4" />
+          <Menu className={iconClassName ?? "h-4 w-4"} />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="p-0 w-full sm:max-w-lg bg-background">

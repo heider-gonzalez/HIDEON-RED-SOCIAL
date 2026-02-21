@@ -39,8 +39,6 @@ const GroupDetail = React.lazy(() => import("@/pages/GroupDetail"));
 const CreateGroup = React.lazy(() => import("@/pages/CreateGroup"));
 const Companies = React.lazy(() => import("@/pages/Companies"));
 const CompanyDetail = React.lazy(() => import("@/pages/CompanyDetail"));
-const Pricing = React.lazy(() => import("@/pages/Pricing"));
-const DebugPremium = React.lazy(() => import("@/pages/DebugPremium"));
 const TermsOfService = React.lazy(() => import("@/pages/TermsOfService"));
 const PrivacyPolicy = React.lazy(() => import("@/pages/PrivacyPolicy"));
 const Settings = React.lazy(() => import("@/pages/settings/Settings"));
@@ -55,7 +53,6 @@ const NotFound = React.lazy(() => import("@/pages/NotFound"));
 const IdeaParticipants = React.lazy(() => import("@/pages/IdeaParticipants"));
 const IdeaChat = React.lazy(() => import("@/pages/IdeaChat"));
 const ProjectDetail = React.lazy(() => import("@/pages/ProjectDetail"));
-const Analytics = React.lazy(() => import("@/pages/Analytics"));
 const PostDetail = React.lazy(() => import("@/pages/PostDetail"));
 
 const queryClient = new QueryClient({
@@ -190,21 +187,6 @@ const App = () => {
                 </AuthGuard>
               } />
 
-              <Route path="/pricing" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Pricing />
-                  </Suspense>
-                </AuthGuard>
-              } />
-
-              <Route path="/analytics" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Analytics />
-                  </Suspense>
-                </AuthGuard>
-              } />
 
               <Route
                 path="/terms"
@@ -223,14 +205,6 @@ const App = () => {
                   </Suspense>
                 }
               />
-
-              <Route path="/debug-premium" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <DebugPremium />
-                  </Suspense>
-                </AuthGuard>
-              } />
 
               <Route path="/groups" element={
                 <AuthGuard>

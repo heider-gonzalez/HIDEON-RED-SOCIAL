@@ -44,7 +44,7 @@ export default function Settings() {
       description: "Configura tu foto de perfil, banner y apariencia",
       icon: Image,
       path: "/settings/personalization",
-      color: "text-indigo-600"
+      color: "text-primary"
     },
     {
       title: "Mis Estadísticas",

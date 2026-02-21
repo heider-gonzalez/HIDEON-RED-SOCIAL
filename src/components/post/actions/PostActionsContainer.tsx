@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ActionsSummary } from "./ActionsSummary";
 import { ActionsButtons } from "./ActionsButtons";
 import { ReactionType } from "@/types/database/social.types";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { reactionIcons } from "../reactions/ReactionIcons";
+import { normalizeReactionType, reactionIcons } from "../reactions/ReactionIcons";
 
 interface PostActionsContainerProps {
   postId: string;
@@ -82,7 +81,8 @@ function processReactions(reactions: any[] | { count: number; by_type: Record<st
     
     // Count reactions by type
     reactions.forEach(reaction => {
-      const type = reaction.reaction_type || reaction.type || 'love';
+      const rawType = reaction.reaction_type || reaction.type || 'love';
+      const type = normalizeReactionType(rawType);
       byType[type] = (byType[type] || 0) + 1;
     });
   } else if (reactions && typeof reactions === 'object') {
@@ -91,7 +91,10 @@ function processReactions(reactions: any[] | { count: number; by_type: Record<st
       totalCount = reactions.count || 0;
     }
     if ('by_type' in reactions && typeof reactions.by_type === 'object') {
-      Object.assign(byType, reactions.by_type);
+      Object.entries(reactions.by_type).forEach(([rawType, count]) => {
+        const type = normalizeReactionType(rawType);
+        byType[type] = (byType[type] || 0) + (Number(count) || 0);
+      });
     }
   }
   

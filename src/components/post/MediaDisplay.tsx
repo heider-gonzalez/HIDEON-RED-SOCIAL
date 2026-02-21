@@ -134,9 +134,20 @@ export function MediaDisplay({
           
           {isVideo && (
             <video 
+              ref={(el) => {
+                if (!el) return;
+                try {
+                  el.setAttribute('webkit-playsinline', 'true');
+                } catch {
+                  // ignore
+                }
+              }}
               src={finalUrl} 
               controls 
               autoPlay
+              muted
+              loop
+              playsInline
               className="w-full"
             />
           )}

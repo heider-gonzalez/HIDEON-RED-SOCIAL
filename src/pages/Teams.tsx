@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Plus, Search } from "lucide-react";
+import { Users, Plus, Search, Brain } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
@@ -15,7 +15,7 @@ export default function Teams() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-              <Users className="h-8 w-8 text-purple-500" />
+              <Brain className="h-8 w-8 text-primary" />
               Equipos
             </h1>
             <p className="text-muted-foreground mt-1">

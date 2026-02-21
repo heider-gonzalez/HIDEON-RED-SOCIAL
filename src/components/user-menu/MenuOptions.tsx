@@ -7,17 +7,16 @@ import {
   HelpCircle,
   MessageSquare,
   Monitor,
-  Trophy,
   Bookmark,
   HeartHandshake,
   PlaySquare,
   Brain,
-  BarChart3
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
+
 import { Separator } from "@/components/ui/separator";
 import { Users } from "lucide-react";
 import { useState } from "react";
@@ -39,6 +38,7 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const [showDonate, setShowDonate] = useState(false);
+  const [showSettingsPrivacy, setShowSettingsPrivacy] = useState(false);
   
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -61,6 +61,11 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
   const handleNavigate = (path: string) => {
     navigate(path);
     onClose();
+  };
+
+  const handleSettingsPrivacyNavigate = (path: string) => {
+    setShowSettingsPrivacy(false);
+    handleNavigate(path);
   };
 
   const cycleTheme = () => {
@@ -96,7 +101,7 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
         >
           <div className="flex items-center">
             <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center mr-3">
-              <Brain className="h-5 w-5 text-purple-500" />
+              <Brain className="h-5 w-5 text-primary" />
             </div>
             <span className="font-medium">Coquitos Destacados</span>
           </div>
@@ -131,23 +136,6 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-between h-14 px-3 rounded-lg hover:bg-accent"
-          onClick={() => handleNavigate("/analytics")}
-        >
-          <div className="flex items-center">
-            <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center mr-3">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="font-medium">Analytics Pro</span>
-              <span className="text-xs text-muted-foreground">Visitas, clicks y rendimiento</span>
-            </div>
-          </div>
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-        </Button>
       
         <Separator className="my-2" />
       
@@ -155,7 +143,7 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
         <Button
           variant="ghost"
           className="w-full justify-between h-14 px-3 rounded-lg hover:bg-accent"
-          onClick={() => handleNavigate("/settings")}
+          onClick={() => setShowSettingsPrivacy(true)}
         >
           <div className="flex items-center">
             <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center mr-3">
@@ -257,7 +245,7 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
         >
           <div className="flex items-center">
             <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center mr-3">
-              <HeartHandshake className="h-5 w-5 text-emerald-600" />
+              <HeartHandshake className="h-5 w-5 text-primary" />
             </div>
             <div className="flex flex-col items-start">
               <span className="font-medium">Donar al desarrollador (Nequi)</span>
@@ -330,6 +318,55 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
               Listo
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showSettingsPrivacy} onOpenChange={setShowSettingsPrivacy}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configuración y privacidad</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1">
+            <Button
+              variant="ghost"
+              className="w-full justify-between h-14 px-3 rounded-lg hover:bg-accent"
+              onClick={() => handleSettingsPrivacyNavigate("/settings/personalization")}
+            >
+              <span className="font-medium">Perfil</span>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-between h-14 px-3 rounded-lg hover:bg-accent"
+              onClick={() => handleSettingsPrivacyNavigate("/settings/account")}
+            >
+              <span className="font-medium">Cuenta</span>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-between h-14 px-3 rounded-lg hover:bg-accent"
+              onClick={() => handleSettingsPrivacyNavigate("/settings/privacy")}
+            >
+              <span className="font-medium">Privacidad</span>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-between h-14 px-3 rounded-lg hover:bg-accent"
+              onClick={() => handleSettingsPrivacyNavigate("/settings/security")}
+            >
+              <span className="font-medium">Contraseña</span>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          </div>
+          <Button
+            variant="outline"
+            className="w-full mt-2"
+            onClick={() => setShowSettingsPrivacy(false)}
+          >
+            Cerrar
+          </Button>
         </DialogContent>
       </Dialog>
     </div>

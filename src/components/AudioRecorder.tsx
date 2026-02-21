@@ -1,16 +1,18 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Loader2, AudioWaveform } from "lucide-react";
+import { Square, Loader2, AudioWaveform } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
+import { useEffect } from "react";
 
 interface AudioRecorderProps {
-  onRecordingComplete: (audioBlob: Blob) => void;
+  onRecordingComplete: (audioBlob: Blob, durationSeconds?: number) => void;
   className?: string;
+  maxDurationSeconds?: number;
 }
 
-export function AudioRecorder({ onRecordingComplete, className }: AudioRecorderProps) {
+export function AudioRecorder({ onRecordingComplete, className, maxDurationSeconds }: AudioRecorderProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const { isRecording, recordingDuration, startRecording, stopRecording } = useAudioRecorder();
@@ -28,11 +30,12 @@ export function AudioRecorder({ onRecordingComplete, className }: AudioRecorderP
   };
 
   const handleStopRecording = async () => {
+    const durationAtStop = recordingDuration;
     setIsProcessing(true);
     try {
       const audioBlob = await stopRecording();
       if (audioBlob) {
-        onRecordingComplete(audioBlob);
+        onRecordingComplete(audioBlob, durationAtStop);
       }
     } catch (error) {
       toast({
@@ -44,6 +47,17 @@ export function AudioRecorder({ onRecordingComplete, className }: AudioRecorderP
       setIsProcessing(false);
     }
   };
+
+  useEffect(() => {
+    if (!isRecording) return;
+    if (isProcessing) return;
+    if (typeof maxDurationSeconds !== "number") return;
+    if (maxDurationSeconds <= 0) return;
+
+    if (recordingDuration >= maxDurationSeconds) {
+      void handleStopRecording();
+    }
+  }, [isRecording, isProcessing, maxDurationSeconds, recordingDuration]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);

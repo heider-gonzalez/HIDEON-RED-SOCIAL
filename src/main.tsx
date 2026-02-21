@@ -1,3 +1,5 @@
+// Cache busting for Render deployment - 2026-02-01 v7.0 FINAL - COMMENT REACTIONS LIVE
+console.log('🚀 H Social loaded with new reactions system v7.0 - COMMENT REACTIONS ENABLED - VERSION 1.0.4');
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'

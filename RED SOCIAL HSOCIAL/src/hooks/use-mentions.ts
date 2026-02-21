@@ -1,2 +1,0 @@
-
-export { useMentions } from './mentions';

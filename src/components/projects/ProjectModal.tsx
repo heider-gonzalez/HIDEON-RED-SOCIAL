@@ -44,6 +44,25 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
   const [newComment, setNewComment] = useState('');
   const [showContactModal, setShowContactModal] = useState(false);
   const navigate = useNavigate();
+  // Helper function to check if URL is a video
+  const isVideoUrl = (url: string | undefined): boolean => {
+    if (!url) return false;
+    const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v'];
+    return videoExtensions.some(ext => url.toLowerCase().includes(ext));
+  };
+
+  // Helper function to get the first media URL (video or image)
+  const getPrimaryMediaUrl = (): string | undefined => {
+    // Check media_urls array first
+    if (project.media_urls && project.media_urls.length > 0) {
+      return project.media_urls[0];
+    }
+    // Fallback to image_url
+    return project.image_url;
+  };
+
+  const primaryMediaUrl = getPrimaryMediaUrl();
+  const isVideo = isVideoUrl(primaryMediaUrl);
   const statusConfig = PROJECT_STATUS_CONFIG[project.status];
   
   // Hooks for views, reactions, and comments
@@ -95,13 +114,24 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
 
           <div className="space-y-6">
             {/* Project Banner */}
-            {project.image_url && (
-              <div className="w-full h-64 rounded-lg overflow-hidden">
-                <img
-                  src={project.image_url}
-                  alt={project.title}
-                  className="w-full h-full object-cover"
-                />
+            {primaryMediaUrl && (
+              <div className="w-full h-64 rounded-lg overflow-hidden bg-black">
+                {isVideo ? (
+                  <video
+                    src={primaryMediaUrl}
+                    controls
+                    className="w-full h-full object-contain"
+                    poster={project.image_url}
+                  >
+                    Tu navegador no soporta el elemento de video.
+                  </video>
+                ) : (
+                  <img
+                    src={primaryMediaUrl}
+                    alt={project.title}
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
             )}
 

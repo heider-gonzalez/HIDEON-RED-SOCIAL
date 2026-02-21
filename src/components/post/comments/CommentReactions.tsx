@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, createElement } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { reactionIcons } from "@/components/post/reactions/ReactionIcons";
+import { normalizeReactionType, reactionIcons } from "@/components/post/reactions/ReactionIcons";
 import type { ReactionType } from "@/types/database/social.types";
 
 interface CommentReactionsProps {
@@ -20,6 +20,9 @@ export function CommentReactions({
 }: CommentReactionsProps) {
   const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  const normalizedUserReaction = userReaction ? normalizeReactionType(userReaction) : null;
+  const iconType = normalizedUserReaction || "love";
   
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -98,10 +101,10 @@ export function CommentReactions({
     >
       {userReaction ? 
         <div className="text-red-500">
-          {createElement(reactionIcons.love.icon, { className: "h-3 w-3" })}
+          {createElement(reactionIcons[iconType].icon, { className: "h-3 w-3" })}
         </div> : 
         <div className="text-muted-foreground">
-          {createElement(reactionIcons.love.icon, { className: "h-3 w-3" })}
+          {createElement(reactionIcons[iconType].icon, { className: "h-3 w-3" })}
         </div>
       }
       <span className="ml-1">{reactionsCount}</span>

@@ -133,6 +133,8 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0 }: MediaL
               className="max-h-[88vh] max-w-[98vw] object-contain"
               controls
               autoPlay
+              muted
+              loop
               playsInline
               preload="metadata"
               onClick={(e) => e.stopPropagation()}

@@ -10,19 +10,23 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { getFollowers, getFollowing, type Follower, type Following } from "@/lib/api/followers";
 import { FollowButton } from "@/components/FollowButton";
 import { useBatchFollowingStatus } from "@/hooks/use-batch-following-status";
+import { useLocation } from "react-router-dom";
 
 const FollowersPage = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("followers");
   const [authError, setAuthError] = useState<string | null>(null);
   const [followers, setFollowers] = useState<Follower[]>([]);
   const [following, setFollowing] = useState<Following[]>([]);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     const loadUserData = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser();
+
         if (error) {
           console.error('Auth error:', error);
           setAuthError('Error de autenticación. Por favor, inicia sesión nuevamente.');
@@ -31,11 +35,19 @@ const FollowersPage = () => {
         if (user) {
           setCurrentUserId(user.id);
           setAuthError(null);
+
+          const params = new URLSearchParams(location.search);
+          const resolvedTargetUserId = params.get("userId") || user.id;
+          setTargetUserId(resolvedTargetUserId);
+          const tab = params.get("tab");
+          if (tab === "followers" || tab === "following") {
+            setActiveTab(tab);
+          }
           
-          // Load followers and following
+          // Load followers and following for the target profile
           const [followersData, followingData] = await Promise.all([
-            getFollowers(user.id),
-            getFollowing(user.id)
+            getFollowers(resolvedTargetUserId),
+            getFollowing(resolvedTargetUserId)
           ]);
           
           setFollowers(followersData);
@@ -52,7 +64,10 @@ const FollowersPage = () => {
     };
     
     loadUserData();
-  }, []);
+  }, [location.search]);
+
+  const isViewingOwnList = !!currentUserId && !!targetUserId && currentUserId === targetUserId;
+  const pageTitle = isViewingOwnList ? "Seguidores" : "Seguidores del usuario";
 
   // Optimización: obtener todos los IDs para batch following status
   const followerIds = followers.map(f => f.id);
@@ -81,9 +96,13 @@ const FollowersPage = () => {
           <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
             <Users className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium">No tienes seguidores todavía</h3>
+          <h3 className="text-lg font-medium">
+            {isViewingOwnList ? "No tienes seguidores todavía" : "Aún no tiene seguidores"}
+          </h3>
           <p className="text-muted-foreground mt-1 text-sm">
-            Cuando otros usuarios te sigan, aparecerán aquí
+            {isViewingOwnList
+              ? "Cuando otros usuarios te sigan, aparecerán aquí"
+              : "Cuando otros usuarios lo sigan, aparecerán aquí"}
           </p>
         </div>
       );
@@ -135,9 +154,13 @@ const FollowersPage = () => {
           <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
             <UserPlus className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium">No sigues a nadie todavía</h3>
+          <h3 className="text-lg font-medium">
+            {isViewingOwnList ? "No sigues a nadie todavía" : "Aún no sigue a nadie"}
+          </h3>
           <p className="text-muted-foreground mt-1 text-sm">
-            Encuentra personas interesantes para seguir
+            {isViewingOwnList
+              ? "Encuentra personas interesantes para seguir"
+              : "Cuando siga a alguien, aparecerá aquí"}
           </p>
         </div>
       );
@@ -175,7 +198,7 @@ const FollowersPage = () => {
 
   if (authError) {
     return (
-      <FullScreenPageLayout title="Seguidores">
+      <FullScreenPageLayout title={pageTitle}>
         <div className="container px-4 max-w-4xl">
           <Card className="p-6">
             <div className="flex flex-col items-center text-center space-y-4">
@@ -196,7 +219,7 @@ const FollowersPage = () => {
 
   return (
     <ErrorBoundary>
-      <FullScreenPageLayout title="Seguidores">
+      <FullScreenPageLayout title={pageTitle}>
         <div className="container px-4 max-w-4xl pt-4">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4 w-full grid grid-cols-2">

@@ -17,7 +17,6 @@ export default function TermsOfService() {
     { id: "4-cuenta", label: "4. Cuenta de usuario y seguridad" },
     { id: "5-contenido", label: "5. Contenido de usuario" },
     { id: "6-propiedad-intelectual", label: "6. Propiedad intelectual" },
-    { id: "7-premium", label: "7. Premium Pro" },
     { id: "8-conducta", label: "8. Conducta prohibida" },
     { id: "9-moderacion", label: "9. Moderación y suspensión" },
     { id: "10-limitacion", label: "10. Limitación de responsabilidad" },
@@ -108,10 +107,6 @@ export default function TermsOfService() {
                   <li>Hacer networking profesional.</li>
                   <li>Construir un portafolio digital.</li>
                 </ul>
-                <p className="text-muted-foreground">
-                  Algunas funciones pueden estar disponibles solo para usuarios Premium Pro. La disponibilidad puede variar
-                  mientras el producto evoluciona (fase beta).
-                </p>
               </CardContent>
             </Card>
           </section>
@@ -167,8 +162,8 @@ export default function TermsOfService() {
               </CardHeader>
               <CardContent className="p-6 pt-2 space-y-3 text-sm">
                 <p>
-                  En Hsocial puedes publicar contenido (ideas, proyectos, comentarios, perfiles, archivos como CV en Premium,
-                  y otros materiales). Tú eres responsable de lo que publicas.
+                  En Hsocial puedes publicar contenido (ideas, proyectos, comentarios, perfiles, archivos y otros materiales).
+                  Tú eres responsable de lo que publicas.
                 </p>
                 <p>
                   Al publicar, confirmas que tienes los derechos necesarios para compartir ese contenido y que no vulnera
@@ -199,32 +194,6 @@ export default function TermsOfService() {
                 <p className="text-muted-foreground">
                   Esto no significa que "nos adueñamos" de tus proyectos; significa que podemos mostrar tu publicación para que
                   otros la vean, comenten o colaboren según tus ajustes de visibilidad.
-                </p>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section id="7-premium" className="scroll-mt-20">
-            <Card className="border-border/60">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">7. Premium Pro (suscripción, renovación, cancelación, reembolsos)</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 pt-2 space-y-3 text-sm">
-                <p>
-                  Premium Pro es una suscripción mensual con renovación automática. Precio de referencia: COP $14.900/mes.
-                </p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Renovación automática mensual, hasta que canceles.</li>
-                  <li>Prueba gratis de 7 días (si está disponible en tu cuenta).</li>
-                  <li>Puedes cancelar en cualquier momento.</li>
-                  <li>Reembolso: solo durante el período de prueba (según validación de la compra y condiciones del proveedor).</li>
-                </ul>
-                <p>
-                  Pagos: usamos MercadoPago como procesador de pagos. No almacenamos tu número de tarjeta.
-                </p>
-                <p className="text-muted-foreground">
-                  Importante: si cancelas, podrás mantener acceso Premium hasta el final del período pagado o de prueba, según
-                  aplique.
                 </p>
               </CardContent>
             </Card>

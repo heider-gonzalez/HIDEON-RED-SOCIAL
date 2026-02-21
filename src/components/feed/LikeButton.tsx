@@ -1,6 +1,6 @@
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { usePostLikes } from '@/hooks/usePostLikes';
+import { useUnifiedReactions } from '@/hooks/use-unified-reactions';
 
 interface LikeButtonProps {
   postId: string;
@@ -9,7 +9,10 @@ interface LikeButtonProps {
 }
 
 export function LikeButton({ postId, userId, className = '' }: LikeButtonProps) {
-  const { isLiked, likeCount, toggleLike, isLoading } = usePostLikes(postId, userId);
+  const { isReacting, userReaction, reactionCount, handleReaction } = useUnifiedReactions(postId);
+
+  const isLiked = userReaction === 'love';
+  const likeCount = reactionCount;
 
   return (
     <Button
@@ -18,9 +21,9 @@ export function LikeButton({ postId, userId, className = '' }: LikeButtonProps) 
       className={`flex items-center gap-1 ${className}`}
       onClick={(e) => {
         e.stopPropagation();
-        toggleLike();
+        handleReaction('love' as any);
       }}
-      disabled={isLoading || !userId}
+      disabled={isReacting || !userId}
       aria-label={isLiked ? 'Quitar me gusta' : 'Me gusta'}
     >
       <Heart

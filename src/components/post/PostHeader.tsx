@@ -30,6 +30,17 @@ interface PostHeaderProps {
   isDemoPost?: boolean;
 }
 
+const professionalCache = new Map<
+  string,
+  {
+    headline: string | null;
+    city: string | null;
+    work_mode: 'remote' | 'hybrid' | 'onsite' | null;
+    seeking_tags: string[];
+    offering_tags: string[];
+  }
+>();
+
 export function PostHeader({ 
   post, 
   onDelete, 
@@ -41,14 +52,23 @@ export function PostHeader({
   isDemoPost = false
 }: PostHeaderProps) {
   const [authorCareer, setAuthorCareer] = useState<string | null>(null);
+  const [professional, setProfessional] = useState<{
+    headline: string | null;
+    city: string | null;
+    work_mode: 'remote' | 'hybrid' | 'onsite' | null;
+    seeking_tags: string[];
+    offering_tags: string[];
+  } | null>(null);
   const [incognitoData, setIncognitoData] = useState<{
     anonymous_author_name: string;
     anonymous_author_number: number;
   } | null>(null);
   
   const isIncognito = post.visibility === 'incognito';
-  const shouldShowCareerLine = !isIncognito && (post.post_type === 'idea' || post.post_type === 'project' || isIdeaPost);
-  const careerLine = shouldShowCareerLine ? (post.profiles as any)?.career ?? authorCareer : null;
+
+  // Obtener la carrera del post o del estado local
+  const careerFromPost = (post.profiles as any)?.career;
+  const careerToShow = !isIncognito ? (careerFromPost || authorCareer) : null;
   
   useEffect(() => {
     // Fetch incognito data if this is an incognito post
@@ -66,23 +86,85 @@ export function PostHeader({
       };
       
       fetchIncognitoData();
-    } else if (post.user_id && shouldShowCareerLine && !(post.profiles as any)?.career) {
-      // Only fetch career information if needed (not incognito and not present in post.profiles)
+    } else if (post.user_id && !careerFromPost) {
+      // Solo fetchear la carrera si no está en el post y no es incógnito
       const fetchAuthorCareer = async () => {
-        const { data, error } = await (supabase as any)
-          .from("profiles")
-          .select("career")
-          .eq("id", post.user_id)
-          .single();
-          
-        if (!error && data && 'career' in data) {
-          setAuthorCareer(data.career);
+        try {
+          const { data, error } = await (supabase as any)
+            .from("profiles")
+            .select("career")
+            .eq("id", post.user_id)
+            .single();
+            
+          if (!error && data && data.career) {
+            setAuthorCareer(data.career);
+          }
+        } catch (err) {
+          console.log("Error fetching career:", err);
         }
       };
       
       fetchAuthorCareer();
     }
-  }, [post.user_id, post.id, isIncognito, shouldShowCareerLine, post.profiles]);
+  }, [post.user_id, post.id, isIncognito, careerFromPost]);
+
+  useEffect(() => {
+    if (isIncognito) return;
+    if (!post.user_id) return;
+
+    const cached = professionalCache.get(post.user_id);
+    if (cached) {
+      setProfessional(cached);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadProfessional = async () => {
+      try {
+        const { data, error } = await (supabase as any)
+          .from('profile_professional')
+          .select('headline, city, work_mode, seeking_tags, offering_tags')
+          .eq('profile_id', post.user_id)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (error) {
+          const message = String((error as any)?.message || '');
+          if (message.toLowerCase().includes('does not exist')) {
+            professionalCache.set(post.user_id, {
+              headline: null,
+              city: null,
+              work_mode: null,
+              seeking_tags: [],
+              offering_tags: [],
+            });
+            setProfessional(professionalCache.get(post.user_id) || null);
+            return;
+          }
+          return;
+        }
+
+        const next = {
+          headline: (data as any)?.headline ?? null,
+          city: (data as any)?.city ?? null,
+          work_mode: (data as any)?.work_mode ?? null,
+          seeking_tags: Array.isArray((data as any)?.seeking_tags) ? (data as any).seeking_tags.filter(Boolean) : [],
+          offering_tags: Array.isArray((data as any)?.offering_tags) ? (data as any).offering_tags.filter(Boolean) : [],
+        };
+        professionalCache.set(post.user_id, next);
+        setProfessional(next);
+      } catch {
+        // ignore
+      }
+    };
+
+    void loadProfessional();
+    return () => {
+      cancelled = true;
+    };
+  }, [post.user_id, isIncognito]);
 
   const renderGroupTag = () => {
     if (isIncognito) return null;
@@ -151,12 +233,54 @@ export function PostHeader({
     return null;
   };
   
-  // No mostrar badges de carrera según requisitos visuales
+  // Función para mostrar la carrera del usuario
   const renderCareerBadge = () => {
-    if (!careerLine) return null;
+    if (!careerToShow) return null;
     return (
-      <div className="text-xs text-muted-foreground/80 font-normal truncate max-w-[18rem]">
-        {careerLine}
+      <div className="text-xs text-muted-foreground/80 font-normal truncate max-w-[18rem]">{careerToShow}</div>
+    );
+  };
+
+  const renderProfessionalSubheader = () => {
+    if (isIncognito) return null;
+    const headline = String(professional?.headline || '').trim();
+    const workModeLabel =
+      professional?.work_mode === 'remote'
+        ? 'Remoto'
+        : professional?.work_mode === 'hybrid'
+          ? 'Híbrido'
+          : professional?.work_mode === 'onsite'
+            ? 'Presencial'
+            : '';
+    const city = String(professional?.city || '').trim();
+    const locationLine = [workModeLabel, city].filter(Boolean).join(' • ');
+    const seeking = Array.isArray(professional?.seeking_tags) ? professional!.seeking_tags.slice(0, 1) : [];
+    const offering = Array.isArray(professional?.offering_tags) ? professional!.offering_tags.slice(0, 2) : [];
+
+    if (!headline && !locationLine && seeking.length === 0 && offering.length === 0) return null;
+
+    return (
+      <div className="mt-1 space-y-1">
+        {headline && (
+          <div className="text-xs text-foreground/80 font-medium truncate max-w-[22rem]">{headline}</div>
+        )}
+        {locationLine && (
+          <div className="text-xs text-muted-foreground truncate max-w-[22rem]">{locationLine}</div>
+        )}
+        {(seeking.length > 0 || offering.length > 0) && (
+          <div className="flex flex-wrap gap-1">
+            {seeking.map((t) => (
+              <Badge key={`seek-${t}`} variant="outline" className="text-[10px] px-2 py-0 h-5">
+                Busco: {t}
+              </Badge>
+            ))}
+            {offering.map((t) => (
+              <Badge key={`off-${t}`} variant="secondary" className="text-[10px] px-2 py-0 h-5">
+                {t}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
@@ -288,7 +412,10 @@ export function PostHeader({
             {renderCompanyTag()}
           </div>
           <div className="flex items-center mt-0.5">
-            {renderCareerBadge()}
+            <div className="flex flex-col">
+              {renderCareerBadge()}
+              {renderProfessionalSubheader()}
+            </div>
           </div>
           <div className="text-xs text-muted-foreground/70 mt-1 font-normal">
             {formatDistanceToNow(new Date(post.created_at), { 

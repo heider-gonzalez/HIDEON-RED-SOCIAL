@@ -11,14 +11,16 @@ const port = process.env.PORT || 10000;
 // Serve static files from the dist directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Handle client-side routing - serve index.html for all non-API routes
+// Handle client-side routing - serve index.html for all non-API, non-static routes
 app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ error: 'API endpoint not found' });
-  }
-
+  // Don't handle static files
   if (req.path.includes('.')) {
     return res.status(404).json({ error: 'File not found' });
+  }
+  
+  // Don't handle API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
   }
 
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));

@@ -1,6 +1,6 @@
 
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { careers } from "@/data/careers";
 import { useCallback } from "react";
 
 interface AcademicFieldsProps {
@@ -9,6 +9,7 @@ interface AcademicFieldsProps {
   semester: string;
   setSemester: (semester: string) => void;
   loading: boolean;
+  showCareerError?: boolean;
 }
 
 export function AcademicFields({
@@ -16,7 +17,8 @@ export function AcademicFields({
   setCareer,
   semester,
   setSemester,
-  loading
+  loading,
+  showCareerError = false
 }: AcademicFieldsProps) {
   // Lista de semestres para el selector
   const semesters = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Egresado"];
@@ -33,25 +35,21 @@ export function AcademicFields({
     <>
       <div>
         <label htmlFor="career" className="block text-sm font-medium mb-1">
-          Carrera estudiada
+          Carrera estudiada <span className="text-red-500">*</span>
         </label>
-        <Select 
-          value={career} 
-          onValueChange={handleCareerChange}
-          disabled={loading} 
+        <Input
+          id="career"
           name="career"
-        >
-          <SelectTrigger id="career" name="career">
-            <SelectValue placeholder="Selecciona tu carrera" />
-          </SelectTrigger>
-          <SelectContent>
-            {careers.map((careerOption) => (
-              <SelectItem key={careerOption} value={careerOption}>
-                {careerOption}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          value={career}
+          onChange={(e) => handleCareerChange(e.target.value)}
+          placeholder="Ej: Ingeniería de Sistemas"
+          disabled={loading}
+          required
+          className={showCareerError && !career.trim() ? "border-red-500 focus:ring-red-500" : ""}
+        />
+        {showCareerError && !career.trim() && (
+          <p className="text-xs text-red-500 mt-1">La carrera es obligatoria</p>
+        )}
       </div>
       
       <div>

@@ -8,9 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { usePremium } from "@/hooks/use-premium";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Download, ExternalLink, Plus, Trash2, FileText, Crown, Lock, Unlock, Github, Linkedin, Globe, Briefcase } from "lucide-react";
+import { Upload, Download, ExternalLink, Plus, Trash2, FileText, Lock, Unlock, Github, Linkedin, Globe, Briefcase } from "lucide-react";
 import type { Profile } from "@/pages/Profile";
 
 interface PortfolioLink {
@@ -47,7 +46,6 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
     description: '',
     type: 'portfolio'
   });
-  const { isPremium } = usePremium();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -59,12 +57,12 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
   const loadPortfolioData = async () => {
     try {
       const [cvResult, linksResult] = await Promise.all([
-        supabase
+        (supabase as any)
           .from('profile_cv')
           .select('*')
           .eq('profile_id', profile.id)
           .single(),
-        supabase
+        (supabase as any)
           .from('profile_portfolio_links')
           .select('*')
           .eq('profile_id', profile.id)
@@ -91,15 +89,6 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isPremium) {
-      toast({
-        variant: "destructive",
-        title: "Función Premium",
-        description: "Esta función está disponible solo para usuarios Premium"
-      });
-      return;
-    }
-
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -137,7 +126,7 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
         .from('cvs')
         .getPublicUrl(fileName);
 
-      const { error: dbError } = await supabase
+      const { error: dbError } = await (supabase as any)
         .from('profile_cv')
         .upsert({
           profile_id: profile.id,
@@ -169,7 +158,7 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
     if (!cv) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('profile_cv')
         .update({ is_public: !cv.is_public })
         .eq('profile_id', profile.id);
@@ -194,15 +183,6 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
   };
 
   const addPortfolioLink = async () => {
-    if (!isPremium) {
-      toast({
-        variant: "destructive",
-        title: "Función Premium",
-        description: "Esta función está disponible solo para usuarios Premium"
-      });
-      return;
-    }
-
     if (!newLink.title || !newLink.url) {
       toast({
         variant: "destructive",
@@ -213,7 +193,7 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('profile_portfolio_links')
         .insert({
           profile_id: profile.id,
@@ -244,7 +224,7 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
 
   const deletePortfolioLink = async (linkId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('profile_portfolio_links')
         .delete()
         .eq('id', linkId);
@@ -315,7 +295,6 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
           <CardTitle className="text-lg flex items-center gap-2">
             <Briefcase className="h-5 w-5" />
             Portafolio Profesional
-            {isPremium && <Badge variant="premium" className="text-xs">Premium</Badge>}
           </CardTitle>
         </div>
       </CardHeader>
@@ -327,7 +306,7 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
               <FileText className="h-4 w-4" />
               CV Profesional
             </h3>
-            {isOwner && isPremium && (
+            {isOwner && (
               <div className="flex items-center gap-2">
                 <Label htmlFor="cv-upload" className="cursor-pointer">
                   <div className="flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90">
@@ -395,19 +374,7 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
               {isOwner ? (
-                <div>
-                  {isPremium ? (
-                    <p>Sube tu CV para que los reclutadores puedan verlo</p>
-                  ) : (
-                    <div className="space-y-2">
-                      <p>Sube tu CV para destacar ante reclutadores</p>
-                      <Badge variant="premium" className="text-xs">
-                        <Crown className="h-3 w-3 mr-1" />
-                        Función Premium
-                      </Badge>
-                    </div>
-                  )}
-                </div>
+                <p>Sube tu CV para que otros puedan verlo</p>
               ) : (
                 <p>Este usuario no ha subido su CV</p>
               )}
@@ -422,7 +389,7 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
               <ExternalLink className="h-4 w-4" />
               Enlaces Profesionales
             </h3>
-            {isOwner && isPremium && (
+            {isOwner && (
               <Button
                 variant="outline"
                 size="sm"
@@ -537,44 +504,13 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
             <div className="text-center py-8 text-muted-foreground">
               <ExternalLink className="h-12 w-12 mx-auto mb-4 opacity-50" />
               {isOwner ? (
-                <div>
-                  {isPremium ? (
-                    <p>Agrega enlaces a tus proyectos y redes profesionales</p>
-                  ) : (
-                    <div className="space-y-2">
-                      <p>Muestra tus proyectos y redes profesionales</p>
-                      <Badge variant="premium" className="text-xs">
-                        <Crown className="h-3 w-3 mr-1" />
-                        Función Premium
-                      </Badge>
-                    </div>
-                  )}
-                </div>
+                <p>Agrega enlaces a tus proyectos y redes profesionales</p>
               ) : (
                 <p>Este usuario no ha agregado enlaces profesionales</p>
               )}
             </div>
           )}
         </div>
-
-        {/* Premium Upgrade Prompt */}
-        {!isPremium && isOwner && (
-          <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
-            <div className="flex items-center gap-3">
-              <Crown className="h-8 w-8 text-purple-600" />
-              <div>
-                <h4 className="font-semibold text-purple-900">Desbloquea todas las funciones Premium</h4>
-                <p className="text-sm text-purple-700">
-                  Sube tu CV, agrega enlaces ilimitados y accede a estadísticas avanzadas
-                </p>
-              </div>
-            </div>
-            <Button className="w-full mt-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-              <Crown className="h-4 w-4 mr-2" />
-              Actualizar a Premium
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

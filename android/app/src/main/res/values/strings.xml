@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">hsocial-com-95-43-34-51-34</string>
+    <string name="app_name">Hsocial</string>
     <string name="title_activity_main">hsocial-com-95-43-34-51-34</string>
     <string name="package_name">com.hsocial.app</string>
     <string name="custom_url_scheme">com.hsocial.app</string>

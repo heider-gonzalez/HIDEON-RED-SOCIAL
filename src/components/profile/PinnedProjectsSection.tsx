@@ -2,7 +2,6 @@ import { Trophy, Pin, PinOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { usePremium } from "@/hooks/use-premium";
 import { usePinnedProjects } from "@/hooks/use-pinned-projects";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,19 +28,10 @@ interface PinnedProjectsSectionProps {
 }
 
 export function PinnedProjectsSection({ profileId, isOwner, allProjects = [] }: PinnedProjectsSectionProps) {
-  const { isPremium } = usePremium();
   const { pinnedProjects, isLoading } = usePinnedProjects(profileId);
   const { toast } = useToast();
 
   const handlePin = async (projectId: string, action: 'pin' | 'unpin') => {
-    if (!isPremium) {
-      toast({
-        variant: "destructive",
-        title: "Solo Premium",
-        description: "Solo usuarios Premium pueden fijar proyectos.",
-      });
-      return;
-    }
     try {
       const rpcName = action === 'pin' ? 'pin_project' : 'unpin_project';
       const { data, error } = await (supabase as any).rpc(rpcName, {
@@ -86,9 +76,6 @@ export function PinnedProjectsSection({ profileId, isOwner, allProjects = [] }: 
         <CardTitle className="flex items-center gap-2">
           <Pin className="h-5 w-5 text-primary" />
           Proyectos destacados
-          {isOwner && isPremium && (
-            <Badge variant="secondary" className="text-xs">Premium</Badge>
-          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -117,7 +104,7 @@ export function PinnedProjectsSection({ profileId, isOwner, allProjects = [] }: 
                     </div>
                     {project.role && <p className="text-sm text-muted-foreground">{project.role}</p>}
                   </div>
-                  {isOwner && isPremium && (
+                  {isOwner && (
                     <Button
                       size="sm"
                       variant="ghost"
