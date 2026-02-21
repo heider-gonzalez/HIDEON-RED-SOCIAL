@@ -449,10 +449,8 @@ function ProjectPostView({ post }: { post: PostType }) {
       <PostContent post={post} postId={post.id} />
       <ProjectContent 
         idea={post.idea} 
-        content={post.content || ''}
         postId={post.id}
         postOwnerId={post.user_id}
-        mediaUrls={post.media_urls || undefined}
         projectStatus={post.project_status}
         technologies={post.technologies}
         demoUrl={post.demo_url}
