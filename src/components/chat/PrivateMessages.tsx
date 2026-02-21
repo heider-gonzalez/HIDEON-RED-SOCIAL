@@ -70,6 +70,11 @@ export function PrivateMessages() {
   const queryClient = useQueryClient();
 
   // Presence hook for typing indicators and online status
+  // NOTE: Temporarily disabled while debugging. Provide safe fallbacks so the UI doesn't crash.
+  const typingUsers = useMemo(() => new Set<string>(), []);
+  const onlineUsers = useMemo(() => new Map<string, { isOnline: boolean }>(), []);
+  const handleTyping = () => {};
+  const stopTyping = () => {};
   // const { typingUsers, onlineUsers, handleTyping, stopTyping } = usePresence(selectedChannelId);
 
   const [acceptedRequests, setAcceptedRequests] = useState<Set<string>>(() => {
@@ -304,7 +309,7 @@ export function PrivateMessages() {
             .eq("id_canal", channelId)
             .order("created_at", { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           return {
             id: otherUserId,
@@ -357,6 +362,34 @@ export function PrivateMessages() {
        setLoading(false);
      }
   };
+
+  // Filtrar conversaciones según la pestaña activa
+  const visibleConversations = useMemo(() => {
+    const searchLower = searchQuery.toLowerCase();
+    const filtered = conversations.filter(conv => 
+      conv.username.toLowerCase().includes(searchLower) ||
+      conv.last_message.toLowerCase().includes(searchLower)
+    );
+
+    if (activeInboxTab === 'archived') {
+      return filtered.filter(conv => archivedChats.has(conv.id));
+    }
+    
+    const isRequest = (conv: Conversation) => {
+      if (conv.is_global) return false;
+      if (acceptedRequests.has(conv.id)) return false;
+      return !mutualFollowMap[conv.id];
+    };
+
+    if (activeInboxTab === 'requests') {
+      return filtered.filter(conv => !conv.is_global && isRequest(conv) && !archivedChats.has(conv.id));
+    }
+
+    // Tab 'inbox' (predeterminado)
+    return filtered.filter(conv => 
+      (conv.is_global || !isRequest(conv)) && !archivedChats.has(conv.id)
+    );
+  }, [conversations, searchQuery, activeInboxTab, archivedChats, acceptedRequests, mutualFollowMap]);
 
   const selectedConv = conversations.find(c => c.id === selectedConversation);
   const selectedChannelId = useMemo(() => {

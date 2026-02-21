@@ -1,8 +1,8 @@
 // Enhanced Service Worker for H Social - Push Notifications & Offline Support
-const CACHE_NAME = 'h-social-v2';
-const STATIC_CACHE = 'h-social-static-v2';
-const MESSAGES_CACHE = 'h-social-messages-v2';
-const IMAGES_CACHE = 'h-social-images-v2';
+const CACHE_NAME = 'h-social-v3';
+const STATIC_CACHE = 'h-social-static-v3';
+const MESSAGES_CACHE = 'h-social-messages-v3';
+const IMAGES_CACHE = 'h-social-images-v3';
 
 // Resources to cache for offline
 const STATIC_ASSETS = [
@@ -36,7 +36,7 @@ self.addEventListener('activate', (event) => {
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (!cacheName.includes('h-social')) {
+            if (!cacheName.includes('h-social-v3')) {
               console.log('🗑️ Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -53,6 +53,39 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // In local development, always bypass the Service Worker for Vite module requests
+  // to avoid serving stale bundles from cache.
+  if (
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.hostname.startsWith('192.168.') ||
+    url.hostname.startsWith('10.') ||
+    url.hostname.startsWith('172.16.') ||
+    url.hostname.startsWith('172.17.') ||
+    url.hostname.startsWith('172.18.') ||
+    url.hostname.startsWith('172.19.') ||
+    url.hostname.startsWith('172.20.') ||
+    url.hostname.startsWith('172.21.') ||
+    url.hostname.startsWith('172.22.') ||
+    url.hostname.startsWith('172.23.') ||
+    url.hostname.startsWith('172.24.') ||
+    url.hostname.startsWith('172.25.') ||
+    url.hostname.startsWith('172.26.') ||
+    url.hostname.startsWith('172.27.') ||
+    url.hostname.startsWith('172.28.') ||
+    url.hostname.startsWith('172.29.') ||
+    url.hostname.startsWith('172.30.') ||
+    url.hostname.startsWith('172.31.') ||
+    url.pathname.startsWith('/@vite') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/node_modules/') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css')
+  ) {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   // Skip non-GET requests and external requests
   if (request.method !== 'GET' || !url.origin.includes(self.location.origin)) {
