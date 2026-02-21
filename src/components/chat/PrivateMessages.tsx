@@ -362,10 +362,6 @@ export function PrivateMessages() {
       const userIdParam = searchParams.get("user");
       if (userIdParam && validConversations.find(c => c.id === userIdParam)) {
         setSelectedConversation(userIdParam);
-      } else if (!selectedConversation) {
-        // Seleccionar la conversación privada más reciente (si existe), no el global
-        const recentConversation = validConversations.find(c => !c.is_global);
-        setSelectedConversation(recentConversation?.id ?? null);
       }
      } catch (error) {
        console.error("Error loading conversations:", error);
