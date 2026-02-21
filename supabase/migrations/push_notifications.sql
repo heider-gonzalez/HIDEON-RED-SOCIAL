@@ -1,6 +1,3 @@
--- Enable Row Level Security on push_subscriptions table
-ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
-
 -- Create push_subscriptions table if it doesn't exist
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -10,6 +7,9 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   UNIQUE(user_id) -- One subscription per user
 );
+
+-- Enable Row Level Security on push_subscriptions table
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for push_subscriptions
 CREATE POLICY "Users can view own subscriptions" ON push_subscriptions
