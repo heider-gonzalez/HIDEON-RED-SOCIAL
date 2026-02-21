@@ -22,6 +22,7 @@ import {
 import { useProjectViews, useProjectComments } from "@/hooks/projects";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
+import { MediaCarousel } from "@/components/post/MediaCarousel";
 
 export default function ProjectDetail() {
   const { postId } = useParams();
@@ -114,16 +115,41 @@ export default function ProjectDetail() {
     contact_link?: string;
   };
 
+  const isVideoUrl = (url: string) => {
+    if (!url) return false;
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv', '.m4v'];
+    const lowerUrl = url.toLowerCase();
+    return videoExtensions.some(ext => lowerUrl.includes(ext)) || 
+           lowerUrl.includes('video') || 
+           lowerUrl.includes('stream');
+  };
+
+  const mediaItems: Array<{ url: string; type: 'image' | 'video' }> = (() => {
+    const urls: string[] = [];
+    if (Array.isArray((project as any).media_urls)) {
+      for (const u of (project as any).media_urls) {
+        if (typeof u === 'string' && u.trim()) urls.push(u);
+      }
+    }
+    if (project.media_url && typeof project.media_url === 'string' && project.media_url.trim()) {
+      urls.push(project.media_url);
+    }
+    const uniq = Array.from(new Set(urls));
+    return uniq.map((url) => ({
+      url,
+      type: (project.media_type?.startsWith('video') || isVideoUrl(url)) ? 'video' : 'image'
+    }));
+  })();
+
   return (
     <Layout>
       <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 pb-24">
-        {/* Hero Image */}
-        {project.media_url && (
-          <div className="w-full h-64 md:h-96 rounded-lg overflow-hidden">
-            <img 
-              src={project.media_url} 
-              alt={projectData.title || "Proyecto"} 
-              className="w-full h-full object-cover"
+        {/* Media (imagenes / videos adjuntos) */}
+        {mediaItems.length > 0 && (
+          <div className="w-full rounded-lg overflow-hidden">
+            <MediaCarousel
+              mediaItems={mediaItems}
+              reelsPostId={postId || undefined}
             />
           </div>
         )}
