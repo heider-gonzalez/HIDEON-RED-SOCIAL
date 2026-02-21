@@ -70,7 +70,7 @@ export function PrivateMessages() {
   const queryClient = useQueryClient();
 
   // Presence hook for typing indicators and online status
-  const { typingUsers, onlineUsers, handleTyping, stopTyping } = usePresence(selectedChannelId);
+  // const { typingUsers, onlineUsers, handleTyping, stopTyping } = usePresence(selectedChannelId);
 
   const [acceptedRequests, setAcceptedRequests] = useState<Set<string>>(() => {
     try {
@@ -463,7 +463,7 @@ export function PrivateMessages() {
 
       playUiSound('message_sent');
       setNewMessage("");
-      stopTyping(); // Stop typing when message is sent
+      // stopTyping(); // Stop typing when message is sent
 
       // Scroll to bottom after sending
       setTimeout(() => {
@@ -1183,7 +1183,7 @@ export function PrivateMessages() {
                     )}
 
                     {/* Typing Indicator */}
-                    {typingUsers.size > 0 && (
+                    {false && ( // typingUsers.size > 0 && (
                       <div className="flex gap-3">
                         <Avatar className="h-8 w-8 flex-shrink-0">
                           <AvatarFallback>
@@ -1193,7 +1193,7 @@ export function PrivateMessages() {
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-xs text-muted-foreground italic">
-                              {typingUsers.size === 1 ? "Escribiendo..." : `${typingUsers.size} escribiendo...`}
+                              {`typingUsers.size === 1 ? "Escribiendo..." : \`\${typingUsers.size} escribiendo...\``}
                             </span>
                           </div>
                           <div className="bg-muted rounded-2xl px-4 py-2 max-w-[70%]">
@@ -1216,7 +1216,7 @@ export function PrivateMessages() {
                       value={newMessage}
                       onChange={(e) => {
                         setNewMessage(e.target.value);
-                        handleTyping(); // Trigger typing event
+                        // handleTyping(); // Trigger typing event
                       }}
                       placeholder="Escribe un mensaje..."
                       className="flex-1"

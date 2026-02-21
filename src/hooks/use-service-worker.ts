@@ -111,8 +111,13 @@ export function useServiceWorker() {
       console.log('🔔 Subscribing to push notifications...');
 
       // You'll need to replace this with your actual VAPID public key from Supabase
-      const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY ||
-        'BKxQzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQ';
+      const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+
+      // If no VAPID key is provided, skip push notifications
+      if (!vapidPublicKey || vapidPublicKey === 'BKxQzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQ') {
+        console.warn('🔔 VAPID public key not configured, skipping push notifications');
+        return null;
+      }
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
