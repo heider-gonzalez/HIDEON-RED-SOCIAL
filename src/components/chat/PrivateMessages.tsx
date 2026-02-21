@@ -19,6 +19,7 @@ import { GlobalChat } from "@/components/chat/GlobalChat";
 import { useMessages, useConversations, useSendMessage } from "@/hooks/use-messages";
 import { Message, Conversation } from "@/types/chat";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePresence } from "@/hooks/use-presence";
 
 import {
   DropdownMenu,
@@ -67,6 +68,9 @@ export function PrivateMessages() {
   const [mutualFollowMap, setMutualFollowMap] = useState<Record<string, boolean>>({});
   const [activeInboxTab, setActiveInboxTab] = useState<'inbox' | 'requests' | 'archived'>('inbox');
   const queryClient = useQueryClient();
+
+  // Presence hook for typing indicators and online status
+  const { typingUsers, onlineUsers, handleTyping, stopTyping } = usePresence(selectedChannelId);
 
   const [acceptedRequests, setAcceptedRequests] = useState<Set<string>>(() => {
     try {
@@ -459,6 +463,7 @@ export function PrivateMessages() {
 
       playUiSound('message_sent');
       setNewMessage("");
+      stopTyping(); // Stop typing when message is sent
 
       // Scroll to bottom after sending
       setTimeout(() => {
@@ -641,9 +646,14 @@ export function PrivateMessages() {
               </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground truncate">
-            {conv.last_message}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-muted-foreground truncate">
+              {conv.last_message}
+            </p>
+            {!conv.is_global && onlineUsers.get(conv.id)?.isOnline && (
+              <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" title="En línea" />
+            )}
+          </div>
           <p className="text-xs text-muted-foreground mt-1">
             {formatDistanceToNow(new Date(conv.last_message_at), {
               addSuffix: true,
@@ -1067,9 +1077,14 @@ export function PrivateMessages() {
               )}
               <div>
                 <p className="font-medium">{selectedConv.username}</p>
-                <p className="text-xs text-muted-foreground">
-                  {selectedConv.is_global ? "Conversación pública" : "En línea"}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {selectedConv.is_global ? "Conversación pública" : "En línea"}
+                  </p>
+                  {!selectedConv.is_global && onlineUsers.get(selectedConv.id)?.isOnline && (
+                    <div className="w-2 h-2 bg-green-500 rounded-full" title="En línea" />
+                  )}
+                </div>
               </div>
 
               <div className="ml-auto flex items-center">
@@ -1166,6 +1181,31 @@ export function PrivateMessages() {
                         );
                       })
                     )}
+
+                    {/* Typing Indicator */}
+                    {typingUsers.size > 0 && (
+                      <div className="flex gap-3">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarFallback>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-muted-foreground italic">
+                              {typingUsers.size === 1 ? "Escribiendo..." : `${typingUsers.size} escribiendo...`}
+                            </span>
+                          </div>
+                          <div className="bg-muted rounded-2xl px-4 py-2 max-w-[70%]">
+                            <div className="flex gap-1">
+                              <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"></div>
+                              <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                              <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
 
@@ -1174,7 +1214,10 @@ export function PrivateMessages() {
                   <div className="flex gap-2">
                     <Input
                       value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
+                      onChange={(e) => {
+                        setNewMessage(e.target.value);
+                        handleTyping(); // Trigger typing event
+                      }}
                       placeholder="Escribe un mensaje..."
                       className="flex-1"
                       disabled={sending}

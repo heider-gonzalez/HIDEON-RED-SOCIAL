@@ -109,16 +109,22 @@ export function useServiceWorker() {
     try {
       console.log('🔔 Subscribing to push notifications...');
 
+      // You'll need to replace this with your actual VAPID public key from Supabase
+      const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY ||
+        'BKxQzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQ';
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(
-          // This should come from your backend/VAPID keys
-          // For now, using a placeholder - replace with your actual VAPID public key
-          'BKxQzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQ'
-        )
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
       });
 
       console.log('✅ Push subscription successful:', subscription);
+
+      // Send subscription to your backend for storage
+      // You should send this to Supabase or your server
+      console.log('📤 Subscription endpoint:', subscription.endpoint);
+      console.log('📤 Subscription keys:', subscription.getKey('p256dh'), subscription.getKey('auth'));
+
       return subscription;
     } catch (error) {
       console.error('❌ Push subscription failed:', error);
