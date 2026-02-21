@@ -39,12 +39,16 @@ export function useNotificationQueue(options: QueueProcessingOptions = {}) {
         return;
       }
 
-      // Call the process-notifications Edge Function
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/process-notifications`, {
+      // Build the Supabase URL dynamically
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wgbbaxvuuinubkgffpiq.supabase.co';
+      const functionUrl = `${supabaseUrl}/functions/v1/process-notifications`;
+
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({
           batchSize,

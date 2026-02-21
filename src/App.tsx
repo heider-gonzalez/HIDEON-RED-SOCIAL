@@ -91,9 +91,16 @@ function ServiceWorkerRegistration() {
       // Request notification permission on login
       requestNotificationPermission().then((granted) => {
         if (granted) {
+          console.log('🔔 Notification permissions granted');
           // Subscribe to push notifications
           subscribeToPushNotifications();
+        } else {
+          console.warn('🔔 Notification permissions denied by user');
+          // Could show a toast or banner here to explain why notifications are important
+          // For now, just log the denial
         }
+      }).catch((error) => {
+        console.error('🔔 Error requesting notification permissions:', error);
       });
     }
   }, [user?.id, requestNotificationPermission, subscribeToPushNotifications]);

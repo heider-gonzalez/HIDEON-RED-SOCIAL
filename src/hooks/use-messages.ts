@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchMessages, fetchConversations, sendMessage, Message, Conversation } from "@/lib/api/messages/queries";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,7 +21,7 @@ export const useMessages = (channelId: string | null, enabled: boolean = true) =
 };
 
 export const useConversations = (currentUserId: string | null) => {
-  return useInfiniteQuery({
+  return useQuery({
     queryKey: ["conversations", currentUserId],
     queryFn: () => {
       if (!currentUserId) throw new Error("User ID is required");
@@ -32,10 +32,6 @@ export const useConversations = (currentUserId: string | null) => {
     gcTime: 30 * 60 * 1000, // 30 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    select: (data) => ({
-      pages: data.pages,
-      pageParams: data.pageParams,
-    }),
   });
 };
 
