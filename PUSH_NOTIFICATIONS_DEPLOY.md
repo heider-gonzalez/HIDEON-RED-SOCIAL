@@ -15,58 +15,95 @@ Esta migración crea:
 
 ## 2. Desplegar Edge Functions
 ```bash
-# Desplegar la función original (para notificaciones individuales)
+# Desplegar todas las funciones
 supabase functions deploy send-push-notification
-
-# Desplegar la nueva función de procesamiento de cola
 supabase functions deploy process-notifications
+supabase functions deploy cleanup-notifications  # Nueva función de limpieza
 ```
 
-## 3. Configurar Secrets (Opcional)
-```bash
-# Si usas FCM u otro servicio de push
-supabase secrets set FCM_SERVER_KEY=tu_fcm_server_key
+## ⚡ **Procesamiento Automático Inteligente**
 
-# VAPID keys (para Web Push API nativo)
-supabase secrets set VAPID_PRIVATE_KEY=tu_private_key
-supabase secrets set VAPID_EMAIL=tu_email@dominio.com
-```
+### **Características del Procesador**
+- **Intervalo inteligente**: 30 segundos base, con backoff exponencial
+- **Procesamiento en lotes**: 10 notificaciones por vez
+- **Reintentos automáticos**: Hasta 3 reintentos con multiplicador x2
+- **Prevención de sobrecarga**: Backoff hasta 5 minutos máximo
+- **Detección de éxito**: Si procesa items, reintenta en 5 segundos
 
-## 4. Configurar Frontend
+### **Limpieza Automática**
+- **Frecuencia**: Cada 6 horas automáticamente
+- **Políticas de limpieza**:
+  - ✅ **Procesadas**: > 24 horas → Eliminar
+  - ✅ **Fallidas**: > 7 días → Eliminar
+  - ✅ **Pendientes atascadas**: > 24 horas → Eliminar
+- **Ejecución inicial**: Al cargar la app por primera vez
+
+## 🔧 **Configuración Adicional**
+
+### **Variables de Entorno**
 ```bash
 # En .env.local
-VITE_VAPID_PUBLIC_KEY=tu_vapid_public_key_generada
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu_anon_key
+VITE_VAPID_PUBLIC_KEY=tu_vapid_public_key
 ```
 
-## 5. Probar el Sistema
+### **Personalización de Intervalos**
+```javascript
+// En ServiceWorkerRegistration component
+const { triggerProcessing } = useNotificationQueue({
+  interval: 60000, // 1 minuto (personalizar)
+  batchSize: 5,    // 5 notificaciones por lote
+  maxRetries: 5,   // Más reintentos
+  backoffMultiplier: 1.5 // Backoff más suave
+});
+```
 
-### Opción A: Procesamiento Manual
+## 📊 **Monitoreo y Debugging**
+
+### **Logs en Consola** (Desarrollo)
+```javascript
+// Procesamiento de cola
+🔔 Queue processor status: {
+  isProcessing: false,
+  currentInterval: 30,
+  userId: "user-123"
+}
+
+// Limpieza automática
+🧹 Running periodic notification cleanup...
+🧹 Cleanup result: { cleaned: { processed: 15, failed: 2, pending: 0 } }
+```
+
+### **Verificación de Funcionamiento**
 ```bash
-# Probar enviando una notificación
+# Probar procesamiento manual
 curl -X POST "https://tu-proyecto.supabase.co/functions/v1/process-notifications" \
   -H "Authorization: Bearer tu-anon-key"
+
+# Probar limpieza manual
+curl -X POST "https://tu-proyecto.supabase.co/functions/v1/cleanup-notifications" \
+  -H "Authorization: Bearer tu-anon-key" \
+  -d '{"dryRun": true}'
 ```
 
-### Opción B: Procesamiento Automático (Recomendado)
-Configurar un **cron job** o **scheduled function** para procesar la cola cada minuto:
+## 🎯 **Sistema Nivel Dios - Características Finales**
 
-```javascript
-// En tu aplicación frontend, llamar periódicamente
-setInterval(async () => {
-  try {
-    const response = await fetch('/functions/v1/process-notifications', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${anonKey}`
-      }
-    });
-    const result = await response.json();
-    console.log('Processed notifications:', result);
-  } catch (error) {
-    console.error('Error processing notifications:', error);
-  }
-}, 60000); // Cada minuto
-```
+### **Automatización Completa**
+- ✅ **Envío automático**: Trigger en BD → Cola → Procesamiento automático
+- ✅ **Limpieza automática**: Eliminación de registros antiguos cada 6 horas
+- ✅ **Recuperación inteligente**: Reintentos y backoff automático
+- ✅ **Escalabilidad**: Procesamiento en lotes sin sobrecargar
+- ✅ **Confiabilidad**: Sistema queue-based resistente a fallos
+
+### **Arquitectura Optimizada**
+- 🔄 **Queue-based**: No bloquea operaciones críticas
+- ⚡ **Batch processing**: Eficiencia máxima
+- 🧹 **Auto-cleanup**: Base de datos siempre optimizada
+- 🔄 **Self-healing**: Recuperación automática de errores
+- 📊 **Observable**: Logging completo para debugging
+
+¡El sistema ahora es completamente autónomo y se mantiene solo! 🚀
 
 ## 📋 Checklist de Verificación
 - [ ] Migración ejecutada sin errores

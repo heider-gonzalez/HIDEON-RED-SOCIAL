@@ -14,6 +14,8 @@ import { initializePortalContainer } from "@/utils/portal-container";
 import { RealtimeNotificationHandler } from "@/components/notifications/RealtimeNotificationHandler";
 import { useAuth } from "@/hooks/use-auth";
 import { useServiceWorker } from "@/hooks/use-service-worker";
+import { useNotificationQueue } from "@/hooks/use-notification-queue";
+import { useNotificationCleanup } from "@/hooks/use-notification-cleanup";
 
 // Critical pages loaded immediately
 import Index from "./pages/Index";
@@ -76,6 +78,13 @@ function RealtimeNotificationsRoot() {
 function ServiceWorkerRegistration() {
   const { user } = useAuth();
   const { requestNotificationPermission, subscribeToPushNotifications } = useServiceWorker();
+  const { triggerProcessing, isProcessing, currentInterval } = useNotificationQueue({
+    interval: 30000, // 30 seconds
+    batchSize: 10,
+    maxRetries: 3,
+    backoffMultiplier: 2
+  });
+  const { cleanupOldNotifications } = useNotificationCleanup();
 
   React.useEffect(() => {
     if (user?.id) {
@@ -88,6 +97,40 @@ function ServiceWorkerRegistration() {
       });
     }
   }, [user?.id, requestNotificationPermission, subscribeToPushNotifications]);
+
+  // Periodic cleanup of notification queue (every 6 hours)
+  React.useEffect(() => {
+    if (!user?.id) return;
+
+    const cleanupInterval = setInterval(async () => {
+      try {
+        console.log('🧹 Running periodic notification cleanup...');
+        await cleanupOldNotifications();
+      } catch (error) {
+        console.error('🧹 Error during periodic cleanup:', error);
+      }
+    }, 6 * 60 * 60 * 1000); // 6 hours
+
+    // Also run cleanup on component mount
+    cleanupOldNotifications().catch(error => {
+      console.error('🧹 Error during initial cleanup:', error);
+    });
+
+    return () => {
+      clearInterval(cleanupInterval);
+    };
+  }, [user?.id, cleanupOldNotifications]);
+
+  // Debug logging for queue processing
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔔 Queue processor status:', {
+        isProcessing,
+        currentInterval: currentInterval / 1000,
+        userId: user?.id
+      });
+    }
+  }, [isProcessing, currentInterval, user?.id]);
 
   return null;
 }
