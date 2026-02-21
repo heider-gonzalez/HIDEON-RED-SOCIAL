@@ -6,7 +6,7 @@ export default function Messages() {
 
   return (
     <div className={`min-h-screen bg-background ${isMobile ? 'pt-14 pb-16' : 'pt-16'}`}>
-      <div className="container max-w-7xl mx-auto py-6 px-4">
+      <div className="w-full mx-auto py-4 md:py-6 px-0 md:px-4">
         <PrivateMessages />
       </div>
     </div>

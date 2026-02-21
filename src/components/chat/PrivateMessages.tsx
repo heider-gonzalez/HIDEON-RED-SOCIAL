@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, MessageCircle, Search, Globe, Users, MoreVertical, Trash2 } from "lucide-react";
+import { Send, Loader2, MessageCircle, Search, Globe, Users, MoreVertical, Trash2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -584,7 +584,7 @@ export function PrivateMessages() {
 
   const { conversacionesPrincipales, solicitudesDeMensajes } = useMemo(() => {
     return splitConversationsByMutualFollow(conversations, {
-      isGlobal: () => false,
+      isGlobal: (c) => !!(c as Conversation).is_global,
       isMutualFollow: (c) => {
         const conv = c as Conversation;
         if (acceptedRequests.has(conv.id)) return true;
@@ -604,9 +604,18 @@ export function PrivateMessages() {
         ? solicitudesDeMensajes.filter((c) => !archivedChats.has((c as Conversation).id))
         : conversacionesPrincipales.filter((c) => !archivedChats.has((c as Conversation).id));
 
-    if (!searchQuery.trim()) return base;
-    return base.filter((conv: any) => (conv.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [activeInboxTab, archivedConversations, solicitudesDeMensajes, conversacionesPrincipales, archivedChats, searchQuery]);
+    const globalConv = conversations.find((c) => c.is_global);
+
+    const baseWithPinnedGlobal = globalConv
+      ? [globalConv, ...base.filter((c) => (c as Conversation).id !== globalConv.id)]
+      : base;
+
+    if (!searchQuery.trim()) return baseWithPinnedGlobal;
+
+    return baseWithPinnedGlobal.filter((conv: any) =>
+      (conv.username || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [activeInboxTab, archivedConversations, solicitudesDeMensajes, conversacionesPrincipales, archivedChats, searchQuery, conversations]);
 
   if (loading && conversations.length === 0) {
     return (
@@ -617,7 +626,7 @@ export function PrivateMessages() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-120px)] border border-border rounded-lg overflow-hidden bg-background">
+    <div className="flex h-[calc(100vh-120px)] md:h-[calc(100vh-96px)] border border-border rounded-lg overflow-hidden bg-background">
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -887,7 +896,7 @@ export function PrivateMessages() {
                   size="sm"
                   onClick={() => setSelectedConversation(null)}
                 >
-                  Salir
+                  Atrás
                 </Button>
               </div>
             </div>
@@ -1017,123 +1026,139 @@ export function PrivateMessages() {
       {isMobile && selectedConversation && (
         <div className="fixed inset-0 z-60 bg-background flex flex-col">
           <div className="p-4 border-b border-border flex items-center gap-3">
-            <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedConversation(null)}>
-              Salir
+            <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedConversation(null)} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Atrás
             </Button>
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={selectedConv?.avatar_url || undefined} />
-              <AvatarFallback>
-                {selectedConv?.username?.[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+
+            {selectedConv?.is_global ? (
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Globe className="h-5 w-5 text-primary" />
+              </div>
+            ) : (
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={selectedConv?.avatar_url || undefined} />
+                <AvatarFallback>
+                  {selectedConv?.username?.[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            )}
             <div>
               <p className="font-medium">{selectedConv?.username}</p>
               <p className="text-xs text-muted-foreground">
-                En línea
+                {selectedConv?.is_global ? "Conversación pública" : "En línea"}
               </p>
             </div>
           </div>
 
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-            <div className="space-y-4">
-              {messages.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>
-                    {`Inicia una conversación con ${selectedConv?.username}`}
-                  </p>
-                </div>
-              ) : (
-                messages.map((message) => {
-                  const isOwn = message.id_autor === currentUserId;
-                  return (
-                    <div
-                      key={message.id}
-                      className={cn(
-                        "flex gap-3",
-                        isOwn ? "flex-row-reverse" : ""
-                      )}
-                    >
-                      <Avatar className="h-8 w-8 flex-shrink-0">
-                        <AvatarImage src={message.author?.avatar_url} />
-                        <AvatarFallback>
-                          {message.author?.username?.[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className={cn(
-                        "flex flex-col max-w-[70%]",
-                        isOwn ? "items-end" : ""
-                      )}>
-                        <div className={cn(
-                          "flex items-center gap-2 mb-1",
-                          isOwn ? "justify-end" : ""
-                        )}>
-                          <span className="text-xs font-medium">
-                            {message.author?.username}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(message.created_at), {
-                              addSuffix: true,
-                              locale: es,
-                            })}
-                          </span>
-                          {isOwn && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 p-0">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => requestDeleteMessage(message)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Eliminar
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
-                        </div>
-                        <div className={cn(
-                          "rounded-2xl px-4 py-2",
-                          isOwn
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        )}>
-                          <p className="text-sm break-words">{message.contenido}</p>
-                        </div>
-                      </div>
+          {selectedConv?.is_global ? (
+            <div className="flex-1 p-4">
+              <GlobalChat />
+            </div>
+          ) : (
+            <>
+              <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+                <div className="space-y-4">
+                  {messages.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">
+                      <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>
+                        {`Inicia una conversación con ${selectedConv?.username}`}
+                      </p>
                     </div>
-                  );
-                })
-              )}
-            </div>
-          </ScrollArea>
+                  ) : (
+                    messages.map((message) => {
+                      const isOwn = message.id_autor === currentUserId;
+                      return (
+                        <div
+                          key={message.id}
+                          className={cn(
+                            "flex gap-3",
+                            isOwn ? "flex-row-reverse" : ""
+                          )}
+                        >
+                          <Avatar className="h-8 w-8 flex-shrink-0">
+                            <AvatarImage src={message.author?.avatar_url} />
+                            <AvatarFallback>
+                              {message.author?.username?.[0]?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className={cn(
+                            "flex flex-col max-w-[70%]",
+                            isOwn ? "items-end" : ""
+                          )}>
+                            <div className={cn(
+                              "flex items-center gap-2 mb-1",
+                              isOwn ? "justify-end" : ""
+                            )}>
+                              <span className="text-xs font-medium">
+                                {message.author?.username}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(message.created_at), {
+                                  addSuffix: true,
+                                  locale: es,
+                                })}
+                              </span>
+                              {isOwn && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 p-0">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() => requestDeleteMessage(message)}
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Eliminar
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
+                            <div className={cn(
+                              "rounded-2xl px-4 py-2",
+                              isOwn
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted"
+                            )}>
+                              <p className="text-sm break-words">{message.contenido}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </ScrollArea>
 
-          <form onSubmit={handleSendMessage} className="p-4 border-t border-border">
-            <div className="flex gap-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Escribe un mensaje..."
-                className="flex-1"
-                disabled={sending}
-              />
-              <Button
-                type="submit"
-                size="icon"
-                disabled={!newMessage.trim() || sending}
-              >
-                {sending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </form>
+              <form onSubmit={handleSendMessage} className="p-4 border-t border-border">
+                <div className="flex gap-2">
+                  <Input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Escribe un mensaje..."
+                    className="flex-1"
+                    disabled={sending}
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    disabled={!newMessage.trim() || sending}
+                  >
+                    {sending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </>
+          )}
         </div>
       )}
     </div>
