@@ -131,6 +131,9 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
   const {
     showComments,
     comments,
+    loadMoreRef,
+    hasNextPage,
+    isFetchingNextPage,
     newComment,
     commentImage,
     setCommentImage,
@@ -273,6 +276,9 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
           postAuthorId={post.user_id}
           totalCommentsCount={(post as any).comments_count ?? (post as any).comments?.count}
           isSubmitting={isSubmitting}
+          loadMoreRef={loadMoreRef}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
         />
       )}
 

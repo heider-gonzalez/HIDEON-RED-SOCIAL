@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, MoreVertical, Trash2, At } from "lucide-react";
+import { Send, Loader2, MoreVertical, Trash2, AtSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -488,7 +488,7 @@ export function GlobalChat() {
               onClick={handleMentionClick}
               className="shrink-0"
             >
-              <At className="h-4 w-4" />
+              <AtSign className="h-4 w-4" />
             </Button>
             <Input
               ref={inputRef}

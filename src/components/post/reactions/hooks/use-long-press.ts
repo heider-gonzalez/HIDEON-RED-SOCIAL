@@ -13,18 +13,29 @@ export function useLongPress({
 }: UseLongPressProps = {}) {
   const [showReactions, setShowReactions] = useState(false);
   const [activeReaction, setActiveReaction] = useState<ReactionType | null>(null);
-  const pressTimer = useRef<NodeJS.Timeout | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
 
-  // Show reactions immediately on click
-  const handlePressStart = useCallback(() => {
-    setShowReactions(true);
-  }, []);
-
-  const handlePressEnd = useCallback(() => {
+  const clearPressTimer = useCallback(() => {
     if (pressTimer.current) {
       clearTimeout(pressTimer.current);
       pressTimer.current = null;
     }
+  }, []);
+
+  // Start a timer and show reactions only if user keeps pressing
+  const handlePressStart = useCallback(() => {
+    clearPressTimer();
+    longPressTriggeredRef.current = false;
+
+    pressTimer.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setShowReactions(true);
+    }, longPressThreshold);
+  }, [clearPressTimer, longPressThreshold]);
+
+  const handlePressEnd = useCallback(() => {
+    clearPressTimer();
     
     // If there's an active reaction and the reactions menu is visible,
     // trigger the callback when the user lifts their finger/pointer
@@ -36,11 +47,9 @@ export function useLongPress({
   // Clean up timer if component unmounts while timer is active
   useEffect(() => {
     return () => {
-      if (pressTimer.current) {
-        clearTimeout(pressTimer.current);
-      }
+      clearPressTimer();
     };
-  }, []);
+  }, [clearPressTimer]);
 
   return {
     showReactions,
@@ -48,6 +57,7 @@ export function useLongPress({
     setActiveReaction,
     setShowReactions,
     handlePressStart,
-    handlePressEnd
+    handlePressEnd,
+    longPressTriggeredRef
   };
 }

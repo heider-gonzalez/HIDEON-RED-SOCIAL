@@ -8,7 +8,7 @@ import { Send, Loader2, MessageCircle, Search, Globe, Users, MoreVertical, Trash
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { playUiSound } from "@/lib/ui-sounds";
@@ -33,8 +33,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const GLOBAL_CHANNEL_ID = "2f79759f-c53f-40ae-b786-59f6e69264a6";
-
 interface Message {
   id: string;
   contenido: string;
@@ -54,7 +52,6 @@ interface Conversation {
   last_message_at: string;
   unread_count: number;
   channel_id: string;
-  is_global?: boolean;
 }
 
 interface SearchResult {
@@ -80,6 +77,7 @@ export function PrivateMessages() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { archivedChats, handleChatLongPress, handleChatPressEnd, handleUnarchiveChat } = useArchivedChats();
   const [mutualFollowMap, setMutualFollowMap] = useState<Record<string, boolean>>({});
@@ -272,27 +270,6 @@ export function PrivateMessages() {
     try {
       setLoading(true);
 
-      // Obtener último mensaje del chat global
-      const { data: globalLastMessage } = await (supabase as any)
-        .from("mensajes")
-        .select("contenido, created_at")
-        .eq("id_canal", GLOBAL_CHANNEL_ID)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      // Crear conversación del chat global
-      const globalConversation: Conversation = {
-        id: "global",
-        username: "Chat Global",
-        avatar_url: null,
-        last_message: globalLastMessage?.contenido || "Únete a la conversación",
-        last_message_at: globalLastMessage?.created_at || new Date().toISOString(),
-        unread_count: 0,
-        channel_id: GLOBAL_CHANNEL_ID,
-        is_global: true
-      };
-
       // Obtener todos los canales privados donde el usuario es miembro
       const { data: userChannels, error: channelsError } = await (supabase as any)
         .from("miembros_canal")
@@ -355,16 +332,15 @@ export function PrivateMessages() {
         new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
       );
 
-      // Añadir chat global al inicio
-      setConversations([globalConversation, ...validConversations]);
+      setConversations(validConversations);
 
       // Si hay un parámetro ?user= en la URL, abrir esa conversación
       const userIdParam = searchParams.get("user");
       if (userIdParam && validConversations.find(c => c.id === userIdParam)) {
         setSelectedConversation(userIdParam);
       } else if (!selectedConversation) {
-        // Seleccionar chat global por defecto
-        setSelectedConversation("global");
+        // Seleccionar la conversación privada más reciente (si existe)
+        setSelectedConversation(validConversations[0]?.id ?? null);
       }
     } catch (error) {
       console.error("Error loading conversations:", error);
@@ -467,23 +443,20 @@ export function PrivateMessages() {
 
   // Suscripción a nuevos mensajes en tiempo real
   useEffect(() => {
-    if (!selectedConversation) return;
-
-    const conversation = conversations.find(c => c.id === selectedConversation);
-    if (!conversation) return;
+    if (!selectedChannelId) return;
 
     const channel = supabase
-      .channel(`messages-${conversation.channel_id}`)
+      .channel(`messages-${selectedChannelId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "mensajes",
-          filter: `id_canal=eq.${conversation.channel_id}`,
+          filter: `id_canal=eq.${selectedChannelId}`,
         },
         () => {
-          loadMessages(conversation.channel_id);
+          loadMessages(selectedChannelId);
           loadConversations();
         }
       )
@@ -492,7 +465,7 @@ export function PrivateMessages() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedConversation, conversations]);
+  }, [selectedChannelId]);
 
   // Cargar conversaciones cuando cambia el usuario actual
   useEffect(() => {
@@ -506,7 +479,7 @@ export function PrivateMessages() {
     const computeMutual = async () => {
       if (!currentUserId) return;
       const otherUserIds = conversations
-        .filter((c) => !c.is_global && c.id !== 'global')
+        .filter((c) => c.id !== 'global')
         .map((c) => c.id);
 
       if (otherUserIds.length === 0) {
@@ -582,10 +555,9 @@ export function PrivateMessages() {
 
   const { conversacionesPrincipales, solicitudesDeMensajes } = useMemo(() => {
     return splitConversationsByMutualFollow(conversations, {
-      isGlobal: (c) => !!(c as any).is_global,
+      isGlobal: () => false,
       isMutualFollow: (c) => {
         const conv = c as Conversation;
-        if (conv.is_global) return true;
         if (acceptedRequests.has(conv.id)) return true;
         return !!mutualFollowMap[conv.id];
       }
@@ -593,7 +565,7 @@ export function PrivateMessages() {
   }, [conversations, mutualFollowMap, acceptedRequests]);
 
   const archivedConversations = useMemo(() => {
-    return conversations.filter((c) => !c.is_global && archivedChats.has(c.id));
+    return conversations.filter((c) => archivedChats.has(c.id));
   }, [conversations, archivedChats]);
 
   const visibleConversations = useMemo(() => {
@@ -601,13 +573,17 @@ export function PrivateMessages() {
       ? archivedConversations
       : activeInboxTab === 'requests'
         ? solicitudesDeMensajes.filter((c) => !archivedChats.has((c as Conversation).id))
-        : conversacionesPrincipales.filter((c) => (c as Conversation).is_global || !archivedChats.has((c as Conversation).id));
+        : conversacionesPrincipales.filter((c) => !archivedChats.has((c as Conversation).id));
 
     if (!searchQuery.trim()) return base;
     return base.filter((conv: any) => (conv.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
   }, [activeInboxTab, archivedConversations, solicitudesDeMensajes, conversacionesPrincipales, archivedChats, searchQuery]);
 
   const selectedConv = conversations.find(c => c.id === selectedConversation);
+  const selectedChannelId = useMemo(() => {
+    const conv = conversations.find((c) => c.id === selectedConversation);
+    return conv?.channel_id ?? null;
+  }, [conversations, selectedConversation]);
 
   if (loading && conversations.length === 0) {
     return (
@@ -644,7 +620,19 @@ export function PrivateMessages() {
       <div className="w-full md:w-80 border-r border-border flex flex-col">
         {/* Header con búsqueda */}
         <div className="p-4 border-b border-border">
-          <h2 className="text-lg font-semibold mb-3">Mensajes</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold">Mensajes</h2>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/global-chat')}
+              className="h-8"
+            >
+              <Globe className="h-4 w-4 mr-2" />
+              Global
+            </Button>
+          </div>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -738,28 +726,22 @@ export function PrivateMessages() {
                 <button
                   key={conv.id}
                   onClick={() => setSelectedConversation(conv.id)}
-                  onMouseDown={() => !conv.is_global && handleChatLongPress(conv.id)}
+                  onMouseDown={() => handleChatLongPress(conv.id)}
                   onMouseUp={handleChatPressEnd}
                   onMouseLeave={handleChatPressEnd}
-                  onTouchStart={() => !conv.is_global && handleChatLongPress(conv.id)}
+                  onTouchStart={() => handleChatLongPress(conv.id)}
                   onTouchEnd={handleChatPressEnd}
                   className={cn(
                     "w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left",
                     selectedConversation === conv.id && "bg-muted"
                   )}
                 >
-                  {conv.is_global ? (
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Globe className="h-6 w-6 text-primary" />
-                    </div>
-                  ) : (
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={conv.avatar_url || undefined} />
-                      <AvatarFallback>
-                        {conv.username[0]?.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={conv.avatar_url || undefined} />
+                    <AvatarFallback>
+                      {conv.username[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <p className="font-medium text-sm truncate">{conv.username}</p>
@@ -780,7 +762,7 @@ export function PrivateMessages() {
                     </p>
                   </div>
 
-                  {activeInboxTab === 'requests' && !conv.is_global && (
+                  {activeInboxTab === 'requests' && (
                     <div className="flex flex-col gap-2">
                       <Button
                         type="button"
@@ -833,7 +815,7 @@ export function PrivateMessages() {
                     </div>
                   )}
 
-                  {activeInboxTab === 'archived' && !conv.is_global && (
+                  {activeInboxTab === 'archived' && (
                     <Button
                       type="button"
                       size="sm"
@@ -860,22 +842,16 @@ export function PrivateMessages() {
           <>
             {/* Header del chat */}
             <div className="p-4 border-b border-border flex items-center gap-3">
-              {selectedConv.is_global ? (
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Globe className="h-5 w-5 text-primary" />
-                </div>
-              ) : (
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={selectedConv.avatar_url || undefined} />
-                  <AvatarFallback>
-                    {selectedConv.username[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              )}
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={selectedConv.avatar_url || undefined} />
+                <AvatarFallback>
+                  {selectedConv.username[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <div>
                 <p className="font-medium">{selectedConv.username}</p>
                 <p className="text-xs text-muted-foreground">
-                  {selectedConv.is_global ? "Conversación pública" : "En línea"}
+                  En línea
                 </p>
               </div>
 
@@ -898,9 +874,7 @@ export function PrivateMessages() {
                   <div className="text-center text-muted-foreground py-8">
                     <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p>
-                      {selectedConv.is_global 
-                        ? "Sé el primero en enviar un mensaje" 
-                        : `Inicia una conversación con ${selectedConv.username}`}
+                      {`Inicia una conversación con ${selectedConv.username}`}
                     </p>
                   </div>
                 ) : (
@@ -1013,22 +987,16 @@ export function PrivateMessages() {
             <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedConversation(null)}>
               Salir
             </Button>
-            {selectedConv?.is_global ? (
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Globe className="h-5 w-5 text-primary" />
-              </div>
-            ) : (
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={selectedConv?.avatar_url || undefined} />
-                <AvatarFallback>
-                  {selectedConv?.username?.[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            )}
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={selectedConv?.avatar_url || undefined} />
+              <AvatarFallback>
+                {selectedConv?.username?.[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             <div>
               <p className="font-medium">{selectedConv?.username}</p>
               <p className="text-xs text-muted-foreground">
-                {selectedConv?.is_global ? "Conversación pública" : "En línea"}
+                En línea
               </p>
             </div>
           </div>
@@ -1039,9 +1007,7 @@ export function PrivateMessages() {
                 <div className="text-center text-muted-foreground py-8">
                   <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>
-                    {selectedConv?.is_global 
-                      ? "Sé el primero en enviar un mensaje" 
-                      : `Inicia una conversación con ${selectedConv?.username}`}
+                    {`Inicia una conversación con ${selectedConv?.username}`}
                   </p>
                 </div>
               ) : (

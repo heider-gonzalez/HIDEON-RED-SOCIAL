@@ -28,6 +28,7 @@ const Teams = React.lazy(() => import("@/pages/Teams"));
 const Ideas = React.lazy(() => import("@/pages/Ideas"));
 const Events = React.lazy(() => import("@/pages/Events"));
 const Messages = React.lazy(() => import("@/pages/Messages"));
+const GlobalChatPage = React.lazy(() => import("@/pages/GlobalChat"));
 const PasswordReset = React.lazy(() => import("@/pages/PasswordReset"));
 const Explore = React.lazy(() => import("@/pages/Explore"));
 const Leaderboard = React.lazy(() => import("@/pages/Leaderboard"));
@@ -148,6 +149,13 @@ const App = () => {
                 <AuthGuard>
                   <Suspense fallback={<LoadingSpinner />}>
                     <Messages />
+                  </Suspense>
+                </AuthGuard>
+              } />
+              <Route path="/global-chat" element={
+                <AuthGuard>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <GlobalChatPage />
                   </Suspense>
                 </AuthGuard>
               } />

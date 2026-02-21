@@ -1,8 +1,20 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export async function fetchPostComments(postId: string) {
+type CommentsCursor = {
+  createdAt: string;
+  id: string;
+};
+
+export async function fetchPostCommentsPage(
+  postId: string,
+  options?: {
+    limit?: number;
+    cursor?: CommentsCursor | null;
+  }
+) {
   try {
+    const limit = options?.limit ?? 20;
     const { data: sessionData } = await supabase.auth.getSession();
     const hasSession = !!sessionData.session;
 
@@ -22,18 +34,23 @@ export async function fetchPostComments(postId: string) {
 
       const previewComments = (previewCommentsRaw || []) as any[];
 
-      return previewComments.map((comment: any) => ({
+      const items = previewComments.map((comment: any) => ({
         ...comment,
         reactions: [],
         user_reaction: null,
       }));
+
+      return {
+        comments: items,
+        nextCursor: null as CommentsCursor | null,
+      };
     }
 
     const { data: auth } = await supabase.auth.getUser();
     const currentUserId = (auth as any)?.user?.id || null;
 
     // Fetch comments without reactions embed to avoid ambiguity
-    let { data: comments, error } = await (supabase as any)
+    let query = (supabase as any)
       .from("comments")
       .select(`
         *,
@@ -44,14 +61,29 @@ export async function fetchPostComments(postId: string) {
         )
       `)
       .eq("post_id", postId)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(limit);
+
+    const cursor = options?.cursor ?? null;
+    if (cursor?.createdAt && cursor?.id) {
+      // (created_at > cursor.createdAt) OR (created_at = cursor.createdAt AND id > cursor.id)
+      query = query.or(
+        `created_at.gt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.gt.${cursor.id})`
+      );
+    }
+
+    const { data: comments, error } = await query;
 
     if (error) {
       throw error;
     }
 
     if (!comments || comments.length === 0) {
-      return [];
+      return {
+        comments: [],
+        nextCursor: null as CommentsCursor | null,
+      };
     }
 
     // Get comment IDs
@@ -89,11 +121,30 @@ export async function fetchPostComments(postId: string) {
       };
     });
 
-    return commentsWithReactions;
+    const last = commentsWithReactions[commentsWithReactions.length - 1];
+    const nextCursor: CommentsCursor | null = last?.created_at && last?.id
+      ? { createdAt: String(last.created_at), id: String(last.id) }
+      : null;
+
+    // If we returned fewer than limit, there's no more
+    const effectiveNextCursor = commentsWithReactions.length < limit ? null : nextCursor;
+
+    return {
+      comments: commentsWithReactions,
+      nextCursor: effectiveNextCursor,
+    };
   } catch (error) {
     console.error("Error fetching comments:", error);
-    return [];
+    return {
+      comments: [],
+      nextCursor: null as CommentsCursor | null,
+    };
   }
+}
+
+export async function fetchPostComments(postId: string) {
+  const { comments } = await fetchPostCommentsPage(postId, { limit: 50, cursor: null });
+  return comments;
 }
 
 export async function createComment(postId: string, content: string, parentId?: string) {

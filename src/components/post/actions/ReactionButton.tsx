@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ReactionMenu } from "../reactions/ReactionMenu";
 import { type ReactionType } from "../reactions/ReactionIcons";
 import { useLongPress } from "../reactions/hooks/use-long-press";
@@ -17,6 +17,7 @@ export function ReactionButton({
   userReaction 
 }: ReactionButtonProps) {
   const [animatingReaction, setAnimatingReaction] = useState<ReactionType | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   const {
     showReactions,
@@ -24,8 +25,10 @@ export function ReactionButton({
     setActiveReaction,
     setShowReactions,
     handlePressStart,
-    handlePressEnd
+    handlePressEnd,
+    longPressTriggeredRef
   } = useLongPress({
+    longPressThreshold: 1000,
     onPressEnd: (reaction) => {
       if (reaction) {
         handleReactionSelected(reaction);
@@ -40,9 +43,37 @@ export function ReactionButton({
     onReaction(type);
   };
 
+  useEffect(() => {
+    if (!showReactions) return;
+
+    const handleOutsidePointerDown = (e: PointerEvent) => {
+      const root = rootRef.current;
+      if (!root) return;
+      if (root.contains(e.target as Node)) return;
+      setShowReactions(false);
+      setActiveReaction(null);
+    };
+
+    document.addEventListener('pointerdown', handleOutsidePointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', handleOutsidePointerDown);
+    };
+  }, [showReactions, setShowReactions, setActiveReaction]);
+
   const handleClick = () => {
+    if (showReactions) {
+      setShowReactions(false);
+      setActiveReaction(null);
+      return;
+    }
+
+    // If a long-press already opened the menu, don't apply the short-click reaction
+    if (longPressTriggeredRef.current) {
+      return;
+    }
+
     if (!showReactions) {
-      // Click normal: reacción de amor por defecto
+      // Click corto: Like (mapeado a 'love' por compatibilidad)
       handleReactionSelected('love');
     }
   };
@@ -50,7 +81,7 @@ export function ReactionButton({
   const userHasReacted = !!userReaction;
 
   return (
-    <div className="relative flex items-center">
+    <div ref={rootRef} className="relative flex items-center">
       {/* Menú de reacciones flotante */}
       {showReactions && (
         <div className="absolute bottom-full left-0 mb-2 z-50">

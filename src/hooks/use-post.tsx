@@ -42,7 +42,10 @@ export function usePost(post: Post, hideComments = false, initialShowComments = 
   const {
     comments,
     handleCommentReaction,
-    handleReply
+    handleReply,
+    loadMoreRef,
+    hasNextPage,
+    isFetchingNextPage
   } = usePostComments(post.id, showComments, setReplyTo, setNewComment);
   
   // Post reactions
@@ -70,6 +73,9 @@ export function usePost(post: Post, hideComments = false, initialShowComments = 
   return {
     showComments,
     comments,
+    loadMoreRef,
+    hasNextPage,
+    isFetchingNextPage,
     newComment,
     commentImage,
     setCommentImage,

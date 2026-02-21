@@ -273,6 +273,8 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
                   src={projectImages[0]}
                   alt={project.title}
                   className="relative z-10 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-pointer"
+                  loading="lazy"
+                  decoding="async"
                   onClick={handleImageClick}
                 />
                 
@@ -568,6 +570,8 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
               src={projectImages[currentImageIndex]}
               alt={`${project.title} - Imagen ${currentImageIndex + 1}`}
               className="w-full h-auto max-h-[80vh] object-contain"
+              loading="lazy"
+              decoding="async"
             />
 
             {/* Navigation buttons */}
@@ -617,6 +621,8 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
                       src={image}
                       alt={`Thumbnail ${index + 1}`}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </button>
                 ))}

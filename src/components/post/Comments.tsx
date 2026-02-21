@@ -5,7 +5,7 @@ import type { Comment } from "@/types/post";
 import type { ReactionType } from "@/types/database/social.types";
 import { useAuth } from "@/providers/AuthProvider";
 import { Link } from "react-router-dom";
-import { LogIn } from "lucide-react";
+import { Loader2, LogIn } from "lucide-react";
 
 interface CommentsProps {
   postId: string;
@@ -24,6 +24,9 @@ interface CommentsProps {
   postAuthorId?: string;
   totalCommentsCount?: number;
   isSubmitting?: boolean;
+  loadMoreRef?: React.RefObject<HTMLDivElement>;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
 }
 
 export function Comments({
@@ -42,7 +45,10 @@ export function Comments({
   setCommentImage,
   postAuthorId,
   totalCommentsCount,
-  isSubmitting = false
+  isSubmitting = false,
+  loadMoreRef,
+  hasNextPage = false,
+  isFetchingNextPage = false
 }: CommentsProps) {
   const { isAuthenticated } = useAuth();
 
@@ -116,6 +122,19 @@ export function Comments({
           onDeleteComment={onDeleteComment}
           postAuthorId={postAuthorId}
         />
+
+        {hasNextPage && (
+          <div ref={loadMoreRef} className="py-4 flex items-center justify-center text-muted-foreground">
+            {isFetchingNextPage ? (
+              <span className="inline-flex items-center gap-2 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Cargando más comentarios...
+              </span>
+            ) : (
+              <span className="text-sm">Desliza para cargar más</span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="px-4 md:px-0">

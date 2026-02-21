@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Home, Search, Users, PlaySquare, Plus, Bell, MessageCircle, Compass } from "lucide-react";
+import { Home, Search, Users, PlaySquare, Plus, Bell, MessageCircle, Compass, Globe } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -117,6 +117,12 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
       label: "Mensajes",
       path: "/messages",
       isActive: location.pathname.startsWith('/messages')
+    },
+    {
+      icon: Globe,
+      label: "Global",
+      path: "/global-chat",
+      isActive: location.pathname.startsWith('/global-chat')
     },
     {
       icon: PlaySquare,
