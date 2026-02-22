@@ -123,8 +123,8 @@ export function usePostReactions(postId: string) {
       if (!result.success) {
         // Revertir cambio optimista en caso de error
         setUserReaction(previousReaction);
-        queryClient.invalidateQueries({ queryKey: ['posts'] });
-        queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
+        queryClient.invalidateQueries({ queryKey: ['posts', postId] });
+        queryClient.invalidateQueries({ queryKey: ['posts'], exact: false });
         
         toast({
           title: "Error",
@@ -132,15 +132,14 @@ export function usePostReactions(postId: string) {
           variant: "destructive"
         });
       } else {
-        queryClient.invalidateQueries({ queryKey: ['posts'] });
-        queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
+        queryClient.invalidateQueries({ queryKey: ['posts', postId] });
       }
     } catch (error: any) {
       console.error('Error in onReaction:', error);
       // Revertir cambio optimista
       setUserReaction(previousReaction);
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-      queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', postId] });
+      queryClient.invalidateQueries({ queryKey: ['posts'], exact: false });
       
       toast({
         title: "Error",

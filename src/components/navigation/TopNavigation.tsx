@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigation } from "./use-navigation";
+import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -27,7 +28,8 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
     newPosts,
     handleHomeClick,
     handleNotificationClick,
-    location
+    location,
+    unreadNotifications
   } = useNavigation();
   
   const navigate = useNavigate();
@@ -37,6 +39,9 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
   const isMobile = useIsMobile();
   const [showPostModal, setShowPostModal] = useState(false);
   const { user } = useUser();
+
+  const { unreadMessages } = useUnreadMessages(currentUserId || undefined);
+  const unreadMessagesCount = unreadMessages.reduce((total, msg) => total + msg.unread_count, 0);
 
   const centerIconStyles: Record<string, { bg: string; fg: string; activeBg: string; activeFg: string }> = {};
 
@@ -104,6 +109,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
       icon: Users,
       label: "Amigos",
       path: "/friends",
+      badge: pendingRequestsCount > 0 ? pendingRequestsCount : null,
       isActive: location.pathname.startsWith('/friends')
     },
     {
@@ -116,6 +122,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
       icon: MessageCircle,
       label: "Mensajes",
       path: "/messages",
+      badge: unreadMessagesCount > 0 ? unreadMessagesCount : null,
       isActive: location.pathname.startsWith('/messages')
     },
     {
@@ -128,8 +135,9 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
       icon: Bell,
       label: "Notificaciones",
       path: "/notifications",
+      badge: unreadNotifications > 0 ? unreadNotifications : null,
       isActive: location.pathname.startsWith('/notifications')
-    }
+    },
   ];
 
   const handleProfileClick = async () => {
@@ -237,6 +245,10 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
     );
   }
 
+  const desktopCenterNavItems = centerNavItems.filter(
+    (item) => item.path !== "/messages" && item.path !== "/notifications"
+  );
+
   // Desktop navigation (Facebook style)
   return (
     <nav className="bg-card border-b border-border h-14 fixed top-0 left-0 right-0 z-[70]">
@@ -261,7 +273,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
         {/* Center Navigation - Facebook Icons */}
         <div className="flex items-center justify-center flex-1 max-w-2xl">
           <div className="flex items-center gap-2">
-            {centerNavItems.map((item) => (
+            {desktopCenterNavItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
@@ -344,12 +356,12 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                 title="Mensajes"
               >
                 <MessageCircle className="h-5 w-5" />
-                {pendingRequestsCount > 0 && (
+                {unreadMessagesCount > 0 && (
                   <Badge 
                     variant="destructive" 
                     className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
                   >
-                    {pendingRequestsCount}
+                    {unreadMessagesCount}
                   </Badge>
                 )}
               </Button>

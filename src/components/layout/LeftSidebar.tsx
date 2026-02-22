@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useNavigation } from "@/components/navigation/use-navigation";
+import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
@@ -22,11 +23,25 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface LeftSidebarProps {
   currentUserId: string | null;
+  pendingRequestsCount?: number;
 }
 
-export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
-  const { unreadNotifications, newPosts, handleHomeClick, handleNotificationClick } = useNavigation();
+type SidebarItem = {
+  icon: any;
+  label: string;
+  path: string;
+  onClick?: () => void;
+};
+
+export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebarProps) {
+  const { unreadNotifications, handleHomeClick, handleNotificationClick, handleExploreClick } = useNavigation();
+  const debug = import.meta.env.DEV;
+  if (debug) console.log('🔔 LeftSidebar - currentUserId prop:', currentUserId);
+  const { getTotalUnreadCount, unreadMessages } = useUnreadMessages(currentUserId || undefined);
+  if (debug) console.log('🔔 LeftSidebar - unreadMessages array:', unreadMessages);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const unreadMessagesCount = unreadMessages.reduce((total, msg) => total + msg.unread_count, 0);
+  if (debug) console.log('🔔 LeftSidebar - unreadMessagesCount:', unreadMessagesCount);
 
   const iconStyles: Record<string, { bg: string; fg: string; activeBg: string; activeFg: string }> = {};
 
@@ -39,19 +54,15 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
 
   const getIconStyle = (path: string) => iconStyles[path] ?? defaultIconStyle;
 
-  const quickAccessItems = [
-    { icon: UserPlus, label: "Seguidores", path: "/followers" },
+  const quickAccessItems: SidebarItem[] = [
     { icon: MessageCircle, label: "Mensajes", path: "/messages" },
     { icon: Bell, label: "Notificaciones", path: "/notifications", onClick: handleNotificationClick },
-    { icon: Users, label: "Mi red", path: "/friends" },
+    { icon: UserPlus, label: "Seguidores", path: "/followers" },
   ];
 
-  const menuItems = [
-    { icon: Home, label: "Inicio", path: "/", onClick: handleHomeClick },
-    { icon: Compass, label: "Explorar", path: "/explore" },
+  const menuItems: SidebarItem[] = [
     { icon: Users, label: "Grupos", path: "/groups" },
     { icon: Briefcase, label: "Proyectos", path: "/projects" },
-    { icon: Video, label: "Reels", path: "/reels" },
     { icon: Bookmark, label: "Guardados", path: "/saved" },
   ];
 
@@ -140,6 +151,22 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
                         {unreadNotifications}
                       </Badge>
                     )}
+                    {item.path === "/messages" && unreadMessagesCount > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="h-5 min-w-[20px] flex items-center justify-center p-0 text-xs"
+                      >
+                        {unreadMessagesCount}
+                      </Badge>
+                    )}
+                    {item.path === "/followers" && pendingRequestsCount && pendingRequestsCount > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="h-5 min-w-[20px] flex items-center justify-center p-0 text-xs"
+                      >
+                        {pendingRequestsCount}
+                      </Badge>
+                    )}
                   </>
                 );
               }}
@@ -183,14 +210,6 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
                     <item.icon className={iconClassName} />
                   </span>
                   <span className={labelClassName}>{item.label}</span>
-                  {item.path === "/" && newPosts > 0 && (
-                    <Badge
-                      variant="destructive"
-                      className="h-5 min-w-[20px] flex items-center justify-center p-0 text-xs"
-                    >
-                      {newPosts}
-                    </Badge>
-                  )}
                 </>
               );
             }}

@@ -13,6 +13,11 @@ export function useNotificationCleanup() {
     try {
       console.log('🧹 Starting notification cleanup...', options);
 
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No authenticated session for cleanup-notifications');
+      }
+
       // Build the Supabase URL dynamically
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wgbbaxvuuinubkgffpiq.supabase.co';
       const functionUrl = `${supabaseUrl}/functions/v1/cleanup-notifications`;
@@ -20,7 +25,8 @@ export function useNotificationCleanup() {
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          // IMPORTANT: Use the user's JWT so Edge Functions can authenticate the caller.
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         },

@@ -77,7 +77,7 @@ function RealtimeNotificationsRoot() {
 
 function ServiceWorkerRegistration() {
   const { user } = useAuth();
-  const { requestNotificationPermission, subscribeToPushNotifications } = useServiceWorker();
+  const { isRegistered, requestNotificationPermission, subscribeToPushNotifications } = useServiceWorker();
   const { triggerProcessing, isProcessing, currentInterval } = useNotificationQueue({
     interval: 30000, // 30 seconds
     batchSize: 10,
@@ -87,23 +87,56 @@ function ServiceWorkerRegistration() {
   const { cleanupOldNotifications } = useNotificationCleanup();
 
   React.useEffect(() => {
-    if (user?.id) {
-      // Request notification permission on login
-      requestNotificationPermission().then((granted) => {
-        if (granted) {
-          console.log('🔔 Notification permissions granted');
-          // Subscribe to push notifications
-          subscribeToPushNotifications();
-        } else {
+    if (!user?.id) return;
+
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        const granted = await requestNotificationPermission();
+        if (!granted) {
           console.warn('🔔 Notification permissions denied by user');
-          // Could show a toast or banner here to explain why notifications are important
-          // For now, just log the denial
+          return;
         }
-      }).catch((error) => {
+
+        console.log('🔔 Notification permissions granted');
+
+        const trySubscribe = async () => {
+          if (cancelled) return;
+          const maxAttempts = 10;
+          (trySubscribe as any)._attempts = ((trySubscribe as any)._attempts ?? 0) + 1;
+
+          if ((trySubscribe as any)._attempts > maxAttempts) {
+            console.error('🔔 Push subscription failed repeatedly. Stopping retries.');
+            return;
+          }
+
+          const sub = await subscribeToPushNotifications();
+          if (!sub) {
+            setTimeout(() => {
+              void trySubscribe();
+            }, 1500);
+          }
+        };
+
+        if (isRegistered) {
+          await trySubscribe();
+        } else {
+          setTimeout(() => {
+            void trySubscribe();
+          }, 1500);
+        }
+      } catch (error) {
         console.error('🔔 Error requesting notification permissions:', error);
-      });
-    }
-  }, [user?.id, requestNotificationPermission, subscribeToPushNotifications]);
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, isRegistered, requestNotificationPermission, subscribeToPushNotifications]);
 
   // Periodic cleanup of notification queue (every 6 hours)
   React.useEffect(() => {

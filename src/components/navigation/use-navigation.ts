@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,25 @@ export function useNavigation() {
   const { toast } = useToast();
   const { getOrCreateChannel, removeChannel } = useSubscriptionManager();
   const queryClient = useQueryClient();
+
+  const isHomeRoute = location.pathname === "/home" || location.pathname === "/";
+
+  const lastSeenPostsKey = useMemo(() => {
+    if (!currentUserId) return null;
+    return `hsocial:last_seen_posts_at:${currentUserId}`;
+  }, [currentUserId]);
+
+  useEffect(() => {
+    try {
+      window.dispatchEvent(
+        new CustomEvent('hsocial:new_posts_count', {
+          detail: { count: newPosts },
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }, [newPosts]);
 
   useEffect(() => {
     // Obtener usuario actual
@@ -43,6 +62,34 @@ export function useNavigation() {
   useEffect(() => {
     if (!currentUserId) return;
 
+    const getLastSeenAt = () => {
+      if (!lastSeenPostsKey) return new Date(0).toISOString();
+      const stored = localStorage.getItem(lastSeenPostsKey);
+      return stored || new Date(0).toISOString();
+    };
+
+    const setLastSeenAt = (iso: string) => {
+      if (!lastSeenPostsKey) return;
+      localStorage.setItem(lastSeenPostsKey, iso);
+    };
+
+    const refreshNewPostsCount = async () => {
+      try {
+        const lastSeenAt = getLastSeenAt();
+        const { count } = await (supabase as any)
+          .from("posts")
+          .select("id", { count: "exact", head: true })
+          .gt("created_at", lastSeenAt)
+          .neq("user_id", currentUserId);
+
+        if (typeof count === "number") {
+          setNewPosts(count);
+        }
+      } catch (error) {
+        console.error("Failed to refresh new posts count:", error);
+      }
+    };
+
     // Load initial unread notifications count
     const loadUnreadCount = async () => {
       const { count } = await supabase
@@ -57,6 +104,21 @@ export function useNavigation() {
     };
 
     loadUnreadCount();
+
+    refreshNewPostsCount();
+
+    const pollId = window.setInterval(() => {
+      void refreshNewPostsCount();
+    }, 30000);
+
+    const handleSeeNewPosts = () => {
+      setNewPosts(0);
+      if (lastSeenPostsKey) {
+        localStorage.setItem(lastSeenPostsKey, new Date().toISOString());
+      }
+    };
+
+    window.addEventListener('hsocial:see_new_posts', handleSeeNewPosts);
 
     // Set up notifications subscription
     const notificationsPromise = getOrCreateChannel("notifications", (channel) => {
@@ -119,7 +181,7 @@ export function useNavigation() {
           table: "posts"
         },
         (payload) => {
-          if (location.pathname !== "/home" && payload.new) {
+          if (payload.new) {
             const post = payload.new as any;
             // Si no es una publicación propia
             if (post.user_id !== currentUserId) {
@@ -142,8 +204,10 @@ export function useNavigation() {
     return () => {
       removeChannel("notifications");
       removeChannel("new-posts");
+      window.clearInterval(pollId);
+      window.removeEventListener('hsocial:see_new_posts', handleSeeNewPosts);
     };
-  }, [currentUserId, location.pathname, toast, getOrCreateChannel, removeChannel]);
+  }, [currentUserId, isHomeRoute, toast, getOrCreateChannel, removeChannel]);
 
   const handleLogout = async () => {
     try {
@@ -170,8 +234,12 @@ export function useNavigation() {
     // Resetear contador de nuevas publicaciones
     setNewPosts(0);
 
+    if (lastSeenPostsKey) {
+      localStorage.setItem(lastSeenPostsKey, new Date().toISOString());
+    }
+
     // Navegar siempre al inicio del feed
-    if (location.pathname !== "/home") {
+    if (!isHomeRoute) {
       navigate("/home");
     }
     
@@ -191,11 +259,19 @@ export function useNavigation() {
     
     // Mark all notifications as read when clicking on notifications icon
     if (currentUserId) {
-      await supabase
-        .from("notifications")
+      await (supabase
+        .from("notifications") as any)
         .update({ read: true })
         .eq("receiver_id", currentUserId)
         .eq("read", false);
+    }
+  };
+
+  const handleExploreClick = () => {
+    setNewPosts(0);
+
+    if (lastSeenPostsKey) {
+      localStorage.setItem(lastSeenPostsKey, new Date().toISOString());
     }
   };
 
@@ -206,6 +282,7 @@ export function useNavigation() {
     handleLogout,
     handleHomeClick,
     handleNotificationClick,
+    handleExploreClick,
     location
   };
 }

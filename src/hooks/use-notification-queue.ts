@@ -39,6 +39,12 @@ export function useNotificationQueue(options: QueueProcessingOptions = {}) {
         return;
       }
 
+      const accessToken = session.access_token;
+      if (!accessToken) {
+        console.log('🔔 No access token, skipping queue processing');
+        return;
+      }
+
       // Build the Supabase URL dynamically
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wgbbaxvuuinubkgffpiq.supabase.co';
       const functionUrl = `${supabaseUrl}/functions/v1/process-notifications`;
@@ -46,7 +52,8 @@ export function useNotificationQueue(options: QueueProcessingOptions = {}) {
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          // IMPORTANT: Use the user's JWT so Edge Functions can authenticate the caller.
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
@@ -56,7 +63,8 @@ export function useNotificationQueue(options: QueueProcessingOptions = {}) {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
       }
 
       const result = await response.json();

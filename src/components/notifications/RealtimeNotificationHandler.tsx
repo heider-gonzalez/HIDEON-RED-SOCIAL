@@ -17,6 +17,7 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
     showReactionNotification,
     showCommentNotification,
     showFriendRequestNotification,
+    updateBadge,
   } = usePushNotifications();
 
   const toastRef = useRef(toast);
@@ -88,11 +89,13 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
             .eq('id', notification.post_id)
             .single()
             .then(({ data }) => {
-              const postContent = data?.content || 'tu publicación';
-              if (notification.type === 'post_like') {
-                showReaction(senderName, postContent, notification.post_id);
-              } else {
-                showComment(senderName, notification.message || 'comentó', notification.post_id);
+              if (data) {
+                const postContent = data.content || 'tu publicación';
+                if (notification.type === 'post_like') {
+                  showReaction(senderName, postContent, notification.post_id);
+                } else {
+                  showComment(senderName, notification.message || 'comentó', notification.post_id);
+                }
               }
             });
         }

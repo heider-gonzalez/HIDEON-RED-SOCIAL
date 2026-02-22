@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { ReactionType } from "@/types/database/social.types";
 import { reactionIcons } from "./ReactionIcons";
@@ -24,6 +24,7 @@ export function HoverReactionButton({
   reactionCount = 0
 }: HoverReactionButtonProps) {
   const [animatingReaction, setAnimatingReaction] = useState<ReactionType | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const closeReactionsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMobile = useIsMobile();
@@ -99,8 +100,30 @@ export function HoverReactionButton({
     }, 260);
   }, [cancelCloseReactions, setActiveReaction, setShowReactions]);
 
+  useEffect(() => {
+    if (!showReactions) return;
+
+    const onPointerDown = (e: PointerEvent) => {
+      const root = wrapperRef.current;
+      if (!root) return;
+      const target = e.target as Node | null;
+      if (!target) return;
+
+      if (!root.contains(target)) {
+        setShowReactions(false);
+        setActiveReaction(null);
+      }
+    };
+
+    document.addEventListener('pointerdown', onPointerDown, { capture: true });
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, { capture: true } as any);
+    };
+  }, [showReactions, setActiveReaction, setShowReactions]);
+
   return (
     <div
+      ref={wrapperRef}
       className="relative"
       onMouseEnter={() => {
         if (!isMobile) {

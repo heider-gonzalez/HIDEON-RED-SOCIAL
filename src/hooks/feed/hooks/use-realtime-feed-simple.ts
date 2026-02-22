@@ -87,13 +87,15 @@ export function useRealtimeFeedSimple(userId?: string) {
             },
             (payload) => {
               if (debug) console.log(' Reaction change detected:', payload.new);
+              const postId = (payload.new as any)?.post_id;
               // Throttled invalidation - only update every 2 seconds max
               clearTimeout(retryTimeoutRef.current);
               retryTimeoutRef.current = setTimeout(() => {
-                queryClient.invalidateQueries({ 
-                  queryKey: ["posts"],
-                  exact: false 
-                });
+                if (postId) {
+                  queryClient.invalidateQueries({ queryKey: ["posts", postId] });
+                } else {
+                  queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
+                }
               }, 2000);
             }
           );
@@ -110,13 +112,16 @@ export function useRealtimeFeedSimple(userId?: string) {
             },
             (payload) => {
               if (debug) console.log(' Comment change detected:', payload.new);
+              const postId = (payload.new as any)?.post_id;
               // Throttled invalidation - only update every 2 seconds max
               clearTimeout(retryTimeoutRef.current);
               retryTimeoutRef.current = setTimeout(() => {
-                queryClient.invalidateQueries({ 
-                  queryKey: ["posts"],
-                  exact: false 
-                });
+                if (postId) {
+                  queryClient.invalidateQueries({ queryKey: ["comments", postId] });
+                  queryClient.invalidateQueries({ queryKey: ["posts", postId] });
+                } else {
+                  queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
+                }
               }, 2000);
             }
           );

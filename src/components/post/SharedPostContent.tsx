@@ -66,10 +66,18 @@ export function SharedPostContent({ post }: SharedPostContentProps) {
             {post.profiles?.username || 'Usuario'}
           </Link>
           <div className="text-xs text-muted-foreground/70 mt-0.5">
-            {formatDistanceToNow(new Date(post.created_at), {
-              addSuffix: true,
-              locale: es
-            })}
+            {(() => {
+              try {
+                const d = new Date((post as any)?.created_at);
+                if (Number.isNaN(d.getTime())) return '';
+                return formatDistanceToNow(d, {
+                  addSuffix: true,
+                  locale: es,
+                });
+              } catch {
+                return '';
+              }
+            })()}
           </div>
         </div>
       </div>

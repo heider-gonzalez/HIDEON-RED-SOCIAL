@@ -69,7 +69,6 @@ export function useServiceWorker() {
       // Handle controller change (when SW takes control)
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         console.log('🎛️ Service Worker controller changed');
-        window.location.reload();
       });
 
     } catch (error) {
@@ -111,7 +110,12 @@ export function useServiceWorker() {
       console.log('🔔 Subscribing to push notifications...');
 
       // You'll need to replace this with your actual VAPID public key from Supabase
-      const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+      const rawVapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+      const vapidPublicKey = (rawVapidPublicKey ?? '')
+        .toString()
+        .trim()
+        .replace(/^['"]|['"]$/g, '')
+        .replace(/\s+/g, '');
 
       // If no VAPID key is provided, skip push notifications
       if (!vapidPublicKey || vapidPublicKey === 'BKxQzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQ') {
@@ -119,9 +123,53 @@ export function useServiceWorker() {
         return null;
       }
 
+      console.log('🔔 VAPID key info:', {
+        stringLength: vapidPublicKey.length,
+        previewStart: vapidPublicKey.slice(0, 10),
+        previewEnd: vapidPublicKey.slice(-10),
+      });
+
+      let applicationServerKey: Uint8Array;
+      try {
+        applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+      } catch (e) {
+        console.error('❌ Invalid VAPID public key (base64 decode failed)', {
+          length: vapidPublicKey.length,
+        });
+        return null;
+      }
+
+      // Some generators/exports provide the raw X||Y (64 bytes) without the uncompressed point prefix (0x04).
+      // PushManager expects an uncompressed P-256 public key which is 65 bytes: 0x04 || X (32) || Y (32).
+      if (applicationServerKey.byteLength === 64) {
+        const fixed = new Uint8Array(65);
+        fixed[0] = 0x04;
+        fixed.set(applicationServerKey, 1);
+        applicationServerKey = fixed;
+        console.warn('🔧 VAPID key decoded to 64 bytes; prepended 0x04 prefix to fix to 65 bytes');
+      }
+
+      // WebPush VAPID public key (P-256) should decode to 65 bytes.
+      if (applicationServerKey.byteLength !== 65) {
+        console.error('❌ Invalid VAPID public key (wrong decoded length)', {
+          decodedLength: applicationServerKey.byteLength,
+          stringLength: vapidPublicKey.length,
+        });
+        return null;
+      }
+
+      console.log('🔔 VAPID decoded length OK:', {
+        decodedLength: applicationServerKey.byteLength,
+      });
+
+      const applicationServerKeyBuffer = applicationServerKey.buffer.slice(
+        applicationServerKey.byteOffset,
+        applicationServerKey.byteOffset + applicationServerKey.byteLength,
+      ) as ArrayBuffer;
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        applicationServerKey: applicationServerKeyBuffer
       });
 
       console.log('✅ Push subscription successful:', subscription);
@@ -129,17 +177,14 @@ export function useServiceWorker() {
       // Save subscription to Supabase database
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { error } = await supabase
+        const subscriptionJson = subscription.toJSON();
+
+        const { error } = await (supabase as any)
           .from('push_subscriptions')
           .upsert({
             user_id: user.id,
-            subscription_data: JSON.stringify({
-              endpoint: subscription.endpoint,
-              keys: {
-                p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
-                auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!)))
-              }
-            })
+            subscription_data: subscriptionJson,
+            updated_at: new Date().toISOString(),
           }, {
             onConflict: 'user_id'
           });
@@ -173,7 +218,7 @@ export function useServiceWorker() {
           { action: 'view', title: 'Ver' },
           { action: 'dismiss', title: 'Descartar' }
         ]
-      });
+      } as any);
     } catch (error) {
       console.error('❌ Error sending test notification:', error);
     }

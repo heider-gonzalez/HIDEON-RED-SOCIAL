@@ -15,6 +15,52 @@ export function useUnifiedReactions(postId: string) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const updatePostInCache = useCallback((updater: (post: any) => any) => {
+    queryClient.setQueriesData({ queryKey: ['posts'] }, (oldData: any) => {
+      if (!oldData) return oldData;
+
+      if (Array.isArray(oldData)) {
+        return oldData.map((p: any) => (p?.id === postId ? updater(p) : p));
+      }
+
+      if (oldData?.pages) {
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: any) => {
+            const itemsKey = Array.isArray(page?.data)
+              ? 'data'
+              : Array.isArray(page?.posts)
+                ? 'posts'
+                : null;
+
+            if (!itemsKey) return page;
+
+            return {
+              ...page,
+              [itemsKey]: (page as any)[itemsKey].map((p: any) => (p?.id === postId ? updater(p) : p))
+            };
+          })
+        };
+      }
+
+      if (Array.isArray(oldData?.data)) {
+        return {
+          ...oldData,
+          data: oldData.data.map((p: any) => (p?.id === postId ? updater(p) : p))
+        };
+      }
+
+      if (Array.isArray(oldData?.posts)) {
+        return {
+          ...oldData,
+          posts: oldData.posts.map((p: any) => (p?.id === postId ? updater(p) : p))
+        };
+      }
+
+      return oldData;
+    });
+  }, [postId, queryClient]);
+
   // Obtener reacción del usuario y contador total
   useEffect(() => {
     const fetchReactionData = async () => {
@@ -58,6 +104,10 @@ export function useUnifiedReactions(postId: string) {
 
     setIsReacting(true);
 
+    const previousUserReaction = userReaction;
+    const previousReactionCount = reactionCount;
+    const nextReaction = previousUserReaction === type ? null : type;
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -68,6 +118,49 @@ export function useUnifiedReactions(postId: string) {
         });
         return;
       }
+
+      // Optimistic UI + cache update
+      setUserReaction(nextReaction);
+      if (previousUserReaction && nextReaction === null) {
+        setReactionCount(prev => Math.max(0, prev - 1));
+      } else if (!previousUserReaction && nextReaction) {
+        setReactionCount(prev => prev + 1);
+      }
+
+      updatePostInCache((post: any) => {
+        const reactions = post?.reactions;
+
+        // If feed uses breakdown object, update count only
+        if (reactions && typeof reactions === 'object' && !Array.isArray(reactions)) {
+          const nextCount = Math.max(0, Number(reactions.count || 0) + (previousUserReaction ? (nextReaction ? 0 : -1) : (nextReaction ? 1 : 0)));
+          return {
+            ...post,
+            reactions: {
+              ...reactions,
+              count: nextCount,
+            },
+            reactions_count: nextCount,
+            user_reaction: nextReaction,
+          };
+        }
+
+        // If feed uses array reactions, patch it
+        if (Array.isArray(reactions)) {
+          const withoutMe = reactions.filter((r: any) => r?.user_id !== user.id);
+          const nextArr = nextReaction ? [...withoutMe, { user_id: user.id, reaction_type: nextReaction }] : withoutMe;
+          return {
+            ...post,
+            reactions: nextArr,
+            reactions_count: nextArr.length,
+            user_reaction: nextReaction,
+          };
+        }
+
+        return {
+          ...post,
+          user_reaction: nextReaction,
+        };
+      });
 
       // Verificar si ya existe una reacción
       const { data: existingReaction } = await (supabase as any)
@@ -85,9 +178,6 @@ export function useUnifiedReactions(postId: string) {
             .delete()
             .eq('post_id', postId)
             .eq('user_id', user.id);
-
-          setUserReaction(null);
-          setReactionCount(prev => Math.max(0, prev - 1));
         } else {
           // Actualizar tipo de reacción
           await (supabase as any)
@@ -95,8 +185,6 @@ export function useUnifiedReactions(postId: string) {
             .update({ reaction_type: type } as any)
             .eq('post_id', postId)
             .eq('user_id', user.id);
-
-          setUserReaction(type);
         }
       } else {
         // Agregar nueva reacción
@@ -107,18 +195,10 @@ export function useUnifiedReactions(postId: string) {
             user_id: user.id,
             reaction_type: type
           } as any);
-
-        setUserReaction(type);
-        setReactionCount(prev => prev + 1);
       }
 
-      // Invalidar queries para actualizar ambos sistemas
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-      queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
-      queryClient.invalidateQueries({ queryKey: ['project-posts'] });
+      // Targeted invalidation (for views that fetch a single post)
       queryClient.invalidateQueries({ queryKey: ['posts', postId] });
-      queryClient.invalidateQueries({ queryKey: ['project-posts', postId] });
-      queryClient.invalidateQueries({ queryKey: ['personalized-feed', postId] });
 
       toast({
         title: "Reacción guardada",
@@ -127,6 +207,15 @@ export function useUnifiedReactions(postId: string) {
 
     } catch (error) {
       console.error('Error handling reaction:', error);
+
+      // Revert optimistic updates
+      setUserReaction(previousUserReaction);
+      setReactionCount(previousReactionCount);
+      updatePostInCache((post: any) => ({
+        ...post,
+        user_reaction: previousUserReaction,
+      }));
+
       toast({
         title: "Error",
         description: "No se pudo procesar tu reacción",
@@ -135,7 +224,7 @@ export function useUnifiedReactions(postId: string) {
     } finally {
       setIsReacting(false);
     }
-  }, [isReacting, postId, queryClient, toast]);
+  }, [isReacting, postId, queryClient, toast, updatePostInCache, userReaction, reactionCount]);
 
   return {
     isReacting,

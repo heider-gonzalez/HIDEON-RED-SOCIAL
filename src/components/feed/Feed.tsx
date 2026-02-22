@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/providers/AuthProvider";
 import { getPublicFeedPreview } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 
 function getScrollParent(el: HTMLElement | null): HTMLElement | null {
   if (!el) return null;
@@ -37,6 +38,7 @@ export function Feed({ userId, groupId, companyId }: FeedProps) {
   const { isAuthenticated, user } = useAuth();
   const [pullDistance, setPullDistance] = useState(0);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+  const [newPostsCount, setNewPostsCount] = useState(0);
   const pullDistanceRef = useRef(0);
   const touchStartYRef = useRef<number | null>(null);
   const isPullingRef = useRef(false);
@@ -77,6 +79,7 @@ export function Feed({ userId, groupId, companyId }: FeedProps) {
     setIsPullRefreshing(true);
     queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
     queryClient.invalidateQueries({ queryKey: ["posts", "public-preview"], exact: false });
+
     try {
       window.dispatchEvent(new Event('hsocial:home_refresh'));
     } catch {
@@ -88,6 +91,27 @@ export function Feed({ userId, groupId, companyId }: FeedProps) {
       setPullDistance(0);
     }, 700);
   }, [isPullRefreshing, queryClient]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent;
+      const count = (ev as any)?.detail?.count;
+      setNewPostsCount(typeof count === 'number' ? count : 0);
+    };
+
+    window.addEventListener('hsocial:new_posts_count', handler as any);
+    return () => window.removeEventListener('hsocial:new_posts_count', handler as any);
+  }, []);
+
+  const handleSeeNewPosts = useCallback(() => {
+    try {
+      window.dispatchEvent(new Event('hsocial:see_new_posts'));
+    } catch {
+      // ignore
+    }
+    triggerRefresh();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [triggerRefresh]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!isAtTop()) return;
@@ -267,6 +291,17 @@ export function Feed({ userId, groupId, companyId }: FeedProps) {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      {isAuthenticated && newPostsCount > 0 && (
+        <div className="sticky top-0 z-10 py-2 bg-background/80 backdrop-blur">
+          <Button
+            variant="secondary"
+            className="w-full rounded-full"
+            onClick={handleSeeNewPosts}
+          >
+            Ver {newPostsCount} publicaciones nuevas
+          </Button>
+        </div>
+      )}
       {(pullDistance > 0 || isPullRefreshing) && (
         <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
           <div className={`w-4 h-4 border-2 border-current border-t-transparent rounded-full ${isPullRefreshing ? 'animate-spin' : ''}`} />

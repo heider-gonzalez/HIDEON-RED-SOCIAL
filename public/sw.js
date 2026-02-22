@@ -265,10 +265,17 @@ self.addEventListener('push', (event) => {
   try {
     notificationData = event.data.json();
   } catch (e) {
-    console.error('❌ Error parsing push data:', e);
+    console.warn('ℹ️ Push payload is not JSON; falling back to text');
+    let textPayload = '';
+    try {
+      textPayload = event.data.text();
+    } catch (_) {
+      textPayload = '';
+    }
+
     notificationData = {
       title: 'H Social',
-      body: 'Tienes una nueva notificación',
+      body: textPayload || 'Tienes una nueva notificación',
       type: 'generic'
     };
   }
@@ -276,8 +283,25 @@ self.addEventListener('push', (event) => {
   // Customize notification based on type
   const options = getNotificationOptions(notificationData);
 
+  console.log('🔔 About to show notification:', { title: notificationData.title || 'H Social', options });
+
   event.waitUntil(
-    self.registration.showNotification(notificationData.title || 'H Social', options)
+    self.registration
+      .showNotification(notificationData.title || 'H Social', options)
+      .then(() => {
+        console.log('✅ showNotification succeeded');
+        // Check if notification is actually stored
+        return self.registration.getNotifications({ tag: options.tag });
+      })
+      .then((notifications) => {
+        console.log('📬 getNotifications after show:', notifications.length, notifications.map(n => ({ title: n.title, tag: n.tag })));
+        if (notifications.length === 0) {
+          console.warn('⚠️ Notification not stored (possible system block)');
+        }
+      })
+      .catch((err) => {
+        console.error('❌ showNotification failed:', err);
+      })
   );
 });
 
@@ -292,6 +316,7 @@ function getNotificationOptions(data) {
       type: data.type,
       ...data
     },
+
     actions: [
       {
         action: 'view',
@@ -302,9 +327,9 @@ function getNotificationOptions(data) {
         title: 'Descartar'
       }
     ],
-    requireInteraction: true,
+    requireInteraction: false,
     silent: false,
-    tag: data.tag || 'hsocial-notification' // Group similar notifications
+    tag: data.tag || `hsocial-${data.type || 'generic'}-${data.messageId || data.conversationId || data.channelId || data.senderId || Date.now()}` // Group similar notifications
   };
 
   // Customize based on notification type

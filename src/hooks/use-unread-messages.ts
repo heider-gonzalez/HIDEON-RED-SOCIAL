@@ -12,6 +12,8 @@ interface UnreadMessage {
 }
 
 export function useUnreadMessages(currentUserId?: string) {
+  const debug = import.meta.env.DEV;
+  if (debug) console.log('🔔 useUnreadMessages HOOK MOUNTED - currentUserId:', currentUserId);
   const [unreadMessages, setUnreadMessages] = useState<UnreadMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -19,53 +21,20 @@ export function useUnreadMessages(currentUserId?: string) {
     if (!currentUserId) return;
 
     const fetchUnreadMessages = async () => {
+      if (debug) console.log('🔔 fetchUnreadMessages - START');
       setLoading(true);
       try {
-        // Get unread messages from notifications table
-        const { data: notifications, error } = await supabase
-          .from('notifications')
-          .select(`
-            id,
-            sender_id,
-            message,
-            created_at,
-            read,
-            sender:profiles!notifications_sender_id_fkey (
-              username,
-              avatar_url
-            )
-          `)
-          .eq('receiver_id', currentUserId)
-          .eq('type', 'message')
-          .eq('read', false)
-          .order('created_at', { ascending: false });
+        if (debug) console.log('🔔 fetchUnreadMessages - currentUserId:', currentUserId);
 
-        if (error) throw error;
+        const { data, error } = await supabase.functions.invoke('get-unread-messages');
+        if (error) {
+          if (debug) console.error('🔔 fetchUnreadMessages invoke error:', error);
+          throw error;
+        }
 
-        // Group notifications by sender and count unread messages
-        const groupedMessages = notifications?.reduce((acc: any[], notification) => {
-          const existingGroup = acc.find(group => group.sender_id === notification.sender_id);
-          
-          if (existingGroup) {
-            existingGroup.unread_count += 1;
-            existingGroup.last_message_at = notification.created_at;
-            existingGroup.message_content = notification.message;
-          } else {
-            acc.push({
-              channel_id: notification.sender_id, // For private messages, use sender_id as channel_id
-              channel_name: notification.sender?.username || 'Usuario desconocido',
-              sender_username: notification.sender?.username || 'Usuario desconocido',
-              sender_avatar: notification.sender?.avatar_url,
-              message_content: notification.message,
-              unread_count: 1,
-              last_message_at: notification.created_at
-            });
-          }
-          
-          return acc;
-        }, []) || [];
-
-        setUnreadMessages(groupedMessages);
+        const items = (data as any)?.unreadMessages;
+        setUnreadMessages(Array.isArray(items) ? items : []);
+        if (debug) console.log('🔔 fetchUnreadMessages - STATE UPDATED');
       } catch (error) {
         console.error('Error fetching unread messages:', error);
       } finally {
@@ -90,12 +59,12 @@ export function useUnreadMessages(currentUserId?: string) {
           const newNotification = payload.new as any;
           
           setUnreadMessages(prev => {
-            const existingGroup = prev.find(group => group.sender_id === newNotification.sender_id);
+            const existingGroup = prev.find(group => group.channel_id === newNotification.sender_id);
             
             if (existingGroup) {
               // Update existing group
               return prev.map(group =>
-                group.sender_id === newNotification.sender_id
+                group.channel_id === newNotification.sender_id
                   ? {
                       ...group,
                       unread_count: group.unread_count + 1,
@@ -109,9 +78,9 @@ export function useUnreadMessages(currentUserId?: string) {
               return [
                 {
                   channel_id: newNotification.sender_id,
-                  channel_name: newNotification.sender?.username || 'Usuario desconocido',
-                  sender_username: newNotification.sender?.username || 'Usuario desconocido',
-                  sender_avatar: newNotification.sender?.avatar_url,
+                  channel_name: `Usuario ${newNotification.sender_id?.slice(0, 8)}`,
+                  sender_username: `Usuario ${newNotification.sender_id?.slice(0, 8)}`,
+                  sender_avatar: null,
                   message_content: newNotification.message,
                   unread_count: 1,
                   last_message_at: newNotification.created_at
@@ -130,14 +99,16 @@ export function useUnreadMessages(currentUserId?: string) {
   }, [currentUserId]);
 
   const getTotalUnreadCount = () => {
-    return unreadMessages.reduce((total, message) => total + message.unread_count, 0);
+    const total = unreadMessages.reduce((total, message) => total + message.unread_count, 0);
+    if (debug) console.log('🔔 useUnreadMessages - unreadMessages:', unreadMessages, 'total:', total);
+    return total;
   };
 
   const markAsRead = async (senderId: string) => {
     try {
       // Mark all messages from this sender as read
-      await supabase
-        .from('notifications')
+      await (supabase
+        .from('notifications') as any)
         .update({ read: true })
         .eq('receiver_id', currentUserId)
         .eq('sender_id', senderId)
@@ -146,7 +117,7 @@ export function useUnreadMessages(currentUserId?: string) {
 
       // Update local state
       setUnreadMessages(prev => 
-        prev.filter(message => message.sender_id !== senderId)
+        prev.filter(message => message.channel_id !== senderId)
       );
     } catch (error) {
       console.error('Error marking messages as read:', error);

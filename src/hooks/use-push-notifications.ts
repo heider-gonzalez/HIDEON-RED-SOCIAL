@@ -111,6 +111,20 @@ export function usePushNotifications() {
     }
   };
 
+  const updateBadge = async (count: number) => {
+    if ('setAppBadge' in navigator && 'clearAppBadge' in navigator) {
+      try {
+        if (count > 0) {
+          await navigator.setAppBadge(count);
+        } else {
+          await navigator.clearAppBadge();
+        }
+      } catch (err) {
+        console.warn('Badge update failed:', err);
+      }
+    }
+  };
+
   const showMessageNotification = (sender: string, message: string, senderId?: string) => {
     showNotification(
       `Mensaje de ${sender}`,
@@ -118,6 +132,8 @@ export function usePushNotifications() {
       undefined,
       { type: 'message', senderId }
     );
+    // Increment badge
+    updateBadge(1);
   };
 
   const showHeartNotification = (sender: string, type: 'profile' | 'engagement', hearts?: number) => {
@@ -178,6 +194,7 @@ export function usePushNotifications() {
     showReactionNotification,
     showCommentNotification,
     showFriendRequestNotification,
+    updateBadge,
     disable
   };
 }

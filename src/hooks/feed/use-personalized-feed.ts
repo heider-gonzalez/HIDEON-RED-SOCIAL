@@ -65,6 +65,10 @@ export function usePersonalizedFeed(userId?: string, groupId?: string, companyId
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage?.nextCursor,
     enabled: true,
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 10,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   const rawPosts = useMemo(() => {
@@ -111,6 +115,9 @@ export function usePersonalizedFeed(userId?: string, groupId?: string, companyId
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     }
+    if (algorithLoading) {
+      return rawPosts;
+    }
     return personalizedPosts;
   }, [isPersonalized, rawPosts, personalizedPosts]);
 
@@ -126,7 +133,8 @@ export function usePersonalizedFeed(userId?: string, groupId?: string, companyId
           .select('post_id')
           .eq('user_id', currentUserId);
 
-        setHiddenPostIds(hiddenPosts?.map(h => h.post_id) || []);
+        const rows = (hiddenPosts as Array<{ post_id: string }> | null) ?? null;
+        setHiddenPostIds(rows?.map((h) => h.post_id) || []);
       } catch (error) {
         console.error("Error fetching hidden data:", error);
       }
@@ -160,7 +168,7 @@ export function usePersonalizedFeed(userId?: string, groupId?: string, companyId
 
   return {
     posts: visiblePosts,
-    isLoading: postsLoading || (isPersonalized && algorithLoading),
+    isLoading: postsLoading,
     isPersonalized,
     setIsPersonalized,
     refetch,

@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EditPostDialog } from "@/components/post/dialogs/EditPostDialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthorPostOptionsMenuProps {
   postId: string;
@@ -18,6 +19,7 @@ export function AuthorPostOptionsMenu({ postId, onEdit, onDelete, canDelete = tr
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const handleDeletePost = async () => {
     if (!canDelete) return;
@@ -56,8 +58,10 @@ export function AuthorPostOptionsMenu({ postId, onEdit, onDelete, canDelete = tr
           description: "Tu publicación ha sido actualizada exitosamente.",
         });
         setEditDialogOpen(false);
-        // Refresh the page to show updated content
-        window.location.reload();
+        queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
+        if (onEdit) {
+          onEdit();
+        }
       } else {
         toast({
           variant: "destructive",
