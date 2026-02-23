@@ -40,7 +40,7 @@ export function useCreateIdeaRequest() {
           canales!inner(id, es_privado)
         `)
         .eq("id_usuario", userId1)
-        .eq("canales.es_privado", true);
+        .eq("canales.es_privado", "true");
 
       if (searchError) throw searchError;
 

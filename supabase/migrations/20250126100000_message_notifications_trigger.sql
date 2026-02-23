@@ -11,7 +11,7 @@ SET search_path = public
 AS $$
 DECLARE
     channel_members RECORD;
-    channel_type TEXT;
+    channel_type BOOLEAN;
 BEGIN
     -- Get channel type to determine notification strategy
     SELECT es_privado INTO channel_type

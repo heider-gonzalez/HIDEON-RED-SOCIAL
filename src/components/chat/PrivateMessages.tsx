@@ -171,7 +171,7 @@ export function PrivateMessages() {
           canales!inner(id, es_privado)
         `)
         .eq("id_usuario", userId1)
-        .eq("canales.es_privado", true);
+        .eq("canales.es_privado", "true");
 
       if (searchError) throw searchError;
 
@@ -275,14 +275,14 @@ export function PrivateMessages() {
       setLoading(true);
 
       // Obtener todos los canales privados donde el usuario es miembro
-      const { data: userChannels, error: channelsError } = await (supabase as any)
+      const { data: userChannels, error: channelsError } = await supabase
         .from("miembros_canal")
         .select(`
           id_canal,
           canales!inner(id, es_privado, nombre)
         `)
         .eq("id_usuario", currentUserId)
-        .eq("canales.es_privado", true);
+        .eq("canales.es_privado", "true");
 
       if (channelsError) throw channelsError;
 

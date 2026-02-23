@@ -87,7 +87,7 @@ export const fetchConversations = async (currentUserId: string): Promise<Convers
       canales!inner(id, es_privado, nombre)
     `)
     .eq("id_usuario", currentUserId)
-    .eq("canales.es_privado", true);
+    .eq("canales.es_privado", "true");
 
   if (channelsError) throw channelsError;
 
