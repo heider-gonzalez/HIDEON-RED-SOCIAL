@@ -118,6 +118,7 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
             isVisible={showPostModal}
             isOpen={showPostModal}
             onClose={() => setShowPostModal(false)}
+            userAvatar={profile.avatar_url}
             initialContent={initialContent}
             initialMedia={initialMedia}
             initialMediaType={initialMediaType}

@@ -77,10 +77,10 @@ export default function Auth() {
 
   // SEO data for react-helmet-async
   const seoData = {
-    title: authMode === 'login' ? 'Iniciar sesión | RED SOCIAL HSOCIAL' : 'Crear cuenta | RED SOCIAL HSOCIAL',
+    title: authMode === 'login' ? 'Iniciar sesión | HIDEON' : 'Crear cuenta | HIDEON',
     description: authMode === 'login'
-      ? 'Inicia sesión en RED SOCIAL HSOCIAL.'
-      : 'Crea tu cuenta en RED SOCIAL HSOCIAL.',
+      ? 'Inicia sesión en HIDEON.'
+      : 'Crea tu cuenta en HIDEON.',
     canonical: `${window.location.origin}/auth`,
     robots: 'index,follow'
   };
@@ -93,8 +93,18 @@ export default function Auth() {
       <main className="min-h-screen flex items-center justify-center bg-background px-4 py-8 sm:py-12 relative" role="main">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <div className="mx-auto mb-4">
-            <span className="text-6xl font-bold text-primary">H</span>
+          <div className="mx-auto mb-4 space-y-4">
+            <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <div className="h-14 w-14 rounded-full bg-white dark:bg-[#121212] [.tech_&]:bg-background flex items-center justify-center overflow-hidden">
+                <svg viewBox="700 250 1250 1400" className="w-[92%] h-[92%] block mx-auto fill-current not-italic text-primary" aria-hidden="true" focusable="false">
+                  <path
+                    transform="translate(0 1850) scale(1 -1)"
+                    d="M820 916 c0 -295 3 -536 6 -536 4 0 78 39 165 87 207 114 207 110 16 211 -21 11 -38 24 -39 28 0 4 74 49 163 100 l164 91 3 -177 2 -178 145 -81 c79 -45 146 -81 149 -81 3 0 6 241 6 535 0 294 -2 535 -4 535 -3 0 -70 -37 -150 -81 l-146 -82 0 -168 c0 -93 -3 -169 -6 -169 -14 0 -393 222 -397 233 -7 18 -5 147 2 147 3 0 35 -17 71 -38 36 -21 91 -52 123 -70 l57 -32 0 42 -1 43 -155 85 c-85 47 -159 87 -164 88 -7 2 -10 -188 -10 -532z m156 -302 c35 -20 64 -38 64 -40 0 -4 -136 -74 -145 -74 -3 0 -5 34 -5 75 0 47 4 75 11 75 6 0 40 -16 75 -36z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <h1 className="text-4xl font-bold tracking-widest text-primary">HIDEON</h1>
           </div>
           <p className="text-muted-foreground text-sm">
             Conecta Ideas con Proyectos

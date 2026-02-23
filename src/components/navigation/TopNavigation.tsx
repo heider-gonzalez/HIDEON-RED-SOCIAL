@@ -253,6 +253,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
   return (
     <nav className="bg-card border-b border-border h-14 fixed top-0 left-0 right-0 z-[70]">
       <div className="w-full flex items-center justify-between h-full px-2 lg:px-4">
+
         {/* Logo and Search - Left */}
         <div className="flex items-center gap-4 flex-shrink-0 w-80">
           <HSocialLogo
@@ -331,7 +332,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                     {(userProfile?.username?.[0] ?? "U").toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="ml-2 text-sm font-bold text-[#050505] dark:text-white max-w-20 truncate">
+                <span className="ml-2 text-sm font-bold text-[#050505] dark:text-white [.tech_&]:text-white max-w-20 truncate">
                   {userProfile?.username || 'Usuario'}
                 </span>
               </Button>

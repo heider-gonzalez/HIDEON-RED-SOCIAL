@@ -310,7 +310,7 @@ export default function Projects() {
     <Layout>
       <div className="min-h-screen bg-background">
         <Helmet>
-          <title>Proyectos Universitarios - HSocial</title>
+          <title>Proyectos Universitarios - HIDEON</title>
           <meta name="description" content="Explora e inspírate con ideas innovadoras de proyectos universitarios" />
         </Helmet>
 

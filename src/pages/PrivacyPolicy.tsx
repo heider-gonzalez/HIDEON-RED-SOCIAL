@@ -36,17 +36,17 @@ export default function PrivacyPolicy() {
       <div className="container px-2 sm:px-4 max-w-4xl pt-6 pb-12 space-y-6">
         <Card className="border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Política de Privacidad de Hsocial</CardTitle>
+            <CardTitle className="text-xl">Política de Privacidad de HIDEON</CardTitle>
           </CardHeader>
           <CardContent className="p-6 pt-2 space-y-3">
             <p className="text-sm text-muted-foreground">
-              En Hsocial valoramos tu privacidad. Aquí te explicamos qué datos recopilamos, por qué lo hacemos, cómo los
+              En HIDEON valoramos tu privacidad. Aquí te explicamos qué datos recopilamos, por qué lo hacemos, cómo los
               protegemos y cuáles son tus derechos.
             </p>
             <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm">
               <div className="font-medium">Responsable del tratamiento (placeholder)</div>
               <div className="mt-1 text-muted-foreground space-y-1">
-                <div>Servicio: Hsocial</div>
+                <div>Servicio: HIDEON</div>
                 <div>Sede: Barranquilla, Atlántico, Colombia (placeholder dirección física si aplica)</div>
                 <div>Correo de contacto: soporte@hsocial.co</div>
               </div>

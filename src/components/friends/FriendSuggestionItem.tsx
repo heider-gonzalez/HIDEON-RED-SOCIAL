@@ -40,7 +40,7 @@ export function FriendSuggestionItem({
           </AvatarFallback>
         </Avatar>
         <div className="space-y-1">
-          <div className="font-bold text-[#050505] dark:text-white">{suggestion.username}</div>
+          <div className="font-bold text-[#050505] dark:text-white [.tech_&]:text-white">{suggestion.username}</div>
           <div className="flex flex-wrap gap-2">
             {suggestion.career && (
               <div className="flex items-center text-xs text-muted-foreground">

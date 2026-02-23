@@ -33,7 +33,7 @@ export default function AccessibilitySettings() {
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Tema</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Ajusta la apariencia de HSocial para reducir el deslumbramiento y dar a tus ojos un descanso.
+            Ajusta la apariencia de HIDEON para reducir el deslumbramiento y dar a tus ojos un descanso.
           </p>
           
           <div className="flex items-center justify-between py-3 border-b">

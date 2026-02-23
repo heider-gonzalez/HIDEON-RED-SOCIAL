@@ -24,8 +24,8 @@ export default function PasswordReset() {
 
   // SEO data for react-helmet-async
   const seoData = {
-    title: 'Restablecer contraseña | RED SOCIAL HSOCIAL',
-    description: 'Restablece tu contraseña en RED SOCIAL HSOCIAL.',
+    title: 'Restablecer contraseña | HIDEON',
+    description: 'Restablece tu contraseña en HIDEON.',
     canonical: `${window.location.origin}/password-reset`,
     robots: 'noindex,nofollow'
   };

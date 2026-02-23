@@ -19,7 +19,7 @@ export function UserProfileDropdown({ username, avatarUrl, userId, isLoading }: 
 
   if (isLoading) {
     return (
-      <div className="py-3 px-4 border-b bg-white dark:bg-gray-900">
+      <div className="py-3 px-4 border-b bg-white dark:bg-gray-900 [.tech_&]:bg-background">
         <div className="h-10 bg-muted animate-pulse rounded-full"></div>
       </div>
     );
@@ -33,12 +33,12 @@ export function UserProfileDropdown({ username, avatarUrl, userId, isLoading }: 
     <Collapsible
       open={isOpen}
       onOpenChange={setIsOpen}
-      className="border-b bg-white dark:bg-gray-900"
+      className="border-b bg-white dark:bg-gray-900 [.tech_&]:bg-background"
     >
       <CollapsibleTrigger asChild>
         <Button
           variant="ghost"
-          className="w-full flex justify-between items-center rounded-none h-auto py-3 px-4 bg-white dark:bg-gray-900"
+          className="w-full flex justify-between items-center rounded-none h-auto py-3 px-4 bg-white dark:bg-gray-900 [.tech_&]:bg-background"
         >
           <div
             className="flex items-center cursor-pointer"
@@ -58,14 +58,14 @@ export function UserProfileDropdown({ username, avatarUrl, userId, isLoading }: 
         </Button>
       </CollapsibleTrigger>
       
-      <CollapsibleContent className="px-4 py-2 bg-white dark:bg-gray-900">
+      <CollapsibleContent className="px-4 py-2 bg-white dark:bg-gray-900 [.tech_&]:bg-background">
         <h3 className="text-sm font-medium text-muted-foreground mb-2">Tus páginas y perfiles</h3>
         
         <div className="space-y-1">
           {/* Current User Profile */}
           <Button
             variant="ghost"
-            className="w-full justify-between px-2 py-2 h-auto bg-white dark:bg-gray-900"
+            className="w-full justify-between px-2 py-2 h-auto bg-white dark:bg-gray-900 [.tech_&]:bg-background"
           >
             <div className="flex items-center">
               <Avatar className="h-10 w-10 mr-3">
@@ -80,7 +80,7 @@ export function UserProfileDropdown({ username, avatarUrl, userId, isLoading }: 
           {/* Create Profile Button */}
           <Button
             variant="ghost"
-            className="w-full justify-start px-2 py-2 h-auto bg-white dark:bg-gray-900"
+            className="w-full justify-start px-2 py-2 h-auto bg-white dark:bg-gray-900 [.tech_&]:bg-background"
             onClick={handleCreateProfile}
           >
             <div className="flex items-center">

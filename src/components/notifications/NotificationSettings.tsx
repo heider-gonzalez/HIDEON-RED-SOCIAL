@@ -160,7 +160,7 @@ export function NotificationSettings() {
             className="w-full"
             onClick={() => {
               // Mostrar notificación de prueba
-              new Notification("¡H Social - Notificación de prueba!", {
+              new Notification("¡HIDEON - Notificación de prueba!", {
                 body: "Las notificaciones están funcionando correctamente",
                 icon: "/favicon.ico"
               });

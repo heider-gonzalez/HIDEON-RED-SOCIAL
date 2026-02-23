@@ -40,7 +40,7 @@ export function EmptyFeed() {
             <Sparkles className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold mb-2">¡Bienvenido a H Social!</h2>
+            <h2 className="text-xl font-semibold mb-2">¡Bienvenido a HIDEON!</h2>
             <p className="text-muted-foreground">
               Conecta con socios, lanza tu proyecto y haz realidad tu emprendimiento.
             </p>

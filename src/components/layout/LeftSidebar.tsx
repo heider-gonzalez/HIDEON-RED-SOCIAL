@@ -85,7 +85,7 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
   return (
     <aside className="h-full bg-card border-r border-border overflow-y-auto custom-scrollbar">
       <div className="p-6">
-        <h2 className="text-xl font-semibold text-[#050505] dark:text-white">Panel</h2>
+        <h2 className="text-xl font-semibold text-[#050505] dark:text-white [.tech_&]:text-white">Panel</h2>
       </div>
 
       <div className="px-4 pb-4">
@@ -101,7 +101,7 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-lg font-semibold text-[#050505] dark:text-white">{userProfile?.username || "Mi perfil"}</p>
+              <p className="text-lg font-semibold text-[#050505] dark:text-white [.tech_&]:text-white">{userProfile?.username || "Mi perfil"}</p>
             </div>
           </Link>
         )}
@@ -134,8 +134,8 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
                 const labelClassName = cn(
                   "flex-1 truncate",
                   isActive
-                    ? "text-[#050505] dark:text-white font-semibold"
-                    : "text-[#1C1E21] dark:text-slate-200 font-medium"
+                    ? "text-[#050505] dark:text-white [.tech_&]:text-white font-semibold"
+                    : "text-[#1C1E21] dark:text-slate-200 [.tech_&]:text-slate-200 font-medium"
                 );
                 return (
                   <>
@@ -201,8 +201,8 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
               const labelClassName = cn(
                 "flex-1 truncate",
                 isActive
-                  ? "text-[#050505] dark:text-white font-semibold"
-                  : "text-[#1C1E21] dark:text-slate-200 font-medium"
+                  ? "text-[#050505] dark:text-white [.tech_&]:text-white font-semibold"
+                  : "text-[#1C1E21] dark:text-slate-200 [.tech_&]:text-slate-200 font-medium"
               );
               return (
                 <>
@@ -232,8 +232,8 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
             const labelClassName = cn(
               "truncate",
               isActive
-                ? "text-[#050505] dark:text-white font-semibold"
-                : "text-[#1C1E21] dark:text-slate-200 font-medium"
+                ? "text-[#050505] dark:text-white [.tech_&]:text-white font-semibold"
+                : "text-[#1C1E21] dark:text-slate-200 [.tech_&]:text-slate-200 font-medium"
             );
             return (
               <>

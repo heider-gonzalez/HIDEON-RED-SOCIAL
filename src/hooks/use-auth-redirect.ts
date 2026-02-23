@@ -66,7 +66,7 @@ export function useAuthRedirect() {
             // Show appropriate message based on whether it's a new user or login
             if (isNewUser || authMode === 'register') {
               toast({
-                title: "¡Bienvenido a H Social!",
+                title: "¡Bienvenido a HIDEON!",
                 description: "Tu cuenta ha sido creada exitosamente con Google.",
               });
             } else {

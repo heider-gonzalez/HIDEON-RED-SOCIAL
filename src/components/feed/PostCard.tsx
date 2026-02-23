@@ -109,7 +109,7 @@ export function PostCard({ post }: PostCardProps) {
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1">
-                <h3 className="font-bold text-[#050505] dark:text-white truncate">
+                <h3 className="font-bold text-[#050505] dark:text-white [.tech_&]:text-white truncate">
                   @{username}
                 </h3>
                 <span className="mx-1 text-gray-400">·</span>

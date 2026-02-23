@@ -800,7 +800,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
   return (
     <div className={`fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-black bg-opacity-50 ${(!isVisible && !isOpen) ? 'hidden' : ''} sm:px-4`}>
-      <div className="bg-white dark:bg-gray-800 shadow-xl w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:rounded-lg sm:max-w-2xl overflow-hidden sm:overflow-visible flex flex-col">
+      <div className="bg-background text-foreground shadow-xl w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:rounded-lg sm:max-w-2xl overflow-hidden sm:overflow-visible flex flex-col">
         <form
           className="flex flex-col h-full min-h-0"
           onSubmit={(e) => {
@@ -829,7 +829,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 onClick={() => setShowPrivacyMenu(!showPrivacyMenu)}
                 className="flex items-center rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
               >
-                <span className="text-blue-500">
+                <span className="text-primary">
                   {privacy === 'Público' ? (
                     <span className="flex items-center">
                       <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
@@ -860,7 +860,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     onClick={() => handlePrivacySelect('Público')}
                     className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                   >
-                    <svg className="mr-2 h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="mr-2 h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10 2a5 5 0 00-5 5v2a2 5 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
                     </svg>
                     Público
@@ -869,7 +869,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     onClick={() => handlePrivacySelect('Amigos')}
                     className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                   >
-                    <svg className="mr-2 h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="mr-2 h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                     </svg>
                     Amigos
@@ -878,7 +878,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     onClick={() => handlePrivacySelect('Solo yo')}
                     className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                   >
-                    <svg className="mr-2 h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="mr-2 h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
                     Solo yo
@@ -943,8 +943,8 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               type="submit"
               disabled={!isFormValid || effectivePublishing}
               className={cn(
-                'ml-2 bg-blue-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-600',
-                !isFormValid && 'cursor-not-allowed bg-blue-300 hover:bg-blue-300',
+                'ml-2 bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90',
+                !isFormValid && 'cursor-not-allowed bg-primary/50 hover:bg-primary/50',
                 effectivePublishing && 'opacity-70 cursor-not-allowed'
               )}
             >
@@ -983,7 +983,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
           {selectedPostType === 'empleo' && (
             <div className="space-y-3 mb-4">
-              <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-blue-50/50 dark:bg-gray-700/30 px-3 py-2 text-sm text-gray-700 dark:text-gray-100">
+              <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-muted/40 px-3 py-2 text-sm text-foreground">
                 Tipo: <span className="font-semibold">Empleo</span>
               </div>
               <textarea
@@ -998,7 +998,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
           {selectedPostType === 'servicios' && (
             <div className="space-y-3 mb-4">
-              <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-blue-50/50 dark:bg-gray-700/30 px-3 py-2 text-sm text-gray-700 dark:text-gray-100">
+              <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-muted/40 px-3 py-2 text-sm text-foreground">
                 Tipo: <span className="font-semibold">Servicios</span>
               </div>
               <div className="space-y-2">
@@ -1075,7 +1075,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   {projectTechnologies.map((tech, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-sm"
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
                     >
                       {tech}
                       <button
@@ -1083,7 +1083,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                         onClick={() => {
                           setProjectTechnologies(prev => prev.filter((_, i) => i !== index));
                         }}
-                        className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100"
+                        className="ml-1 text-primary/80 hover:text-primary"
                       >
                         ×
                       </button>
@@ -1360,12 +1360,11 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
           {selectedPostType === null && (
             <textarea
-              className="w-full resize-none border-none p-0 text-gray-900 placeholder-gray-500 focus:ring-0 dark:text-gray-100 dark:placeholder-gray-400 sm:text-sm"
+              className="w-full resize-none border-none bg-transparent p-0 text-gray-900 placeholder-gray-500 focus:ring-0 dark:text-gray-100 dark:placeholder-gray-400 [.tech_&]:text-gray-100 [.tech_&]:placeholder-gray-400 sm:text-sm"
               rows={10}
               placeholder="Comparte tus ideas..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              autoFocus
             />
           )}
 
@@ -1563,7 +1562,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 setShowPostTypeMenu(!showPostTypeMenu);
               }}
               className={cn(
-                "flex items-center rounded-full p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700"
+                "flex items-center rounded-full p-2 text-primary hover:bg-muted"
               )}
             >
               <Plus className="h-5 w-5" />
@@ -1575,7 +1574,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   onClick={() => handlePostTypeSelect('idea')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
-                  <Lightbulb className="mr-3 h-5 w-5 text-blue-500" />
+                  <Lightbulb className="mr-3 h-5 w-5 text-primary" />
                   Publicar una idea
                 </button>
                 
@@ -1583,7 +1582,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   onClick={() => handlePostTypeSelect('proyecto')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
-                  <Briefcase className="mr-3 h-5 w-5 text-blue-500" />
+                  <Briefcase className="mr-3 h-5 w-5 text-primary" />
                   Publicar un proyecto
                 </button>
                 
@@ -1591,7 +1590,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   onClick={() => handlePostTypeSelect('encuesta')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
-                  <BarChart2 className="mr-3 h-5 w-5 text-blue-500" />
+                  <BarChart2 className="mr-3 h-5 w-5 text-primary" />
                   Publicar una encuesta
                 </button>
                 
@@ -1599,7 +1598,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   onClick={() => handlePostTypeSelect('evento')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
-                  <Calendar className="mr-3 h-5 w-5 text-blue-500" />
+                  <Calendar className="mr-3 h-5 w-5 text-primary" />
                   Publicar un evento
                 </button>
 
@@ -1607,7 +1606,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   onClick={() => handlePostTypeSelect('empleo')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
-                  <Briefcase className="mr-3 h-5 w-5 text-blue-500" />
+                  <Briefcase className="mr-3 h-5 w-5 text-primary" />
                   Publicar empleo
                 </button>
 
@@ -1615,7 +1614,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   onClick={() => handlePostTypeSelect('servicios')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
-                  <Briefcase className="mr-3 h-5 w-5 text-blue-500" />
+                  <Briefcase className="mr-3 h-5 w-5 text-primary" />
                   Publicar servicios
                 </button>
               </div>
@@ -1627,7 +1626,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
       {showMusicSelector && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+          <div className="bg-background text-foreground rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
             <MusicSelector
               onTrackSelect={handleMusicTrackSelect}
               onClose={() => setShowMusicSelector(false)}
@@ -1638,7 +1637,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
       {showAudioEditor && selectedAudioTrack && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className="bg-background text-foreground rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <InstagramAudioEditor
               track={selectedAudioTrack}
               videoDuration={30}

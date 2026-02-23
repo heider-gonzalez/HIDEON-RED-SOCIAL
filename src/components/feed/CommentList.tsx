@@ -53,7 +53,7 @@ export function CommentList({ postId, className = '' }: CommentListProps) {
           <div className="flex-1">
             <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm text-gray-900 dark:text-white">
+                <span className="font-medium text-sm text-gray-900 dark:text-white [.tech_&]:text-white">
                   @{comment.profiles.username}
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400">

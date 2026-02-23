@@ -17,30 +17,31 @@ export function useUnreadMessages(currentUserId?: string) {
   const [unreadMessages, setUnreadMessages] = useState<UnreadMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const fetchUnreadMessages = async () => {
+    if (!currentUserId) return;
+    if (debug) console.log('🔔 fetchUnreadMessages - START');
+    setLoading(true);
+    try {
+      if (debug) console.log('🔔 fetchUnreadMessages - currentUserId:', currentUserId);
+
+      const { data, error } = await supabase.functions.invoke('get-unread-messages');
+      if (error) {
+        if (debug) console.error('🔔 fetchUnreadMessages invoke error:', error);
+        throw error;
+      }
+
+      const items = (data as any)?.unreadMessages;
+      setUnreadMessages(Array.isArray(items) ? items : []);
+      if (debug) console.log('🔔 fetchUnreadMessages - STATE UPDATED');
+    } catch (error) {
+      console.error('Error fetching unread messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!currentUserId) return;
-
-    const fetchUnreadMessages = async () => {
-      if (debug) console.log('🔔 fetchUnreadMessages - START');
-      setLoading(true);
-      try {
-        if (debug) console.log('🔔 fetchUnreadMessages - currentUserId:', currentUserId);
-
-        const { data, error } = await supabase.functions.invoke('get-unread-messages');
-        if (error) {
-          if (debug) console.error('🔔 fetchUnreadMessages invoke error:', error);
-          throw error;
-        }
-
-        const items = (data as any)?.unreadMessages;
-        setUnreadMessages(Array.isArray(items) ? items : []);
-        if (debug) console.log('🔔 fetchUnreadMessages - STATE UPDATED');
-      } catch (error) {
-        console.error('Error fetching unread messages:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
 
     fetchUnreadMessages();
 
@@ -107,7 +108,7 @@ export function useUnreadMessages(currentUserId?: string) {
   const markAsRead = async (senderId: string) => {
     try {
       // Mark all messages from this sender as read
-      await (supabase
+      const { error } = await (supabase
         .from('notifications') as any)
         .update({ read: true })
         .eq('receiver_id', currentUserId)
@@ -115,10 +116,18 @@ export function useUnreadMessages(currentUserId?: string) {
         .eq('type', 'message')
         .eq('read', false);
 
+      if (error) {
+        console.error('Error marking messages as read (DB):', error);
+        return;
+      }
+
       // Update local state
       setUnreadMessages(prev => 
         prev.filter(message => message.channel_id !== senderId)
       );
+
+      // Re-sync from server to avoid stuck counters
+      await fetchUnreadMessages();
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }

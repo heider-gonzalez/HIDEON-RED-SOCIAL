@@ -147,7 +147,7 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
       {/* Online Friends */}
       <Card className="mb-6">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-bold flex items-center gap-2 text-[#050505] dark:text-white">
+          <CardTitle className="text-sm font-bold flex items-center gap-2 text-[#050505] dark:text-white [.tech_&]:text-white">
             <MessageCircle className="h-4 w-4" />
             Contactos
           </CardTitle>
@@ -174,7 +174,7 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
                   className="flex-1 min-w-0 cursor-pointer"
                   onClick={() => openChat(friend.id, friend.username, friend.avatar_url)}
                 >
-                  <p className="text-sm font-bold truncate text-[#050505] dark:text-white">{friend.username}</p>
+                  <p className="text-sm font-bold truncate text-[#050505] dark:text-white [.tech_&]:text-white">{friend.username}</p>
                   <p className="text-xs text-muted-foreground">
                     {friend.is_online ? 'Activo ahora' : getTimeAgo(friend.last_seen ?? null)}
                   </p>
@@ -201,7 +201,7 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
       {/* Friend Suggestions */}
       <Card className="mb-6">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-bold flex items-center gap-2 text-[#050505] dark:text-white">
+          <CardTitle className="text-sm font-bold flex items-center gap-2 text-[#050505] dark:text-white [.tech_&]:text-white">
             <UserPlus className="h-4 w-4" />
             Personas que podrías conocer
           </CardTitle>
@@ -221,7 +221,7 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate text-[#050505] dark:text-white">{suggestion.username}</p>
+                    <p className="text-sm font-bold truncate text-[#050505] dark:text-white [.tech_&]:text-white">{suggestion.username}</p>
                     {suggestion.mutual_friends && suggestion.mutual_friends > 0 && (
                       <p className="text-xs text-muted-foreground">
                         {suggestion.mutual_friends} seguidores en común

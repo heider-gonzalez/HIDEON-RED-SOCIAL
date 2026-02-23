@@ -1,15 +1,16 @@
-// Enhanced Service Worker for H Social - Push Notifications & Offline Support
-const CACHE_NAME = 'h-social-v3';
-const STATIC_CACHE = 'h-social-static-v3';
-const MESSAGES_CACHE = 'h-social-messages-v3';
-const IMAGES_CACHE = 'h-social-images-v3';
+// Enhanced Service Worker for HIDEON - Push Notifications & Offline Support
+const CACHE_NAME = 'hideon-v1';
+const STATIC_CACHE = 'hideon-static-v1';
+const MESSAGES_CACHE = 'hideon-messages-v1';
+const IMAGES_CACHE = 'hideon-images-v1';
 
 // Resources to cache for offline
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  '/favicon.svg',
+  '/icon.svg',
+  '/icon-maskable.svg'
 ];
 
 // Install event - cache static assets
@@ -36,7 +37,7 @@ self.addEventListener('activate', (event) => {
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (!cacheName.includes('h-social-v3')) {
+            if (!cacheName.includes('hideon-v1')) {
               console.log('🗑️ Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -190,7 +191,7 @@ function getOfflinePage() {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>H Social - Sin conexión</title>
+        <title>HIDEON - Sin conexión</title>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -274,7 +275,7 @@ self.addEventListener('push', (event) => {
     }
 
     notificationData = {
-      title: 'H Social',
+      title: 'HIDEON',
       body: textPayload || 'Tienes una nueva notificación',
       type: 'generic'
     };
@@ -283,11 +284,11 @@ self.addEventListener('push', (event) => {
   // Customize notification based on type
   const options = getNotificationOptions(notificationData);
 
-  console.log('🔔 About to show notification:', { title: notificationData.title || 'H Social', options });
+  console.log('🔔 About to show notification:', { title: notificationData.title || 'HIDEON', options });
 
   event.waitUntil(
     self.registration
-      .showNotification(notificationData.title || 'H Social', options)
+      .showNotification(notificationData.title || 'HIDEON', options)
       .then(() => {
         console.log('✅ showNotification succeeded');
         // Check if notification is actually stored
@@ -308,8 +309,8 @@ self.addEventListener('push', (event) => {
 // Generate notification options based on type
 function getNotificationOptions(data) {
   const baseOptions = {
-    icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
     vibrate: [200, 100, 200],
     data: {
       url: data.url || '/',
@@ -329,7 +330,7 @@ function getNotificationOptions(data) {
     ],
     requireInteraction: false,
     silent: false,
-    tag: data.tag || `hsocial-${data.type || 'generic'}-${data.messageId || data.conversationId || data.channelId || data.senderId || Date.now()}` // Group similar notifications
+    tag: data.tag || `hideon-${data.type || 'generic'}-${data.messageId || data.conversationId || data.channelId || data.senderId || Date.now()}` // Group similar notifications
   };
 
   // Customize based on notification type
@@ -338,7 +339,7 @@ function getNotificationOptions(data) {
       return {
         ...baseOptions,
         body: data.body || `Mensaje de ${data.senderName || 'alguien'}`,
-        icon: data.senderAvatar || '/icon-192x192.png',
+        icon: data.senderAvatar || '/icon.svg',
         data: {
           ...baseOptions.data,
           conversationId: data.conversationId
@@ -370,7 +371,7 @@ function getNotificationOptions(data) {
       return {
         ...baseOptions,
         body: data.body || 'Nueva interacción en tu publicación',
-        icon: '/icon-192x192.png'
+        icon: '/icon.svg'
       };
 
     default:

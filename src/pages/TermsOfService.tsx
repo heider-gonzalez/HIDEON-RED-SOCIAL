@@ -37,17 +37,17 @@ export default function TermsOfService() {
       <div className="container px-2 sm:px-4 max-w-4xl pt-6 pb-12 space-y-6">
         <Card className="border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Términos y Condiciones de Hsocial</CardTitle>
+            <CardTitle className="text-xl">Términos y Condiciones de HIDEON</CardTitle>
           </CardHeader>
           <CardContent className="p-6 pt-2 space-y-3">
             <p className="text-sm text-muted-foreground">
-              Estos términos explican cómo funciona Hsocial (red social profesional para universitarios y profesionales)
+              Estos términos explican cómo funciona HIDEON (red social profesional para universitarios y profesionales)
               y qué esperamos de ti al usar la plataforma.
             </p>
             <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm">
               <div className="font-medium">Información básica</div>
               <div className="mt-1 text-muted-foreground space-y-1">
-                <div>Nombre del servicio: Hsocial</div>
+                <div>Nombre del servicio: HIDEON</div>
                 <div>Sede: Barranquilla, Atlántico, Colombia (placeholder dirección física si aplica)</div>
                 <div>Contacto: soporte@hsocial.co</div>
               </div>

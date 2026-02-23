@@ -30,20 +30,27 @@ export const HSocialLogo = ({ className = "", showText = true, size = "md", onCl
     lg: "text-2xl",
   };
 
-  const logoBgClass = variant === "brand" ? "bg-blue-600" : "bg-foreground";
-  const logoTextClass = variant === "brand" ? "text-white" : "text-background";
-  const brandWordClass = variant === "brand" ? "text-blue-600 dark:text-blue-400" : "text-foreground";
+  const logoBgClass = "bg-white dark:bg-[#121212] [.tech_&]:bg-background";
+  const logoTextClass = "text-primary";
+  const brandWordClass = "text-primary";
 
   const content = (
     <div className={`flex items-center gap-1.5 group ${className}`}>
-      {/* Logo minimalista blanco y negro empresarial */}
-      <div
-        className={`${sizeClasses[size]} rounded-full ${logoBgClass} flex items-center justify-center`}
-      >
-        <span className={`${letterSizeClasses[size]} ${logoTextClass} font-bold`}>H</span>
+      <div className={`${sizeClasses[size]} mt-[1px] rounded-full ${logoBgClass} flex items-center justify-center overflow-hidden`}>
+        <svg
+          viewBox="700 250 1250 1400"
+          className={`w-[92%] h-[92%] fill-current not-italic ${logoTextClass}`}
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            transform="translate(0 1850) scale(1 -1)"
+            d="M820 916 c0 -295 3 -536 6 -536 4 0 78 39 165 87 207 114 207 110 16 211 -21 11 -38 24 -39 28 0 4 74 49 163 100 l164 91 3 -177 2 -178 145 -81 c79 -45 146 -81 149 -81 3 0 6 241 6 535 0 294 -2 535 -4 535 -3 0 -70 -37 -150 -81 l-146 -82 0 -168 c0 -93 -3 -169 -6 -169 -14 0 -393 222 -397 233 -7 18 -5 147 2 147 3 0 35 -17 71 -38 36 -21 91 -52 123 -70 l57 -32 0 42 -1 43 -155 85 c-85 47 -159 87 -164 88 -7 2 -10 -188 -10 -532z m156 -302 c35 -20 64 -38 64 -40 0 -4 -136 -74 -145 -74 -3 0 -5 34 -5 75 0 47 4 75 11 75 6 0 40 -16 75 -36z"
+          />
+        </svg>
       </div>
       {showText && (
-        <span className={`${textSizeClasses[size]} font-bold ${brandWordClass}`}>Social</span>
+        <span className={`${textSizeClasses[size]} font-extrabold tracking-[0.22em] ${brandWordClass}`}>HIDEON</span>
       )}
     </div>
   );

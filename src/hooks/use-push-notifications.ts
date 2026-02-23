@@ -40,9 +40,9 @@ export function usePushNotifications() {
         
         // Mostrar notificación de bienvenida
         showNotification(
-          "H Social - Notificaciones activadas",
+          "HIDEON - Notificaciones activadas",
           "Ahora recibirás mensajes y notificaciones en tiempo real",
-          "/favicon.ico"
+          "/favicon.svg"
         );
         
         return true;
@@ -71,8 +71,8 @@ export function usePushNotifications() {
     try {
       const notification = new Notification(title, {
         body,
-        icon: icon || "/favicon.ico",
-        badge: "/favicon.ico",
+        icon: icon || "/favicon.svg",
+        badge: "/favicon.svg",
         tag: data?.type || 'general',
         requireInteraction: false,
         silent: false,

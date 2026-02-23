@@ -11,11 +11,6 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
       attribute="class"
       defaultTheme="light"
       themes={["light", "dark", "tech"]}
-      value={{
-        light: "light",
-        dark: "dark",
-        tech: "dark",
-      }}
       enableSystem={false}
       disableTransitionOnChange
       {...props}

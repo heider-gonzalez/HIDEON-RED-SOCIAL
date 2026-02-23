@@ -64,7 +64,7 @@ export default function Reels() {
   return (
     <FacebookLayout hideNavigation={!shouldUseMobileLayout} hideLeftSidebar={!shouldUseMobileLayout}>
       <Helmet>
-        <title>Reels - HSocial</title>
+        <title>Reels - HIDEON</title>
         <meta name="description" content="Descubre videos cortos y creativos de la comunidad universitaria" />
       </Helmet>
 
