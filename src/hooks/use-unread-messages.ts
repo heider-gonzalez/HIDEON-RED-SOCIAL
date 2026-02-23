@@ -45,6 +45,47 @@ export function useUnreadMessages(currentUserId?: string) {
 
     fetchUnreadMessages();
 
+    const resyncUnread = () => {
+      if (!currentUserId) return;
+      fetchUnreadMessages();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        if (debug) console.log('🔔 useUnreadMessages - visibilitychange -> resync');
+        resyncUnread();
+      }
+    };
+
+    const handleFocus = () => {
+      if (debug) console.log('🔔 useUnreadMessages - window focus -> resync');
+      resyncUnread();
+    };
+
+    const handleNewNotification = (event: Event) => {
+      const detail = (event as CustomEvent | undefined)?.detail as any;
+      const type = detail?.notification?.type ?? detail?.type;
+      if (type !== 'message') return;
+      if (debug) console.log('🔔 useUnreadMessages - new-notification(message) -> resync');
+      resyncUnread();
+    };
+
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      const data = (event as any)?.data;
+      const type = data?.notification?.data?.type ?? data?.data?.type ?? data?.type;
+      if (type !== 'message') return;
+      if (debug) console.log('🔔 useUnreadMessages - service worker message(message) -> resync');
+      resyncUnread();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('new-notification', handleNewNotification as EventListener);
+
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    }
+
     // Set up real-time subscription for new messages
     const channel = supabase
       .channel('unread-messages')
@@ -121,6 +162,12 @@ export function useUnreadMessages(currentUserId?: string) {
       .subscribe();
 
     return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('new-notification', handleNewNotification as EventListener);
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+      }
       supabase.removeChannel(channel);
     };
   }, [currentUserId]);
