@@ -212,7 +212,13 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                 )}
                 aria-label={item.label}
               >
-                <item.icon className="h-6 w-6" strokeWidth={item.isActive ? 2 : 1.5} />
+                <span
+                  className={cn(
+                    item.path === "/explore" && !item.isActive && "explore-attention"
+                  )}
+                >
+                  <item.icon className="h-6 w-6" strokeWidth={item.isActive ? 2 : 1.5} />
+                </span>
                 {item.badge && item.badge > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -296,7 +302,13 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                   );
                   return (
                     <span className={bubbleClassName}>
-                      <item.icon className={iconClassName} strokeWidth={item.isActive ? 2 : 1.5} />
+                      <span
+                        className={cn(
+                          item.path === "/explore" && !item.isActive && "explore-attention"
+                        )}
+                      >
+                        <item.icon className={iconClassName} strokeWidth={item.isActive ? 2 : 1.5} />
+                      </span>
                     </span>
                   );
                 })()}

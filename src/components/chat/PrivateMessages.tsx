@@ -20,6 +20,7 @@ import { useMessages, useConversations, useSendMessage } from "@/hooks/use-messa
 import { Message, Conversation } from "@/types/chat";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePresence } from "@/hooks/use-presence";
+import { useUnreadMessages } from "@/hooks/use-unread-messages";
 
 import {
   DropdownMenu,
@@ -68,6 +69,13 @@ export function PrivateMessages() {
   const [mutualFollowMap, setMutualFollowMap] = useState<Record<string, boolean>>({});
   const [activeInboxTab, setActiveInboxTab] = useState<'inbox' | 'requests' | 'archived'>('inbox');
   const queryClient = useQueryClient();
+
+  const { unreadMessages, markAsRead } = useUnreadMessages(currentUserId || undefined);
+  const unreadCountByUserId = useMemo(() => {
+    return new Map<string, number>(
+      unreadMessages.map((m) => [String(m.channel_id), Number(m.unread_count || 0)])
+    );
+  }, [unreadMessages]);
 
   // Presence hook for typing indicators and online status
   // NOTE: Temporarily disabled while debugging. Provide safe fallbacks so the UI doesn't crash.
@@ -600,6 +608,19 @@ export function PrivateMessages() {
     }
   }, [selectedConversation, conversations]);
 
+  useEffect(() => {
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.is_global
+          ? conv
+          : {
+              ...conv,
+              unread_count: unreadCountByUserId.get(String(conv.id)) ?? 0,
+            }
+      )
+    );
+  }, [unreadCountByUserId]);
+
   // Manejar apertura de chat desde URL
   useEffect(() => {
     const userIdParam = searchParams.get("user");
@@ -607,6 +628,7 @@ export function PrivateMessages() {
       getOrCreatePrivateChannel(currentUserId, userIdParam).then((channelId) => {
         if (channelId) {
           loadConversations().then(() => {
+            markAsRead(userIdParam);
             setSelectedConversation(userIdParam);
           });
         }
@@ -647,7 +669,12 @@ export function PrivateMessages() {
       <button
         key={conv.id}
         style={style}
-        onClick={() => setSelectedConversation(conv.id)}
+        onClick={() => {
+          if (!conv.is_global) {
+            markAsRead(conv.id);
+          }
+          setSelectedConversation(conv.id);
+        }}
         onMouseDown={() => !conv.is_global && handleChatLongPress(conv.id)}
         onMouseUp={handleChatPressEnd}
         onMouseLeave={handleChatPressEnd}
@@ -672,7 +699,10 @@ export function PrivateMessages() {
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <p className="font-medium text-sm truncate">{conv.username}</p>
+            <p className={cn(
+              "text-sm truncate",
+              conv.unread_count > 0 ? "font-semibold" : "font-medium"
+            )}>{conv.username}</p>
             {conv.unread_count > 0 && (
               <span className="bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
                 {conv.unread_count}
