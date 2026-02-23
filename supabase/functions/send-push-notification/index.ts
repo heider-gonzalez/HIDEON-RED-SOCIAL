@@ -87,8 +87,8 @@ Deno.serve(async (req) => {
     const pushMessage: PushMessage = {
       title: `Nuevo mensaje de ${authorData.username}`,
       body: contenido.length > 100 ? contenido.substring(0, 100) + '...' : contenido,
-      icon: authorData.avatar_url || '/icon-192x192.png',
-      badge: '/icon-192x192.png',
+      icon: authorData.avatar_url || '/icon.svg',
+      badge: '/icon.svg',
       data: {
         type: 'message',
         senderId: id_autor,

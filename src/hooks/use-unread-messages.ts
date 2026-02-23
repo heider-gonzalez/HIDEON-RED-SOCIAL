@@ -54,10 +54,13 @@ export function useUnreadMessages(currentUserId?: string) {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `receiver_id=eq.${currentUserId}&type=eq.message&read=eq.false`
+          filter: `receiver_id=eq.${currentUserId}`
         },
         (payload) => {
           const newNotification = payload.new as any;
+
+          if (newNotification?.type !== 'message') return;
+          if (newNotification?.read !== false) return;
           
           setUnreadMessages(prev => {
             const existingGroup = prev.find(group => group.channel_id === newNotification.sender_id);
@@ -90,6 +93,29 @@ export function useUnreadMessages(currentUserId?: string) {
               ];
             }
           });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `receiver_id=eq.${currentUserId}`
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          const previous = payload.old as any;
+
+          if (updated?.type !== 'message') return;
+
+          const wasUnread = previous?.read === false;
+          const isUnread = updated?.read === false;
+
+          if (wasUnread === isUnread) return;
+
+          // Avoid complex incremental logic; just resync for correctness.
+          fetchUnreadMessages();
         }
       )
       .subscribe();

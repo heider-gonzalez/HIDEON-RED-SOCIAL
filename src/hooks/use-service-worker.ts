@@ -211,8 +211,8 @@ export function useServiceWorker() {
       // This is for testing - in production, this would come from your backend
       await registration.showNotification(data.title, {
         body: data.body,
-        icon: '/icon-192x192.png',
-        badge: '/icon-192x192.png',
+        icon: '/icon.svg',
+        badge: '/icon.svg',
         data: data,
         actions: [
           { action: 'view', title: 'Ver' },

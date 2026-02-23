@@ -192,8 +192,8 @@ async function processNotification(supabaseClient: any, notification: any): Prom
   const pushMessage: PushMessage = {
     title: `Nuevo mensaje de ${authorData.username}`,
     body: payload.content.length > 100 ? payload.content.substring(0, 100) + '...' : payload.content,
-    icon: authorData.avatar_url || '/icon-192x192.png',
-    badge: '/icon-192x192.png',
+    icon: authorData.avatar_url || '/icon.svg',
+    badge: '/icon.svg',
     data: {
       type: 'message',
       senderId: payload.authorId,
