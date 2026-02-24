@@ -1,4 +1,4 @@
-import { MessageCircle, Share2, MoreHorizontal, User, Briefcase, School, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageCircle, Share2, MoreHorizontal, User, Briefcase, School, ChevronDown, ChevronUp, Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Post } from './PostFeed';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 import { MediaLightbox, type LightboxMediaItem } from '@/components/post/MediaLightbox';
+import { useFullscreenVideo } from '@/components/video/FullscreenVideoContext';
 
 export interface PostCardProps {
   post: Post;
@@ -59,6 +60,76 @@ export function PostCard({ post }: PostCardProps) {
   const [lightboxStart, setLightboxStart] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const fullscreenVideo = useFullscreenVideo();
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isMuted, setIsMuted] = useState(true);
+  const [volume, setVolume] = useState(1);
+  const [isVerticalVideo, setIsVerticalVideo] = useState(true);
+
+  const formatTime = (seconds: number) => {
+    const s = Math.max(0, Math.floor(seconds || 0));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2, '0')}`;
+  };
+
+  const openFullscreenFromFeed = (v?: HTMLVideoElement | null) => {
+    const video = v ?? videoRef.current;
+    fullscreenVideo.open({
+      initialPostId: post.id,
+      initialUrl: primaryMediaUrl,
+      initialTime: video?.currentTime ?? 0,
+      muted: video?.muted ?? true,
+    });
+  };
+
+  const togglePlay = async () => {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      if (v.paused) {
+        await v.play();
+      } else {
+        v.pause();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const toggleMute = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      v.muted = !v.muted;
+      setIsMuted(v.muted);
+    } catch {
+      // ignore
+    }
+  };
+
+  const changeVolume = (next: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    const clamped = Math.min(1, Math.max(0, next));
+    try {
+      v.volume = clamped;
+      setVolume(clamped);
+      if (clamped > 0 && v.muted) {
+        v.muted = false;
+        setIsMuted(false);
+      }
+      if (clamped === 0 && !v.muted) {
+        v.muted = true;
+        setIsMuted(true);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const el = containerRef.current;
@@ -79,6 +150,7 @@ export function PostCard({ post }: PostCardProps) {
         }
         try {
           v.muted = true;
+          setIsMuted(true);
           v.play().catch(() => {});
         } catch {
           // ignore
@@ -89,6 +161,51 @@ export function PostCard({ post }: PostCardProps) {
     obs.observe(el);
     return () => obs.disconnect();
   }, [primaryMediaUrl, isVideo]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    const onLoadedMetadata = () => {
+      setDuration(Number.isFinite(v.duration) ? v.duration : 0);
+      try {
+        const w = v.videoWidth || 1;
+        const h = v.videoHeight || 1;
+        setIsVerticalVideo(h / w >= 1.25);
+      } catch {
+        // ignore
+      }
+    };
+
+    const onTimeUpdate = () => {
+      setCurrentTime(v.currentTime || 0);
+    };
+
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onVolumeChange = () => {
+      setIsMuted(Boolean(v.muted));
+      setVolume(typeof v.volume === 'number' ? v.volume : 1);
+    };
+
+    v.addEventListener('loadedmetadata', onLoadedMetadata);
+    v.addEventListener('timeupdate', onTimeUpdate);
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('volumechange', onVolumeChange);
+
+    onLoadedMetadata();
+    onTimeUpdate();
+    onVolumeChange();
+
+    return () => {
+      v.removeEventListener('loadedmetadata', onLoadedMetadata);
+      v.removeEventListener('timeupdate', onTimeUpdate);
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('volumechange', onVolumeChange);
+    };
+  }, [primaryMediaUrl]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -164,21 +281,102 @@ export function PostCard({ post }: PostCardProps) {
             />
           )}
           {isVideo && (
-            <video
-              ref={videoRef}
-              src={primaryMediaUrl}
-              className="w-full max-h-[500px] cursor-pointer"
-              muted
-              playsInline
-              loop
-              preload="metadata"
-              onClick={() => {
-                setLightboxStart(0);
-                setLightboxOpen(true);
-              }}
-            >
-              Tu navegador no soporta el elemento de video.
-            </video>
+            <div className="relative w-full bg-black">
+              <video
+                ref={videoRef}
+                src={primaryMediaUrl}
+                className={
+                  isVerticalVideo
+                    ? "w-full max-h-[500px] cursor-pointer object-cover"
+                    : "w-full max-h-[500px] cursor-pointer object-contain"
+                }
+                muted
+                playsInline
+                loop
+                preload="metadata"
+                onClick={() => openFullscreenFromFeed(videoRef.current)}
+              >
+                Tu navegador no soporta el elemento de video.
+              </video>
+
+              {/* Player bar (estilo Facebook) */}
+              <div
+                className="absolute left-0 right-0 bottom-0 z-10 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="h-8 w-8 inline-flex items-center justify-center text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void togglePlay();
+                    }}
+                    aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+                  >
+                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                  </button>
+
+                  <div className="text-xs text-white tabular-nums min-w-[84px]">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </div>
+
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 0}
+                    step={0.1}
+                    value={Math.min(currentTime, duration || 0)}
+                    onChange={(e) => {
+                      const v = videoRef.current;
+                      if (!v) return;
+                      const t = Number(e.target.value);
+                      try {
+                        v.currentTime = t;
+                        setCurrentTime(t);
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                    className="flex-1 h-1 accent-white"
+                  />
+
+                  <button
+                    type="button"
+                    className="h-8 w-8 inline-flex items-center justify-center text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleMute();
+                    }}
+                    aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
+                  >
+                    {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                  </button>
+
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={isMuted ? 0 : volume}
+                    onChange={(e) => changeVolume(Number(e.target.value))}
+                    className="w-20 h-1 accent-white"
+                  />
+
+                  <button
+                    type="button"
+                    className="h-8 w-8 inline-flex items-center justify-center text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openFullscreenFromFeed(videoRef.current);
+                    }}
+                    aria-label="Pantalla completa"
+                  >
+                    <Maximize className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}

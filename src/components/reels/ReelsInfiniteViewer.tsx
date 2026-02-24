@@ -19,16 +19,18 @@ interface ReelItemProps {
   isActive: boolean;
   onReaction: (postId: string, type: string) => void;
   onViewTracked: (postId: string, duration: number) => void;
+  initialSeek?: { time: number; muted?: boolean };
 }
 
-const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTracked }: ReelItemProps) {
+const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTracked, initialSeek }: ReelItemProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [hasError, setHasError] = useState(false);
   const [currentSrc, setCurrentSrc] = useState(post.media_url);
+  const [isVertical, setIsVertical] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const { userReaction, onReaction: handleReaction } = usePostReactions(post.id);
   const { toast } = useToast();
 
@@ -47,7 +49,7 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
     handleDeleteComment,
     handleCancelReply
   } = useReelComments(post.id);
-  
+
   // Control de volumen mejorado
   const { volume, isMuted, showSlider, toggleMute, changeVolume, showSliderTemporarily } = useVolumeControl(videoRef);
 
@@ -64,7 +66,7 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
     } else if (videoRef.current && (!isActive || !isIntersecting)) {
       setIsPlaying(false);
       videoRef.current.pause();
-      
+
       // Track view duration
       if (startTime) {
         const duration = Math.floor((Date.now() - startTime) / 1000);
@@ -93,7 +95,36 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
   useEffect(() => {
     setHasError(false);
     setCurrentSrc(post.media_url);
+    setIsVertical(true);
   }, [post.media_url]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!isActive) return;
+    if (!initialSeek) return;
+
+    const apply = () => {
+      try {
+        if (typeof initialSeek.muted === 'boolean') {
+          v.muted = initialSeek.muted;
+        }
+        if (Number.isFinite(initialSeek.time)) {
+          v.currentTime = Math.max(0, initialSeek.time);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    if (v.readyState >= 1) {
+      apply();
+      return;
+    }
+
+    v.addEventListener('loadedmetadata', apply, { once: true });
+    return () => v.removeEventListener('loadedmetadata', apply);
+  }, [initialSeek, isActive]);
 
   const togglePlay = useCallback(() => {
     setIsPlaying(!isPlaying);
@@ -168,12 +199,24 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
         <video
           ref={videoRef}
           src={currentSrc || undefined}
-          className="w-full h-full object-cover"
+          className={isVertical ? "w-full h-full object-cover" : "w-full h-full object-contain"}
+          controls={!isVertical}
           loop
           playsInline
           muted={isMuted}
-          onClick={handleVideoClick}
+          onClick={isVertical ? handleVideoClick : undefined}
           onError={handleVideoError}
+          onLoadedMetadata={() => {
+            try {
+              const v = videoRef.current;
+              if (!v) return;
+              const w = v.videoWidth || 1;
+              const h = v.videoHeight || 1;
+              setIsVertical(h / w >= 1.25);
+            } catch {
+              // ignore
+            }
+          }}
           onLoadStart={() => {}} // Reduce console spam
           onCanPlay={() => {}} // Reduce console spam
         />
@@ -340,13 +383,15 @@ interface ReelsInfiniteViewerProps {
   onReaction: (postId: string, type: string) => void;
   onViewTracked: (postId: string, duration: number) => void;
   initialPostId?: string;
+  initialPlayback?: { postId: string; time: number; muted?: boolean };
 }
 
 function ReelsInfiniteViewerComponent({
   posts,
   onReaction,
   onViewTracked,
-  initialPostId
+  initialPostId,
+  initialPlayback
 }: ReelsInfiniteViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -408,6 +453,11 @@ function ReelsInfiniteViewerComponent({
           isActive={index === currentIndex}
           onReaction={onReaction}
           onViewTracked={onViewTracked}
+          initialSeek={
+            initialPlayback && initialPlayback.postId === post.id
+              ? { time: initialPlayback.time, muted: initialPlayback.muted }
+              : undefined
+          }
         />
       ))}
     </div>

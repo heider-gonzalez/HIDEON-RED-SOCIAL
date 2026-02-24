@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Eye, Heart, MessageCircle, Users, Calendar, X, ChevronLeft, ChevronRight, Edit, Trash2, MoreHorizontal, ExternalLink, ChevronUp, ChevronDown, Volume2, VolumeX } from 'lucide-react';
+import { Eye, Heart, MessageCircle, Users, Calendar, X, ChevronLeft, ChevronRight, Edit, Trash2, MoreHorizontal, ExternalLink, ChevronUp, ChevronDown, Volume2, VolumeX, Volume1, Play, Pause, Maximize } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -23,6 +23,7 @@ import {
   subscribeNowPlayingVideoId,
   subscribeSoundEnabled,
 } from '@/lib/media/global-media';
+import { useFullscreenVideo } from '@/components/video/FullscreenVideoContext';
 
 interface ProjectCardProps {
   project: Project;
@@ -41,8 +42,15 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const navigate = useNavigate();
   const statusConfig = PROJECT_STATUS_CONFIG[project.status];
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fullscreenVideo = useFullscreenVideo();
   const [isVideoHovered, setIsVideoHovered] = useState(false);
   const [isVideoInView, setIsVideoInView] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isMutedLocal, setIsMutedLocal] = useState(true);
+  const [volumeLocal, setVolumeLocal] = useState(1);
+  const [isVerticalVideo, setIsVerticalVideo] = useState(true);
   const instanceIdRef = useRef<string>(
     typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function'
       ? (crypto as any).randomUUID()
@@ -60,11 +68,134 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
       if (!v) return;
       try {
         v.muted = !enabled;
+        setIsMutedLocal(v.muted);
+        setVolumeLocal(typeof v.volume === 'number' ? v.volume : 1);
       } catch {
         // ignore
       }
     });
   }, []);
+
+  const formatTime = (seconds: number) => {
+    const s = Math.max(0, Math.floor(seconds || 0));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2, '0')}`;
+  };
+
+  const openFullscreenFromCard = (v?: HTMLVideoElement | null) => {
+    const video = v ?? videoRef.current;
+    if (!primaryVideoUrl) return;
+    fullscreenVideo.open({
+      initialUrl: primaryVideoUrl,
+      initialTime: video?.currentTime ?? 0,
+      muted: video?.muted ?? true,
+    });
+  };
+
+  const togglePlay = async () => {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      if (v.paused) {
+        setNowPlayingVideoId(`${instanceIdRef.current}:video`);
+        await v.play();
+      } else {
+        v.pause();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const toggleMuteLocal = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      v.muted = !v.muted;
+      setIsMutedLocal(v.muted);
+      setSoundEnabled(!v.muted);
+    } catch {
+      // ignore
+    }
+  };
+
+  const increaseVolume = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    const next = Math.min(1, (v.volume || 0) + 0.1);
+    changeVolumeLocal(next);
+  };
+
+  const decreaseVolume = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    const next = Math.max(0, (v.volume || 0) - 0.1);
+    changeVolumeLocal(next);
+  };
+
+  const changeVolumeLocal = (next: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    const clamped = Math.min(1, Math.max(0, next));
+    try {
+      v.volume = clamped;
+      setVolumeLocal(clamped);
+      if (clamped > 0 && v.muted) {
+        v.muted = false;
+        setIsMutedLocal(false);
+        setSoundEnabled(true);
+      }
+      if (clamped === 0 && !v.muted) {
+        v.muted = true;
+        setIsMutedLocal(true);
+        setSoundEnabled(false);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    const onLoadedMetadata = () => {
+      setDuration(Number.isFinite(v.duration) ? v.duration : 0);
+      try {
+        const w = v.videoWidth || 1;
+        const h = v.videoHeight || 1;
+        setIsVerticalVideo(h / w >= 1.25);
+      } catch {
+        // ignore
+      }
+    };
+    const onTimeUpdate = () => setCurrentTime(v.currentTime || 0);
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onVolumeChange = () => {
+      setIsMutedLocal(Boolean(v.muted));
+      setVolumeLocal(typeof v.volume === 'number' ? v.volume : 1);
+    };
+
+    v.addEventListener('loadedmetadata', onLoadedMetadata);
+    v.addEventListener('timeupdate', onTimeUpdate);
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('volumechange', onVolumeChange);
+
+    onLoadedMetadata();
+    onTimeUpdate();
+    onVolumeChange();
+
+    return () => {
+      v.removeEventListener('loadedmetadata', onLoadedMetadata);
+      v.removeEventListener('timeupdate', onTimeUpdate);
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('volumechange', onVolumeChange);
+    };
+  }, [primaryVideoUrl]);
 
   useEffect(() => {
     return subscribeNowPlayingVideoId((id) => {
@@ -235,23 +366,86 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
                   muted
                   loop
                   playsInline
-                  className="relative z-10 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-pointer"
-                  onClick={handleImageClick}
+                  className={
+                    isVerticalVideo
+                      ? "relative z-10 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-pointer"
+                      : "relative z-10 w-full h-full object-contain transition-transform duration-700 cursor-pointer"
+                  }
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openFullscreenFromCard(videoRef.current);
+                  }}
                   onMouseEnter={() => setIsVideoHovered(true)}
                   onMouseLeave={() => setIsVideoHovered(false)}
                 />
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleCardVideoMute();
-                  }}
-                  className="absolute top-3 right-3 z-40 rounded-full bg-black/50 text-white p-2 backdrop-blur-sm"
-                  aria-label={!soundEnabled ? 'Activar sonido' : 'Silenciar'}
+                {/* Player bar (estilo Facebook) */}
+                <div
+                  className="absolute left-0 right-0 bottom-0 z-40 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {!soundEnabled ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="h-8 w-8 inline-flex items-center justify-center text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void togglePlay();
+                      }}
+                      aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+                    >
+                      {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                    </button>
+
+                    <div className="text-xs text-white tabular-nums min-w-[84px]">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </div>
+
+                    <input
+                      type="range"
+                      min={0}
+                      max={duration || 0}
+                      step={0.1}
+                      value={Math.min(currentTime, duration || 0)}
+                      onChange={(e) => {
+                        const v = videoRef.current;
+                        if (!v) return;
+                        const t = Number(e.target.value);
+                        try {
+                          v.currentTime = t;
+                          setCurrentTime(t);
+                        } catch {
+                          // ignore
+                        }
+                      }}
+                      className="flex-1 h-1 accent-white"
+                    />
+
+                    <button
+                      type="button"
+                      className="h-8 w-8 inline-flex items-center justify-center text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMuteLocal();
+                      }}
+                      aria-label={isMutedLocal ? 'Activar sonido' : 'Silenciar'}
+                    >
+                      {isMutedLocal || volumeLocal === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="h-8 w-8 inline-flex items-center justify-center text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openFullscreenFromCard(videoRef.current);
+                      }}
+                      aria-label="Pantalla completa"
+                    >
+                      <Maximize className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
                 
                 {/* Video indicator overlay */}
                 <div className="absolute inset-0 z-20 bg-black/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">

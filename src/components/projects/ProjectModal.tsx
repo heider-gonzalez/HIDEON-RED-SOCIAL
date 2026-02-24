@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 import {
   Dialog,
@@ -23,7 +23,12 @@ import {
   Mail,
   Send,
   X,
-  User
+  User,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -33,6 +38,7 @@ import { usePostReactions } from '@/hooks/posts/use-post-reactions';
 import { ReactionType } from '@/types/database/social.types';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useFullscreenVideo } from '@/components/video/FullscreenVideoContext';
 
 interface ProjectModalProps {
   project: Project;
@@ -44,6 +50,97 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
   const [newComment, setNewComment] = useState('');
   const [showContactModal, setShowContactModal] = useState(false);
   const navigate = useNavigate();
+  const fullscreenVideo = useFullscreenVideo();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isMutedLocal, setIsMutedLocal] = useState(true);
+  const [volumeLocal, setVolumeLocal] = useState(1);
+  const instanceIdRef = useRef<string>(
+    typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function'
+      ? (crypto as any).randomUUID()
+      : `pm_${Math.random().toString(16).slice(2)}_${Date.now()}`
+  );
+
+  const formatTime = (seconds: number) => {
+    const s = Math.max(0, Math.floor(seconds || 0));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2, '0')}`;
+  };
+
+  const openFullscreenFromModal = (v?: HTMLVideoElement | null) => {
+    const video = v ?? videoRef.current;
+    if (!primaryMediaUrl) return;
+    fullscreenVideo.open({
+      initialUrl: primaryMediaUrl,
+      initialTime: video?.currentTime ?? 0,
+      muted: video?.muted ?? true,
+    });
+  };
+
+  const togglePlay = async () => {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      if (v.paused) {
+        setNowPlayingVideoId(`${instanceIdRef.current}:video`);
+        await v.play();
+      } else {
+        v.pause();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const toggleMuteLocal = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      v.muted = !v.muted;
+      setIsMutedLocal(v.muted);
+      setSoundEnabled(!v.muted);
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    const onLoadedMetadata = () => {
+      setDuration(Number.isFinite(v.duration) ? v.duration : 0);
+    };
+    const onTimeUpdate = () => setCurrentTime(v.currentTime || 0);
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onVolumeChange = () => {
+      setIsMutedLocal(Boolean(v.muted));
+      setVolumeLocal(typeof v.volume === 'number' ? v.volume : 1);
+    };
+
+    v.addEventListener('loadedmetadata', onLoadedMetadata);
+    v.addEventListener('timeupdate', onTimeUpdate);
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('volumechange', onVolumeChange);
+
+    onLoadedMetadata();
+    onTimeUpdate();
+    onVolumeChange();
+
+    return () => {
+      v.removeEventListener('loadedmetadata', onLoadedMetadata);
+      v.removeEventListener('timeupdate', onTimeUpdate);
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('volumechange', onVolumeChange);
+    };
+  }, [primaryMediaUrl]);
+
   // Helper function to check if URL is a video
   const isVideoUrl = (url: string | undefined): boolean => {
     if (!url) return false;
@@ -117,14 +214,91 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
             {primaryMediaUrl && (
               <div className="w-full h-64 rounded-lg overflow-hidden bg-black">
                 {isVideo ? (
-                  <video
-                    src={primaryMediaUrl}
-                    controls
-                    className="w-full h-full object-contain"
-                    poster={project.image_url}
-                  >
-                    Tu navegador no soporta el elemento de video.
-                  </video>
+                  <>
+                    <video
+                      ref={videoRef}
+                      src={primaryMediaUrl}
+                      muted
+                      loop
+                      playsInline
+                      className="w-full h-full object-contain"
+                      poster={project.image_url}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openFullscreenFromModal(videoRef.current);
+                      }}
+                    >
+                      Tu navegador no soporta el elemento de video.
+                    </video>
+
+                    {/* Player bar (estilo Facebook) */}
+                    <div
+                      className="absolute left-0 right-0 bottom-0 z-40 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="h-8 w-8 inline-flex items-center justify-center text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void togglePlay();
+                          }}
+                          aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+                        >
+                          {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                        </button>
+
+                        <div className="text-xs text-white tabular-nums min-w-[84px]">
+                          {formatTime(currentTime)} / {formatTime(duration)}
+                        </div>
+
+                        <input
+                          type="range"
+                          min={0}
+                          max={duration || 0}
+                          step={0.1}
+                          value={Math.min(currentTime, duration || 0)}
+                          onChange={(e) => {
+                            const v = videoRef.current;
+                            if (!v) return;
+                            const t = Number(e.target.value);
+                            try {
+                              v.currentTime = t;
+                              setCurrentTime(t);
+                            } catch {
+                              // ignore
+                            }
+                          }}
+                          className="flex-1 h-1 accent-white"
+                        />
+
+                        <button
+                          type="button"
+                          className="h-8 w-8 inline-flex items-center justify-center text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMuteLocal();
+                          }}
+                          aria-label={isMutedLocal ? 'Activar sonido' : 'Silenciar'}
+                        >
+                          {isMutedLocal || volumeLocal === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="h-8 w-8 inline-flex items-center justify-center text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openFullscreenFromModal(videoRef.current);
+                          }}
+                          aria-label="Pantalla completa"
+                        >
+                          <Maximize className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <img
                     src={primaryMediaUrl}

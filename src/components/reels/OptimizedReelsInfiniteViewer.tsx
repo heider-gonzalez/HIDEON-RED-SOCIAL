@@ -20,6 +20,7 @@ interface OptimizedReelItemProps {
   onViewTracked: (postId: string, duration: number) => void;
   batchFollowingStatus?: boolean;
   onBatchFollowingUpdate?: (userId: string, isFollowing: boolean) => void;
+  initialSeek?: { time: number; muted?: boolean };
 }
 
 const OptimizedReelItem = memo(function OptimizedReelItem({ 
@@ -28,12 +29,14 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   onReaction, 
   onViewTracked,
   batchFollowingStatus,
-  onBatchFollowingUpdate
+  onBatchFollowingUpdate,
+  initialSeek
 }: OptimizedReelItemProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [hasError, setHasError] = useState(false);
   const [currentSrc, setCurrentSrc] = useState(post.media_url);
+  const [isVertical, setIsVertical] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -84,7 +87,36 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   useEffect(() => {
     setHasError(false);
     setCurrentSrc(post.media_url);
+    setIsVertical(true);
   }, [post.media_url]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!isActive) return;
+    if (!initialSeek) return;
+
+    const apply = () => {
+      try {
+        if (typeof initialSeek.muted === 'boolean') {
+          v.muted = initialSeek.muted;
+        }
+        if (Number.isFinite(initialSeek.time)) {
+          v.currentTime = Math.max(0, initialSeek.time);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    if (v.readyState >= 1) {
+      apply();
+      return;
+    }
+
+    v.addEventListener('loadedmetadata', apply, { once: true });
+    return () => v.removeEventListener('loadedmetadata', apply);
+  }, [initialSeek, isActive]);
 
   const togglePlay = useCallback(() => {
     setIsPlaying(!isPlaying);
@@ -141,19 +173,31 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
         <video
           ref={videoRef}
           src={currentSrc || undefined}
-          className="w-full h-full object-cover"
+          className={isVertical ? "w-full h-full object-cover" : "w-full h-full object-contain"}
+          controls={!isVertical}
           loop
           playsInline
           muted={isMuted}
-          onClick={handleVideoClick}
+          onClick={isVertical ? handleVideoClick : undefined}
           onError={handleVideoError}
+          onLoadedMetadata={() => {
+            try {
+              const v = videoRef.current;
+              if (!v) return;
+              const w = v.videoWidth || 1;
+              const h = v.videoHeight || 1;
+              setIsVertical(h / w >= 1.25);
+            } catch {
+              // ignore
+            }
+          }}
           onLoadStart={() => {}} // Reduce console spam
           onCanPlay={() => {}} // Reduce console spam
         />
       )}
 
       {/* Play/Pause overlay */}
-      {!isPlaying && (
+      {!isPlaying && isVertical && (
         <div className="absolute inset-0 flex items-center justify-center">
           <Button
             variant="ghost"
@@ -277,15 +321,25 @@ interface OptimizedReelsInfiniteViewerProps {
   posts: Post[];
   onReaction: (postId: string, type: string) => void;
   onViewTracked: (postId: string, duration: number) => void;
+  initialPostId?: string;
+  initialPlayback?: { postId: string; time: number; muted?: boolean };
 }
 
 export const OptimizedReelsInfiniteViewer = memo(function OptimizedReelsInfiniteViewer({ 
   posts, 
   onReaction, 
-  onViewTracked 
+  onViewTracked,
+  initialPostId,
+  initialPlayback
 }: OptimizedReelsInfiniteViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!initialPostId) return;
+    const index = posts.findIndex((p) => p.id === initialPostId);
+    if (index >= 0) setCurrentIndex(index);
+  }, [initialPostId, posts]);
 
   // Optimización: batch following status para todos los autores de reels
   const authorIds = posts.map(post => post.user_id).filter(Boolean);
@@ -348,6 +402,11 @@ export const OptimizedReelsInfiniteViewer = memo(function OptimizedReelsInfinite
           onViewTracked={onViewTracked}
           batchFollowingStatus={post.user_id ? getFollowingStatus(post.user_id) : undefined}
           onBatchFollowingUpdate={updateFollowingStatus}
+          initialSeek={
+            initialPlayback && initialPlayback.postId === post.id
+              ? { time: initialPlayback.time, muted: initialPlayback.muted }
+              : undefined
+          }
         />
       ))}
     </div>

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Volume2, VolumeX } from "lucide-react";
+import { Maximize, Pause, Play, Volume2, VolumeX, Volume1 } from "lucide-react";
 import { PostImage } from "@/components/ui/optimized-image";
 import { MediaLightbox } from "./MediaLightbox";
+import { useFullscreenVideo } from "@/components/video/FullscreenVideoContext";
 import {
   getSoundEnabled,
   setNowPlayingVideoId,
@@ -25,7 +25,7 @@ interface MediaCarouselProps {
 }
 
 export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetadata, reelsPostId }: MediaCarouselProps) {
-  const navigate = useNavigate();
+  const fullscreenVideo = useFullscreenVideo();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxStartIndex, setLightboxStartIndex] = useState(0);
@@ -45,6 +45,19 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   const [isMuted, setIsMuted] = useState(() => !getSoundEnabled());
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [volumeLocal, setVolumeLocal] = useState(1);
+  const [isVerticalVideo, setIsVerticalVideo] = useState(true);
+
+  const formatTime = (seconds: number) => {
+    const s = Math.max(0, Math.floor(seconds || 0));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2, '0')}`;
+  };
+
   const hasAudio = Boolean(audioUrl);
   const clipStart = useMemo(() => {
     const s = Number(audioMetadata?.startTime ?? audioMetadata?.start_time ?? 0);
@@ -60,6 +73,82 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   const imageItems = useMemo(() => {
     return mediaItems.filter((i) => i.type === 'image');
   }, [mediaItems]);
+
+  const openFullscreenActive = () => {
+    const item = mediaItems[currentIndex];
+    if (!item || item.type !== 'video') return;
+    const v = videoRefs.current[currentIndex];
+    fullscreenVideo.open({
+      initialPostId: reelsPostId,
+      initialUrl: item.url,
+      initialTime: v?.currentTime ?? 0,
+      muted: v?.muted ?? true,
+    });
+  };
+
+  const togglePlay = async () => {
+    const v = videoRefs.current[currentIndex];
+    if (!v) return;
+    try {
+      if (v.paused) {
+        setNowPlayingVideoId(`${instanceIdRef.current}:${currentIndex}`);
+        await v.play();
+      } else {
+        v.pause();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const toggleVideoMute = () => {
+    const v = videoRefs.current[currentIndex];
+    if (!v) return;
+    try {
+      const nextMuted = !v.muted;
+      v.muted = nextMuted;
+      setSoundEnabled(!nextMuted);
+      setIsMuted(nextMuted);
+    } catch {
+      // ignore
+    }
+  };
+
+  const increaseVideoVolume = () => {
+    const v = videoRefs.current[currentIndex];
+    if (!v) return;
+    const next = Math.min(1, (v.volume || 0) + 0.1);
+    changeVideoVolume(next);
+  };
+
+  const decreaseVideoVolume = () => {
+    const v = videoRefs.current[currentIndex];
+    if (!v) return;
+    const next = Math.max(0, (v.volume || 0) - 0.1);
+    changeVideoVolume(next);
+  };
+
+  const changeVideoVolume = (next: number) => {
+    const v = videoRefs.current[currentIndex];
+    if (!v) return;
+    const clamped = Math.min(1, Math.max(0, next));
+    try {
+      v.volume = clamped;
+      setVolumeLocal(clamped);
+      if (clamped > 0 && v.muted) {
+        v.muted = false;
+        setIsMuted(false);
+        setSoundEnabled(true);
+      }
+      if (clamped === 0 && !v.muted) {
+        v.muted = true;
+        setIsMuted(true);
+        setSoundEnabled(false);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -83,6 +172,54 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
       setIsMuted(!enabled);
     });
   }, []);
+
+  useEffect(() => {
+    const v = videoRefs.current[currentIndex];
+    const item = mediaItems[currentIndex];
+    if (!v || item?.type !== 'video') {
+      setIsPlaying(false);
+      setDuration(0);
+      setCurrentTime(0);
+      setIsVerticalVideo(true);
+      return;
+    }
+
+    const onLoadedMetadata = () => {
+      setDuration(Number.isFinite(v.duration) ? v.duration : 0);
+      try {
+        const w = v.videoWidth || 1;
+        const h = v.videoHeight || 1;
+        setIsVerticalVideo(h / w >= 1.25);
+      } catch {
+        // ignore
+      }
+    };
+    const onTimeUpdate = () => setCurrentTime(v.currentTime || 0);
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onVolumeChange = () => {
+      setIsMuted(Boolean(v.muted));
+      setVolumeLocal(typeof v.volume === 'number' ? v.volume : 1);
+    };
+
+    v.addEventListener('loadedmetadata', onLoadedMetadata);
+    v.addEventListener('timeupdate', onTimeUpdate);
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('volumechange', onVolumeChange);
+
+    onLoadedMetadata();
+    onTimeUpdate();
+    onVolumeChange();
+
+    return () => {
+      v.removeEventListener('loadedmetadata', onLoadedMetadata);
+      v.removeEventListener('timeupdate', onTimeUpdate);
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('volumechange', onVolumeChange);
+    };
+  }, [currentIndex, mediaItems]);
 
   useEffect(() => {
     return subscribeNowPlayingVideoId((id) => {
@@ -239,14 +376,13 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
     if (!item) return;
 
     if (item.type === 'video') {
-      if (reelsPostId) {
-        navigate(`/reels/${reelsPostId}`);
-        return;
-      }
-      // fallback: if no postId provided, open lightbox as before
-      setCurrentIndex(index);
-      setLightboxStartIndex(index);
-      setIsLightboxOpen(true);
+      const v = videoRefs.current[index];
+      fullscreenVideo.open({
+        initialPostId: reelsPostId,
+        initialUrl: item.url,
+        initialTime: v?.currentTime ?? 0,
+        muted: v?.muted ?? true,
+      });
       return;
     }
 
@@ -416,6 +552,75 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
         >
           {!soundEnabled ? <VolumeX size={18} /> : <Volume2 size={18} />}
         </button>
+      )}
+
+      {mediaItems[currentIndex]?.type === 'video' && (
+        <div
+          className="absolute left-0 right-0 bottom-0 z-30 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="h-8 w-8 inline-flex items-center justify-center text-white"
+              onClick={(e) => {
+                e.stopPropagation();
+                void togglePlay();
+              }}
+              aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+            >
+              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+            </button>
+
+            <div className="text-xs text-white tabular-nums min-w-[84px]">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </div>
+
+            <input
+              type="range"
+              min={0}
+              max={duration || 0}
+              step={0.1}
+              value={Math.min(currentTime, duration || 0)}
+              onChange={(e) => {
+                const v = videoRefs.current[currentIndex];
+                if (!v) return;
+                const t = Number(e.target.value);
+                try {
+                  v.currentTime = t;
+                  setCurrentTime(t);
+                } catch {
+                  // ignore
+                }
+              }}
+              className="flex-1 h-1 accent-white"
+            />
+
+            <button
+              type="button"
+              className="h-8 w-8 inline-flex items-center justify-center text-white"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleVideoMute();
+              }}
+              aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
+            >
+              {isMuted || volumeLocal === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </button>
+
+            <button
+              type="button"
+              className="h-8 w-8 inline-flex items-center justify-center text-white"
+              onClick={(e) => {
+                e.stopPropagation();
+                openFullscreenActive();
+              }}
+              aria-label="Pantalla completa"
+            >
+              <Maximize className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
       )}
 
       {mediaItems.length > 1 && (

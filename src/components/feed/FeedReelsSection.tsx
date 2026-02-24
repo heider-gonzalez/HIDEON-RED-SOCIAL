@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Post } from "@/types/post";
+import { useFullscreenVideo } from "@/components/video/FullscreenVideoContext";
 
 interface FeedReelsSectionProps {
   posts: Post[];
@@ -15,6 +16,7 @@ function isVideoUrl(url: string) {
 
 export function FeedReelsSection({ posts }: FeedReelsSectionProps) {
   const navigate = useNavigate();
+  const fullscreenVideo = useFullscreenVideo();
 
   const reels = useMemo(() => {
     return posts
@@ -55,7 +57,14 @@ export function FeedReelsSection({ posts }: FeedReelsSectionProps) {
                 <button
                   key={post.id}
                   type="button"
-                  onClick={() => navigate(`/reels/${post.id}`)}
+                  onClick={() => {
+                    fullscreenVideo.open({
+                      initialPostId: post.id,
+                      initialUrl: url,
+                      initialTime: 0,
+                      muted: true,
+                    });
+                  }}
                   className="relative flex-none w-[140px] h-[220px] rounded-lg overflow-hidden bg-black"
                 >
                   <video

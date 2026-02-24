@@ -16,6 +16,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useServiceWorker } from "@/hooks/use-service-worker";
 import { useNotificationQueue } from "@/hooks/use-notification-queue";
 import { useNotificationCleanup } from "@/hooks/use-notification-cleanup";
+import { FullscreenVideoProvider } from "@/components/video/FullscreenVideoContext";
+import { FullscreenVideoRoot } from "@/components/video/FullscreenVideoRoot";
 
 // Critical pages loaded immediately
 import Index from "./pages/Index";
@@ -189,296 +191,299 @@ const App = () => {
             <Toaster />
             <BrowserRouter>
               <AuthProvider>
-                <RecoveryTokenHandler />
-                <RealtimeNotificationsRoot />
-                <ServiceWorkerRegistration />
-              <Routes>
-              {/* Critical pages - no lazy loading */}
-              <Route path="/auth" element={<Auth />} />
-              
-              <Route path="/" element={<Index />} />
+                <FullscreenVideoProvider>
+                  <RecoveryTokenHandler />
+                  <RealtimeNotificationsRoot />
+                  <ServiceWorkerRegistration />
+                  <FullscreenVideoRoot />
+                  <Routes>
+                    {/* Critical pages - no lazy loading */}
+                    <Route path="/auth" element={<Auth />} />
+                    
+                    <Route path="/" element={<Index />} />
 
-              <Route
-                path="/home"
-                element={
-                  <AuthGuard>
-                    <Index />
-                  </AuthGuard>
-                }
-              />
-              
-              {/* Core features - lazy loaded */}
-              <Route path="/password-reset" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <PasswordReset />
-                </Suspense>
-              } />
-              <Route path="/profile/:userId" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Profile />
-                  </Suspense>
-                </AuthGuard>
-              } />
+                    <Route
+                      path="/home"
+                      element={
+                        <AuthGuard>
+                          <Index />
+                        </AuthGuard>
+                      }
+                    />
+                    
+                    {/* Core features - lazy loaded */}
+                    <Route path="/password-reset" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <PasswordReset />
+                      </Suspense>
+                    } />
+                    <Route path="/profile/:userId" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Profile />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
 
-              <Route path="/post/:postId" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <PostDetail />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/friends" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Friends />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/followers" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <FollowersPage />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/notifications" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Notifications />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/messages" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Messages />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/global-chat" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <GlobalChatPage />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/projects" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Projects />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/teams" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Teams />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/ideas" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Ideas />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/events" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Events />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/explore" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Explore />
-                  </Suspense>
-                </AuthGuard>
-              } />
+                    <Route path="/post/:postId" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <PostDetail />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/friends" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Friends />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/followers" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <FollowersPage />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/notifications" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Notifications />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/messages" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Messages />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/global-chat" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <GlobalChatPage />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/projects" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Projects />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/teams" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Teams />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/ideas" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Ideas />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/events" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Events />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/explore" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Explore />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
 
 
-              <Route
-                path="/terms"
-                element={
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <TermsOfService />
-                  </Suspense>
-                }
-              />
+                    <Route
+                      path="/terms"
+                      element={
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <TermsOfService />
+                        </Suspense>
+                      }
+                    />
 
-              <Route
-                path="/privacy"
-                element={
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <PrivacyPolicy />
-                  </Suspense>
-                }
-              />
+                    <Route
+                      path="/privacy"
+                      element={
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <PrivacyPolicy />
+                        </Suspense>
+                      }
+                    />
 
-              <Route path="/groups" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Groups />
-                  </Suspense>
-                </AuthGuard>
-              } />
+                    <Route path="/groups" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Groups />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
 
-              <Route path="/groups/create" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <CreateGroup />
-                  </Suspense>
-                </AuthGuard>
-              } />
+                    <Route path="/groups/create" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <CreateGroup />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
 
-              <Route path="/groups/:slugOrId" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <GroupDetail />
-                  </Suspense>
-                </AuthGuard>
-              } />
+                    <Route path="/groups/:slugOrId" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <GroupDetail />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
 
-              <Route path="/companies" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Companies />
-                  </Suspense>
-                </AuthGuard>
-              } />
+                    <Route path="/companies" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Companies />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
 
-              <Route path="/companies/:slugOrId" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <CompanyDetail />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/leaderboard" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Leaderboard />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/saved" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Saved />
-                  </Suspense>
-                </AuthGuard>
-              } />
+                    <Route path="/companies/:slugOrId" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <CompanyDetail />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/leaderboard" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Leaderboard />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/saved" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Saved />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
 
-              <Route path="/reels" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Reels />
-                  </Suspense>
-                </AuthGuard>
-              } />
+                    <Route path="/reels" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Reels />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
 
-              <Route path="/reels/:reelId" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Reels />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              
-              {/* Settings pages */}
-              <Route path="/settings" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Settings />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/settings/account" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <AccountSettings />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/settings/personalization" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <PersonalizationSettings />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/settings/privacy" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <PrivacySettings />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/settings/security" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <SecuritySettings />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/settings/notifications" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <NotificationSettings />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/settings/statistics" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <StatisticsSettings />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              <Route path="/settings/accessibility" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <AccessibilitySettings />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              
-              {/* Idea participants page */}
-              <Route path="/idea/:postId/participants" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <IdeaParticipants />
-                  </Suspense>
-                </AuthGuard>
-              } />
+                    <Route path="/reels/:reelId" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Reels />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    
+                    {/* Settings pages */}
+                    <Route path="/settings" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Settings />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/settings/account" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <AccountSettings />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/settings/personalization" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <PersonalizationSettings />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/settings/privacy" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <PrivacySettings />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/settings/security" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <SecuritySettings />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/settings/notifications" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <NotificationSettings />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/settings/statistics" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <StatisticsSettings />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    <Route path="/settings/accessibility" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <AccessibilitySettings />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    
+                    {/* Idea participants page */}
+                    <Route path="/idea/:postId/participants" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <IdeaParticipants />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
 
-              <Route path="/idea/:postId/chat" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <IdeaChat />
-                  </Suspense>
-                </AuthGuard>
-              } />
+                    <Route path="/idea/:postId/chat" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <IdeaChat />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
 
-              {/* Project detail page */}
-              <Route path="/project/:postId" element={
-                <AuthGuard>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <ProjectDetail />
-                  </Suspense>
-                </AuthGuard>
-              } />
-              
-              {/* 404 fallback */}
-              <Route path="*" element={
-                <Suspense fallback={<LoadingSpinner />}>
-                  <NotFound />
-                </Suspense>
-              } />
-              </Routes>
+                    {/* Project detail page */}
+                    <Route path="/project/:postId" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <ProjectDetail />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+                    
+                    {/* 404 fallback */}
+                    <Route path="*" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <NotFound />
+                      </Suspense>
+                    } />
+                  </Routes>
+                </FullscreenVideoProvider>
               </AuthProvider>
             </BrowserRouter>
           </ThemeProvider>
