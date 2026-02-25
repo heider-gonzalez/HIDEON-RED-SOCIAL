@@ -60,11 +60,9 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
 
   useEffect(() => {
     if (isActive && isIntersecting && videoRef.current) {
-      setIsPlaying(true);
       setStartTime(Date.now());
       videoRef.current.play().catch(console.error);
     } else if (videoRef.current && (!isActive || !isIntersecting)) {
-      setIsPlaying(false);
       videoRef.current.pause();
 
       // Track view duration
@@ -77,6 +75,23 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
       }
     }
   }, [isActive, isIntersecting, post.id, startTime, onViewTracked]);
+
+  // Sync play/pause state with actual video events
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+
+    return () => {
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+    };
+  }, []);
 
   // El volumen se maneja en el hook useVolumeControl
 
@@ -127,16 +142,15 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
   }, [initialSeek, isActive]);
 
   const togglePlay = useCallback(() => {
-    setIsPlaying(!isPlaying);
     if (videoRef.current) {
-      if (!isPlaying) {
+      if (videoRef.current.paused) {
         videoRef.current.play();
         setStartTime(Date.now());
       } else {
         videoRef.current.pause();
       }
     }
-  }, [isPlaying]);
+  }, []);
 
   // Doble click para mute/unmute, single click para play/pause
   const handleVideoClick = useDoubleClick(
@@ -176,137 +190,178 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
       ref={containerRef}
       className="relative w-full h-[100svh] bg-black flex items-center justify-center snap-start"
     >
-      {/* Video o mensaje de error */}
-      {hasError ? (
-        <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
-          <div className="text-center p-8">
-            <div className="text-6xl mb-4">⚠️</div>
-            <h3 className="text-xl font-semibold mb-2">Video no disponible</h3>
-            <p className="text-gray-400">No se pudo cargar este video</p>
-            <Button 
-              variant="outline" 
-              className="mt-4"
-              onClick={() => {
-                setHasError(false);
-                setCurrentSrc(post.media_url);
-              }}
+      {/* Video layer */}
+      <div className="absolute inset-0 z-0">
+        {hasError ? (
+          <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
+            <div className="text-center p-8">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h3 className="text-xl font-semibold mb-2">Video no disponible</h3>
+              <p className="text-gray-400">No se pudo cargar este video</p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => {
+                  setHasError(false);
+                  setCurrentSrc(post.media_url);
+                }}
+              >
+                Reintentar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <video
+            ref={videoRef}
+            src={currentSrc || undefined}
+            className={isVertical ? "w-full h-full object-cover" : "w-full h-full object-contain"}
+            controls={!isVertical}
+            loop
+            playsInline
+            muted={isMuted}
+            onClick={isVertical ? handleVideoClick : undefined}
+            onError={handleVideoError}
+            onLoadedMetadata={() => {
+              try {
+                const v = videoRef.current;
+                if (!v) return;
+                const w = v.videoWidth || 1;
+                const h = v.videoHeight || 1;
+                setIsVertical(h / w >= 1.25);
+              } catch {
+                // ignore
+              }
+            }}
+            onLoadStart={() => {}} // Reduce console spam
+            onCanPlay={() => {}} // Reduce console spam
+          />
+        )}
+      </div>
+
+      {/* Overlay layer */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        {/* Tap hint / play */}
+        {!isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="bg-black/50 text-white hover:bg-black/70 h-16 w-16 pointer-events-auto"
+              onClick={togglePlay}
             >
-              Reintentar
+              <Play className="h-8 w-8" />
             </Button>
           </div>
-        </div>
-      ) : (
-        <video
-          ref={videoRef}
-          src={currentSrc || undefined}
-          className={isVertical ? "w-full h-full object-cover" : "w-full h-full object-contain"}
-          controls={!isVertical}
-          loop
-          playsInline
-          muted={isMuted}
-          onClick={isVertical ? handleVideoClick : undefined}
-          onError={handleVideoError}
-          onLoadedMetadata={() => {
-            try {
-              const v = videoRef.current;
-              if (!v) return;
-              const w = v.videoWidth || 1;
-              const h = v.videoHeight || 1;
-              setIsVertical(h / w >= 1.25);
-            } catch {
-              // ignore
-            }
-          }}
-          onLoadStart={() => {}} // Reduce console spam
-          onCanPlay={() => {}} // Reduce console spam
-        />
-      )}
+        )}
 
-      {/* Play/Pause overlay */}
-      {!isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        {/* Volume Slider */}
+        <div className="pointer-events-auto">
+          <VolumeSlider
+            volume={volume}
+            isMuted={isMuted}
+            show={showSlider}
+            onChange={changeVolume}
+            onMuteToggle={toggleMute}
+          />
+        </div>
+
+        {/* Right actions */}
+        <div className="absolute right-3 bottom-24 flex flex-col gap-6 items-center pointer-events-auto z-20">
+          <div className="flex flex-col items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-12 w-12 rounded-full ${
+                userReaction === 'love'
+                  ? 'bg-transparent text-red-500'
+                  : 'bg-transparent text-white hover:bg-white/10'
+              }`}
+              onClick={handleLike}
+            >
+              <Heart className={`h-7 w-7 ${userReaction === 'love' ? 'fill-current' : ''}`} />
+            </Button>
+            <span className="text-white text-xs mt-1">{post.reactions_count || 0}</span>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-12 w-12 rounded-full bg-transparent text-white hover:bg-white/10"
+              onClick={() => {
+                setShowComments(true);
+                onReaction(post.id, 'comment');
+              }}
+            >
+              <MessageCircle className="h-7 w-7" />
+            </Button>
+            <span className="text-white text-xs mt-1">{post.comments_count || 0}</span>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-12 w-12 rounded-full bg-transparent text-white hover:bg-white/10"
+              onClick={handleShare}
+            >
+              <Share2 className="h-7 w-7" />
+            </Button>
+          </div>
+
           <Button
             variant="ghost"
             size="icon"
-            className="bg-black/50 text-white hover:bg-black/70 h-16 w-16"
-            onClick={() => setIsPlaying(true)}
-          >
-            <Play className="h-8 w-8" />
-          </Button>
-        </div>
-      )}
-
-      {/* Volume Slider Flotante */}
-      <VolumeSlider
-        volume={volume}
-        isMuted={isMuted}
-        show={showSlider}
-        onChange={changeVolume}
-        onMuteToggle={toggleMute}
-      />
-
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleMute();
-          showSliderTemporarily();
-        }}
-        className="absolute bottom-20 right-4 z-50 rounded-full bg-black/50 text-white hover:bg-black/70"
-        aria-label={isMuted ? "Activar sonido" : "Silenciar"}
-      >
-        {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-      </Button>
-
-      {/* Action buttons - Vertical en la derecha (estilo Instagram Reels) */}
-      <div className="absolute right-4 bottom-32 flex flex-col gap-6 items-center">
-        <div className="flex flex-col items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-12 w-12 rounded-full ${
-              userReaction === 'love' 
-                ? 'bg-transparent text-red-500' 
-                : 'bg-transparent text-white hover:bg-white/10'
-            }`}
-            onClick={handleLike}
-          >
-            <Heart className={`h-7 w-7 ${userReaction === 'love' ? 'fill-current' : ''}`} />
-          </Button>
-          <span className="text-white text-xs mt-1">{post.reactions_count || 0}</span>
-        </div>
-
-        <div className="flex flex-col items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-12 w-12 rounded-full bg-transparent text-white hover:bg-white/10"
-            onClick={() => {
-              setShowComments(true);
-              onReaction(post.id, 'comment');
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleMute();
+              showSliderTemporarily();
             }}
+            className="h-11 w-11 rounded-full bg-black/50 text-white hover:bg-black/70"
+            aria-label={isMuted ? "Activar sonido" : "Silenciar"}
           >
-            <MessageCircle className="h-7 w-7" />
+            {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
           </Button>
-          <span className="text-white text-xs mt-1">{post.comments_count || 0}</span>
         </div>
 
-        <div className="flex flex-col items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-12 w-12 rounded-full bg-transparent text-white hover:bg-white/10"
-            onClick={handleShare}
-          >
-            <Share2 className="h-7 w-7" />
-          </Button>
+        {/* Bottom-left user info */}
+        <div className="absolute left-0 right-0 bottom-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10">
+          <div className="max-w-[calc(100%-5rem)]">
+            <div className="flex items-center gap-3 mb-2">
+              <Avatar className="h-10 w-10 border-2 border-white">
+                <AvatarImage src={post.profiles?.avatar_url} alt={post.profiles?.username} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {(post.profiles?.username || 'U').charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm text-white truncate">
+                  {post.profiles?.username || 'Usuario'}
+                </h3>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs bg-transparent border-white text-white hover:bg-white hover:text-black pointer-events-auto"
+              >
+                Seguir
+              </Button>
+            </div>
+
+            {post.content && (
+              <p className="text-sm text-white line-clamp-2">
+                {post.content}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
       {showComments && (
         <div
-          className="absolute inset-0 z-50 flex items-end bg-black/60"
+          className="absolute inset-0 z-[60] flex items-end bg-black/60"
           onClick={() => setShowComments(false)}
         >
           <div
@@ -342,38 +397,6 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
           </div>
         </div>
       )}
-
-      {/* User info - Parte inferior izquierda */}
-      <div className="absolute bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-        <div className="flex items-center gap-3 mb-2">
-          <Avatar className="h-10 w-10 border-2 border-white">
-            <AvatarImage src={post.profiles?.avatar_url} alt={post.profiles?.username} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
-              {(post.profiles?.username || 'U').charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          
-          <div className="flex-1">
-            <h3 className="font-semibold text-sm text-white">
-              {post.profiles?.username || 'Usuario'}
-            </h3>
-          </div>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs bg-transparent border-white text-white hover:bg-white hover:text-black"
-          >
-            Seguir
-          </Button>
-        </div>
-        
-        {post.content && (
-          <p className="text-sm text-white line-clamp-2 max-w-[70%]">
-            {post.content}
-          </p>
-        )}
-      </div>
     </div>
   );
 });
