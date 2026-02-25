@@ -115,16 +115,12 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
   }, [currentUserId]);
 
   return (
-    <aside className="h-full bg-card border-r border-border overflow-y-auto custom-scrollbar">
-      <div className="p-6">
-        <h2 className="text-xl font-semibold text-[#050505] dark:text-white [.tech_&]:text-white">Panel</h2>
-      </div>
-
-      <div className="px-4 pb-4">
+    <aside className="h-full bg-muted/10 border-r border-border/20 overflow-y-auto custom-scrollbar">
+      <div className="px-3 pt-4 pb-3">
         {currentUserId && userProfile && (
           <Link
             to={`/profile/${currentUserId}`}
-            className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+            className="flex items-center space-x-3 p-2.5 rounded-2xl hover:bg-muted/40 transition-colors"
           >
             <Avatar className="h-10 w-10">
               <AvatarImage src={userProfile?.avatar_url || undefined} />
@@ -133,7 +129,7 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-lg font-semibold text-[#050505] dark:text-white [.tech_&]:text-white">{userProfile?.username || "Mi perfil"}</p>
+              <p className="text-base font-semibold text-foreground/90">{userProfile?.username || "Mi perfil"}</p>
             </div>
           </Link>
         )}
@@ -147,26 +143,28 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
               onClick={item.onClick}
               className={({ isActive }) =>
                 cn(
-                  "group flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                  isActive ? "bg-primary/5" : "hover:bg-muted/50"
+                  "group flex items-center gap-3 px-3 py-2.5 rounded-2xl mb-1.5 transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  isActive
+                    ? "bg-background/70 ring-1 ring-border/20"
+                    : "hover:bg-background/50"
                 )
               }
             >
               {({ isActive }) => {
                 const style = getIconStyle(item.path);
                 const iconWrapperClassName = cn(
-                  "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ease-out ring-1 ring-border/60 dark:ring-border/50 group-hover:shadow-sm group-hover:scale-[1.03] group-active:scale-[0.99]",
+                  "h-9 w-9 rounded-full flex items-center justify-center transition-colors duration-200 ease-out ring-1 ring-border/20",
                   isActive ? style.activeBg : style.bg
                 );
                 const iconClassName = cn(
-                  "h-5 w-5 transition-colors duration-200 group-hover:opacity-90",
+                  "h-[18px] w-[18px] transition-colors duration-200",
                   isActive ? style.activeFg : style.fg
                 );
                 const labelClassName = cn(
                   "flex-1 truncate",
                   isActive
-                    ? "text-[#050505] dark:text-white [.tech_&]:text-white font-semibold"
-                    : "text-[#1C1E21] dark:text-slate-200 [.tech_&]:text-slate-200 font-medium"
+                    ? "text-foreground font-semibold"
+                    : "text-foreground/80 font-medium"
                 );
                 return (
                   <>
@@ -178,17 +176,17 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
                 );
               }}
             </NavLink>
-            {index < menuItems.length - 1 && <Separator className="my-3" />}
+            {index < menuItems.length - 1 && <Separator className="my-2 opacity-0" />}
           </Fragment>
         ))}
-        <Separator className="my-3" />
+        <Separator className="my-2 opacity-0" />
 
         <NavLink
           to="/groups/create"
           className={({ isActive }) =>
             cn(
-              "group flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              isActive ? "bg-primary/5" : "hover:bg-muted/50"
+              "group flex items-center gap-3 px-3 py-2.5 rounded-2xl mb-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              isActive ? "bg-muted/50" : "hover:bg-background/50"
             )
           }
         >
@@ -197,20 +195,20 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
             const labelClassName = cn(
               "truncate",
               isActive
-                ? "text-[#050505] dark:text-white [.tech_&]:text-white font-semibold"
-                : "text-[#1C1E21] dark:text-slate-200 [.tech_&]:text-slate-200 font-medium"
+                ? "text-foreground font-semibold"
+                : "text-foreground/80 font-medium"
             );
             return (
               <>
                 <span
                   className={cn(
-                    "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ease-out ring-1 ring-border/60 dark:ring-border/50 group-hover:shadow-sm group-hover:scale-[1.03] group-active:scale-[0.99]",
+                    "h-9 w-9 rounded-full flex items-center justify-center transition-colors duration-200 ease-out ring-1 ring-border/20",
                     isActive ? style.activeBg : style.bg
                   )}
                 >
                   <Plus
                     className={cn(
-                      "h-5 w-5 transition-colors duration-200 group-hover:opacity-90",
+                      "h-[18px] w-[18px] transition-colors duration-200",
                       isActive ? style.activeFg : style.fg
                     )}
                   />
@@ -221,10 +219,10 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
           }}
         </NavLink>
 
-        <div className="h-px bg-border my-3" />
+        <div className="h-px bg-border/0 my-2" />
 
-        <div className="px-4 py-1">
-          <p className="text-xs font-semibold text-muted-foreground">Grupos en los que estoy</p>
+        <div className="px-3 py-2">
+          <p className="text-xs font-medium text-muted-foreground">Mis grupos</p>
         </div>
 
         {groupsLoading ? (
@@ -235,13 +233,13 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
               <Link
                 key={String(g.id)}
                 to={`/groups/${g.slug || g.id}`}
-                className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-muted/50 transition-colors"
+                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-background/50 transition-colors"
               >
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={g.avatar_url || undefined} />
                   <AvatarFallback>{String(g.name || "G").slice(0, 1).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <span className="flex-1 truncate text-sm font-medium text-[#1C1E21] dark:text-slate-200 [.tech_&]:text-slate-200">
+                <span className="flex-1 truncate text-sm font-medium text-foreground/85">
                   {g.name}
                 </span>
               </Link>
@@ -252,21 +250,21 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
             <div className="px-4 py-2 text-sm text-muted-foreground">Aún no estás en ningún grupo</div>
             {recommendedGroups.length > 0 && (
               <>
-                <div className="px-4 py-1">
-                  <p className="text-xs font-semibold text-muted-foreground">Recomendados</p>
+                <div className="px-3 py-2">
+                  <p className="text-xs font-medium text-muted-foreground">Sugerencias</p>
                 </div>
                 <div className="mb-2">
                   {recommendedGroups.map((g) => (
                     <Link
                       key={String(g.id)}
                       to={`/groups/${g.slug || g.id}`}
-                      className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-background/50 transition-colors"
                     >
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={g.avatar_url || undefined} />
                         <AvatarFallback>{String(g.name || "G").slice(0, 1).toUpperCase()}</AvatarFallback>
                       </Avatar>
-                      <span className="flex-1 truncate text-sm font-medium text-[#1C1E21] dark:text-slate-200 [.tech_&]:text-slate-200">
+                      <span className="flex-1 truncate text-sm font-medium text-foreground/85">
                         {g.name}
                       </span>
                     </Link>

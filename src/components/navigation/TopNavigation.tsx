@@ -154,10 +154,10 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
   if (isMobile) {
     return (
       <nav className={cn(
-        "bg-background/95 backdrop-blur border-b border-border fixed top-0 left-0 right-0 z-[70] shadow-sm"
+        "bg-background/95 backdrop-blur border-b border-border/30 fixed top-0 left-0 right-0 z-[70] shadow-none"
       )}>
         <div className="flex flex-col">
-          <div className="flex items-center justify-between h-12 px-3">
+          <div className="flex items-center justify-between h-14 px-4">
             <HSocialLogo
               size="lg"
               showText={true}
@@ -170,32 +170,32 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full bg-muted/70 text-foreground hover:bg-muted"
+                className="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
                 onClick={() => setShowPostModal(true)}
                 aria-label="Crear"
               >
-                <Plus className="h-6 w-6" />
+                <Plus className="h-5 w-5" strokeWidth={1.5} />
               </Button>
 
               {/* Search button (abre buscador de pantalla completa) */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full bg-muted/70 text-foreground hover:bg-muted"
+                className="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
                 onClick={() => setShowFullScreenSearch(true)}
                 aria-label="Buscar"
               >
-                <Search className="h-6 w-6" />
+                <Search className="h-5 w-5" strokeWidth={1.5} />
               </Button>
 
               <UserMenu
-                triggerClassName="h-10 w-10 rounded-full bg-muted/70 text-foreground hover:bg-muted"
-                iconClassName="h-6 w-6"
+                triggerClassName="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
+                iconClassName="h-5 w-5"
               />
             </div>
           </div>
 
-          <div className="flex items-center h-12 px-1">
+          <div className="flex items-center h-12 px-2">
             {centerNavItems.map((item) => (
               <Link
                 key={item.path}
@@ -217,7 +217,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                     item.path === "/explore" && !item.isActive && "explore-attention"
                   )}
                 >
-                  <item.icon className="h-6 w-6" strokeWidth={item.isActive ? 2 : 1.5} />
+                  <item.icon className="h-5 w-5" strokeWidth={item.isActive ? 2 : 1.5} />
                 </span>
                 {item.badge && item.badge > 0 && (
                   <Badge 
@@ -252,16 +252,16 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
   }
 
   const desktopCenterNavItems = centerNavItems.filter(
-    (item) => item.path !== "/messages" && item.path !== "/notifications"
+    (item) => item.path !== "/messages" && item.path !== "/notifications" && item.path !== "/explore"
   );
 
   // Desktop navigation (Facebook style)
   return (
-    <nav className="bg-card border-b border-border h-14 fixed top-0 left-0 right-0 z-[70]">
-      <div className="w-full flex items-center justify-between h-full px-2 lg:px-4">
+    <nav className="bg-background/95 backdrop-blur border-b border-border/30 h-16 fixed top-0 left-0 right-0 z-[70]">
+      <div className="w-full flex items-center justify-between h-full px-3 lg:px-6">
 
         {/* Logo and Search - Left */}
-        <div className="flex items-center gap-4 flex-shrink-0 w-80">
+        <div className="flex items-center gap-4 flex-shrink-0 w-[420px]">
           <HSocialLogo
             size="md"
             showText={true}
@@ -270,7 +270,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
           
           {/* Search bar - desktop inline search */}
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
             <div className="w-full">
               <FriendSearch />
             </div>
@@ -287,17 +287,17 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                 onClick={item.onClick}
                 className={cn(
                   "flex items-center justify-center h-12 w-32 rounded-xl transition-colors duration-200 relative group",
-                  item.isActive ? "bg-primary/10" : "hover:bg-muted"
+                  item.isActive ? "bg-muted/60" : "hover:bg-muted/50"
                 )}
               >
                 {(() => {
                   const style = getCenterIconStyle(item.path);
                   const bubbleClassName = cn(
-                    "h-10 w-10 rounded-full flex items-center justify-center transition-colors ring-1 ring-border/60 group-hover:shadow-sm",
+                    "h-10 w-10 rounded-full flex items-center justify-center transition-colors ring-1 ring-border/30",
                     item.isActive ? style.activeBg : style.bg
                   );
                   const iconClassName = cn(
-                    "h-6 w-6 transition-colors",
+                    "h-[22px] w-[22px] transition-colors",
                     item.isActive ? style.activeFg : style.fg
                   );
                   return (
@@ -307,7 +307,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                           item.path === "/explore" && !item.isActive && "explore-attention"
                         )}
                       >
-                        <item.icon className={iconClassName} strokeWidth={item.isActive ? 2 : 1.5} />
+                        <item.icon className={iconClassName} strokeWidth={item.isActive ? 1.8 : 1.4} />
                       </span>
                     </span>
                   );
@@ -344,7 +344,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                     {(userProfile?.username?.[0] ?? "U").toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="ml-2 text-sm font-bold text-[#050505] dark:text-white [.tech_&]:text-white max-w-20 truncate">
+                <span className="ml-2 text-sm font-semibold text-foreground/90 max-w-20 truncate">
                   {userProfile?.username || 'Usuario'}
                 </span>
               </Button>
@@ -353,22 +353,22 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                className="h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors text-muted-foreground"
                 title="Crear"
                 onClick={() => setShowPostModal(true)}
               >
-                <Plus className="h-5 w-5" />
+                <Plus className="h-5 w-5" strokeWidth={1.5} />
               </Button>
 
               {/* Messenger */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full bg-muted hover:bg-muted/80 transition-colors relative"
+                className="h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors relative text-muted-foreground"
                 onClick={() => navigate("/messages")}
                 title="Mensajes"
               >
-                <MessageCircle className="h-5 w-5" />
+                <MessageCircle className="h-5 w-5" strokeWidth={1.5} />
                 {unreadMessagesCount > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -381,7 +381,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
 
               {/* Notifications */}
               <NotificationDropdown
-                triggerClassName="h-10 w-10 rounded-full bg-muted hover:bg-muted/80 transition-colors relative shadow-sm ring-1 ring-black/5 hover:shadow-md"
+                triggerClassName="h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors relative shadow-none ring-1 ring-border/30"
                 iconClassName="h-5 w-5"
                 onOpen={handleNotificationClick}
               />

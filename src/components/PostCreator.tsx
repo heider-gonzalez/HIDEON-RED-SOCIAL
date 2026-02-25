@@ -28,6 +28,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useDraft } from "@/hooks/use-draft";
 import { useAutoResize } from "@/hooks/use-auto-resize";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCreateIdea } from "@/hooks/ideas/use-create-idea";
 
 export interface Idea {
   title: string;
@@ -165,6 +166,7 @@ export function PostCreator({
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const createIdeaMutation = useCreateIdea();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const finalTextareaRef = externalTextareaRef || textareaRef;
   const { clearDraft } = useDraft(content, setContent);
@@ -500,7 +502,62 @@ export function PostCreator({
         };
       }
       
-      // Insert regular post or idea post
+      if (postType === "idea") {
+        const newPost = await createIdeaMutation.mutateAsync({ postData });
+        console.log('Post created successfully:', newPost);
+
+        sendIdeaPublishedAutoMessage(session.user.id);
+
+        queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
+        queryClient.invalidateQueries({ queryKey: ["personalized-feed"] });
+        queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+        queryClient.invalidateQueries({ queryKey: ["project-posts"] });
+
+        try {
+          window.dispatchEvent(new Event('hsocial:home_refresh'));
+        } catch {
+          // ignore
+        }
+
+        mobileToasts.postCreated();
+        onPostCreated?.();
+        clearDraft();
+
+        setContent("");
+        setVisibility("public");
+        setPostType("regular");
+        setSelectedFiles([]);
+        setSelectedGroupId('');
+        setSelectedCompanyId('');
+        setContentStyle({
+          backgroundKey: 'none',
+          textColor: 'text-foreground',
+          isTextOnly: false
+        });
+        setIdea({
+          title: "",
+          description: "",
+          required_skills: [],
+          max_participants: 5,
+          contact_link: ""
+        });
+        setTempSkills("");
+        setEvento({
+          title: "",
+          description: "",
+          subtitle: "",
+          start_date: "",
+          location: "",
+          location_type: 'presencial',
+          category: 'conference',
+          gradient_color: 'gradient-1',
+          banner_file: null
+        });
+
+        return;
+      }
+
+      // Insert regular post
       const { data: newPost, error: postError } = await supabase
         .from("posts")
         .insert(postData)
@@ -523,6 +580,10 @@ export function PostCreator({
       queryClient.invalidateQueries({ queryKey: ["personalized-feed"] });
       queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
       queryClient.invalidateQueries({ queryKey: ["project-posts"] });
+
+      if (postType === "idea") {
+        queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      }
 
       // Some infinite queries won't refetch immediately on invalidate; force a refetch
       queryClient.refetchQueries({ queryKey: ["posts"], exact: false });

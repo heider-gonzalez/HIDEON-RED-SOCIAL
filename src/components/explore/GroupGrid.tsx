@@ -65,7 +65,8 @@ export function GroupGrid({ searchQuery }: { searchQuery: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Users className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">No se encontraron grupos</p>
+        <p className="text-muted-foreground">Por ahora no aparece ningún grupo</p>
+        <p className="text-xs text-muted-foreground mt-1">Puedes crear uno y empezar la conversación con tu gente.</p>
       </div>
     );
   }

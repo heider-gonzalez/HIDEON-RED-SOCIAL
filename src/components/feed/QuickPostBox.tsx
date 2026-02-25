@@ -51,8 +51,8 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="left" className="max-w-xs">
-                  <p className="font-medium">¡Tu primer post aparece aquí!</p>
-                  <p className="text-sm text-muted-foreground">Comparte tu idea o proyecto con la comunidad.</p>
+                  <p className="font-medium">Tu primer post empieza aquí</p>
+                  <p className="text-sm text-muted-foreground">Puede ser una idea, un avance o una pregunta. Sin presión.</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -72,14 +72,14 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
                 className="flex-1 px-4 py-2.5 text-left rounded-full border border-border hover:bg-muted/50 transition-colors text-muted-foreground text-sm"
               >
                 {isNewUser 
-                  ? `¿Qué idea tienes en mente, ${profile.username}? ¡Animate!` 
-                  : `¿Qué idea tienes en mente, ${profile.username}?`}
+                  ? `¿Qué quieres compartir hoy, ${profile.username}?` 
+                  : `¿Qué quieres compartir hoy, ${profile.username}?`}
               </button>
             </TooltipTrigger>
             {isNewUser && (
               <TooltipContent side="top" className="max-w-xs">
-                <p className="font-medium">¡Comparte tu primera idea!</p>
-                <p className="text-sm text-muted-foreground">Buscas colaborador? ¿Quieres mostrar tu proyecto?</p>
+                <p className="font-medium">Una buena forma de empezar</p>
+                <p className="text-sm text-muted-foreground">Di en qué andas o qué estás buscando, y la gente te encuentra.</p>
               </TooltipContent>
             )}
           </Tooltip>

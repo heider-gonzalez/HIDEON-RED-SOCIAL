@@ -1,5 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useIdeas } from "@/hooks/ideas/use-ideas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Lightbulb, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,37 +15,14 @@ import { toast } from "@/hooks/use-toast";
 export function IdeaGrid({ searchQuery }: { searchQuery: string }) {
   const [selectedPost, setSelectedPost] = useState<PostType | null>(null);
   const [showPostModal, setShowPostModal] = useState(false);
-  
-  const { data: ideas, isLoading } = useQuery({
-    queryKey: ['explore-ideas', searchQuery],
-    queryFn: async () => {
-      let query = supabase
-        .from('posts')
-        .select(`
-          *,
-          profiles(username, avatar_url)
-        `)
-        .eq('post_type', 'idea')
-        .not('idea', 'is', null)
-        .eq('visibility', 'public')
-        .order('created_at', { ascending: false })
-        .limit(20);
-      
-      if (searchQuery) {
-        query = query.or(`content.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
-    }
-  });
+
+  const { data: ideas, isLoading } = useIdeas({ searchQuery, limit: 20 });
 
   const postIds = ideas?.map(idea => idea.id) || [];
   const { data: participantCounts } = useIdeaParticipantsCount(postIds);
 
   if (isLoading) {
-    return <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+    return <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {[1,2,3,4].map(i => <div key={i} className="h-48 bg-muted animate-pulse rounded-lg" />)}
     </div>;
   }
@@ -55,14 +31,15 @@ export function IdeaGrid({ searchQuery }: { searchQuery: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Lightbulb className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">No se encontraron ideas</p>
+        <p className="text-muted-foreground">Todavía no hay ideas por aquí</p>
+        <p className="text-xs text-muted-foreground mt-1">Si tienes algo en mente, compártelo y vemos quién se suma.</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {ideas?.map((idea) => {
         const participantCount = participantCounts?.get(idea.id) || 0;
         const isJoinableIdea = !!(idea as any)?.idea;

@@ -185,8 +185,8 @@ export function NotificationDropdown({ triggerClassName, iconClassName, onOpen }
                 <Bell className="h-8 w-8 text-muted-foreground/50" />
                 <p className="text-sm">
                   {activeTab === "all" 
-                    ? "No tienes notificaciones" 
-                    : `No tienes notificaciones de ${
+                    ? "Tienes todo al día por ahora" 
+                    : `Por ahora no hay novedades de ${
                         activeTab === "comments" ? "comentarios" :
                         "reacciones"
                       }`

@@ -40,6 +40,7 @@ export function usePostActions(postId: string) {
       if (error) throw error;
       
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['ideas'] });
       toast({
         title: "Publicación eliminada",
         description: "La publicación se ha eliminado correctamente",

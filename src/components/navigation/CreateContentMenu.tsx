@@ -109,40 +109,40 @@ export function CreateContentMenu({ open, onOpenChange }: CreateContentMenuProps
     {
       id: 'idea',
       icon: Lightbulb,
-      title: 'Publicar Idea Colaborativa',
-      description: 'Comparte una idea y encuentra colaboradores',
+      title: 'Compartir una idea',
+      description: 'Cuéntala y encuentra gente que se sume',
       iconBg: 'bg-yellow-500/10',
       iconColor: 'text-yellow-500'
     },
     {
       id: 'project',
       icon: FolderKanban,
-      title: 'Publicar Proyecto',
-      description: 'Muestra un proyecto en curso o finalizado',
+      title: 'Mostrar un proyecto',
+      description: 'En curso o terminado, como tú quieras',
       iconBg: 'bg-blue-500/10',
       iconColor: 'text-blue-500'
     },
     {
       id: 'media',
       icon: Image,
-      title: 'Publicar Foto/Video',
-      description: 'Comparte contenido multimedia',
+      title: 'Foto o video',
+      description: 'Comparte un momento o avance',
       iconBg: 'bg-pink-500/10',
       iconColor: 'text-pink-500'
     },
     {
       id: 'employment',
       icon: FolderKanban,
-      title: 'Publicar Empleo',
-      description: 'Comparte una oferta laboral o vacante',
+      title: 'Oferta de trabajo',
+      description: 'Si estás buscando o tienes una vacante',
       iconBg: 'bg-sky-500/10',
       iconColor: 'text-sky-500'
     },
     {
       id: 'services',
       icon: Users,
-      title: 'Publicar Servicios',
-      description: 'Ofrece o busca un servicio (con categoría)',
+      title: 'Servicios',
+      description: 'Ofrece o busca ayuda puntual',
       iconBg: 'bg-indigo-500/10',
       iconColor: 'text-indigo-500'
     },
@@ -150,7 +150,7 @@ export function CreateContentMenu({ open, onOpenChange }: CreateContentMenuProps
       id: 'group',
       icon: Users,
       title: 'Crear Grupo',
-      description: 'Forma un grupo de trabajo colaborativo',
+      description: 'Arma un espacio para trabajar en equipo',
       iconBg: 'bg-green-500/10',
       iconColor: 'text-green-500'
     },
@@ -158,7 +158,7 @@ export function CreateContentMenu({ open, onOpenChange }: CreateContentMenuProps
       id: 'story',
       icon: Video,
       title: 'Crear Historia/Reel',
-      description: 'Sube un video corto o historia',
+      description: 'Un video corto para compartir',
       iconBg: 'bg-purple-500/10',
       iconColor: 'text-purple-500'
     }
@@ -171,7 +171,7 @@ export function CreateContentMenu({ open, onOpenChange }: CreateContentMenuProps
           <DialogHeader>
             <DialogTitle>Crear contenido</DialogTitle>
             <DialogDescription>
-              Elige el tipo de contenido que deseas publicar
+              Elige una forma de compartir
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, Lightbulb, FolderOpen, Users, Trophy, Brain } from "lucide-react";
+import { Search, Lightbulb, FolderOpen, Users } from "lucide-react";
 import { IdeaGrid } from "@/components/explore/IdeaGrid";
 import { ProjectGrid } from "@/components/explore/ProjectGrid";
 import { GroupGrid } from "@/components/explore/GroupGrid";
@@ -21,7 +21,7 @@ export default function Explore() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Buscar ideas, proyectos, usuarios..."
+              placeholder="Busca ideas, proyectos o personas…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-11 rounded-lg bg-muted border-none text-foreground placeholder:text-muted-foreground"
@@ -57,8 +57,8 @@ export default function Explore() {
               value="lideres" 
               className="shrink-0 gap-2 text-foreground data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary px-3 text-xs sm:text-sm"
             >
-              <Brain className="h-4 w-4" />
-              Coquitos
+              <Users className="h-4 w-4" />
+              Personas
             </TabsTrigger>
           </TabsList>
 

@@ -94,7 +94,7 @@ const Notifications = () => {
               >
                 <X className="h-5 w-5" />
               </Button>
-              <h1 className="text-xl font-semibold">Notificaciones</h1>
+              <h1 className="text-xl font-semibold">Novedades</h1>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="md:hidden" aria-label="Buscar">
@@ -108,7 +108,7 @@ const Notifications = () => {
                   onClick={() => markAsRead()}
                 >
                   <Check className="h-4 w-4" />
-                  <span className="hidden sm:inline">Marcar como leídas</span>
+                  <span className="hidden sm:inline">Marcar como vistas</span>
                 </Button>
               )}
               {notifications.length > 0 && (
@@ -136,7 +136,7 @@ const Notifications = () => {
               </div>
             ) : filteredNotifications.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground">
-                No tienes notificaciones
+                Cuando haya algo nuevo, lo verás por aquí.
               </div>
             ) : (
               <>

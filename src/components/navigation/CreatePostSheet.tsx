@@ -269,8 +269,8 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
       }
       
       toast({
-        title: "¡Publicación creada!",
-        description: "Tu publicación se ha compartido exitosamente",
+        title: "Listo",
+        description: "Ya quedó compartido con la comunidad",
       });
 
       // Reset form
@@ -285,7 +285,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
       console.error('Error creating post:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear la publicación",
+        description: "No pudimos publicarlo. Intenta de nuevo en un momento.",
         variant: "destructive",
       });
     } finally {
@@ -314,7 +314,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
         </SheetHeader>
 
         <SheetDescription className="px-4 pt-2 text-xs text-muted-foreground">
-          Comparte tus ideas, crea eventos o publica contenido con tu comunidad.
+          Comparte un avance, una idea o una pregunta. Aquí se vale empezar simple.
         </SheetDescription>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -429,10 +429,10 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
           <Textarea
             placeholder={
               activeTab === "idea" 
-                ? "Describe tu idea..." 
+                ? "Cuéntanos tu idea…" 
                 : activeTab === "project" 
-                ? "Comparte tu proyecto..." 
-                : "¿Qué estás pensando?"
+                ? "Cuéntanos de tu proyecto…" 
+                : "¿Qué quieres compartir hoy?"
             }
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -551,14 +551,15 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
 
           {/* Submit Button */}
           <Button
-            onClick={handleSubmit}
+            type="submit"
             disabled={(!content.trim() && !selectedFile) || isSubmitting}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg"
           >
-            {isSubmitting ? "Publicando..." : "Publicar"}
+            {isSubmitting ? "Compartiendo..." : "Compartir"}
           </Button>
         </div>
       </SheetContent>
     </Sheet>
   );
+
 }

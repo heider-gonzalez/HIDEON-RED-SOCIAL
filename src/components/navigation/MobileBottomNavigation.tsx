@@ -1,4 +1,4 @@
-import { Home, Users, PlusSquare, FolderOpen, Compass, MessageCircle } from "lucide-react";
+import { Home, Users, PlusSquare, FolderOpen, Compass } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import ModalPublicacionWeb from "@/components/ModalPublicacionWeb";
 import { supabase } from "@/integrations/supabase/client";
-import { useUnreadMessages } from "@/hooks/use-unread-messages";
 
 interface MobileBottomNavigationProps {
   currentUserId: string | null;
@@ -26,14 +25,11 @@ export function MobileBottomNavigation({
   const [showPostModal, setShowPostModal] = useState(false);
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
   const isVisible = useScrollDirection();
-  const { unreadMessages } = useUnreadMessages(currentUserId || undefined);
-  const unreadMessagesCount = unreadMessages.reduce((total, msg) => total + msg.unread_count, 0);
 
   const iconStyles: Record<string, { bg: string; fg: string; activeBg: string; activeFg: string }> = {
     "/": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
     "/home": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
     "/groups": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
-    "/messages": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
     "/projects": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
     "/explore": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
     "__action__": { bg: "bg-primary/10", fg: "text-primary", activeBg: "bg-primary/20", activeFg: "text-primary" },
@@ -92,12 +88,6 @@ export function MobileBottomNavigation({
       badge: null,
     },
     {
-      icon: MessageCircle,
-      label: "Mensajes",
-      path: "/messages",
-      badge: unreadMessagesCount > 0 ? unreadMessagesCount : null,
-    },
-    {
       icon: PlusSquare,
       label: "Publicar",
       path: "/",
@@ -125,11 +115,10 @@ export function MobileBottomNavigation({
           "fixed bottom-0 left-0 right-0 bg-background border-t border-border z-[60] md:hidden transition-transform duration-300 pb-2",
           isVisible ? "translate-y-0" : "translate-y-full"
         )}>
-        <div className="grid grid-cols-6 items-center h-14">
+        <div className="grid grid-cols-5 items-center h-14">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || 
               (item.label === "Grupos" && location.pathname.startsWith('/groups')) ||
-              (item.label === "Mensajes" && location.pathname.startsWith('/messages')) ||
               (item.label === "Proyectos" && location.pathname.startsWith('/projects')) ||
               (item.label === "Explorar" && location.pathname.startsWith('/explore'));
             

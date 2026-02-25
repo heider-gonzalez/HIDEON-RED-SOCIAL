@@ -143,7 +143,7 @@ export function NotificationDropdown({ triggerClassName, iconClassName, onOpen }
           </div>
         ) : filteredNotifications.length === 0 ? (
           <div className="p-6 text-center text-muted-foreground">
-            No tienes notificaciones
+            Tienes todo al día por ahora
           </div>
         ) : (
           <NotificationGroups

@@ -42,7 +42,8 @@ export function ProjectGrid({ searchQuery }: { searchQuery: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">No se encontraron proyectos</p>
+        <p className="text-muted-foreground">Aún no hay proyectos para mostrar</p>
+        <p className="text-xs text-muted-foreground mt-1">Cuando quieras, comparte el tuyo (aunque esté en progreso).</p>
       </div>
     );
   }

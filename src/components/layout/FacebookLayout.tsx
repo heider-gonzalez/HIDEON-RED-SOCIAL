@@ -146,11 +146,12 @@ export function FacebookLayout({
           <main
             className={`flex-1 h-full w-full overflow-y-auto ${!hideLeftSidebar ? 'lg:ml-[280px]' : ''} ${!hideRightSidebar ? 'xl:mr-[320px]' : ''}`}
           >
-            <div className="w-full px-0 py-2 lg:py-4 bg-muted/20 min-h-full">
-              {/* Notification banner */}
-              {currentUserId && <NotificationPermissionBanner />}
-              {children}
-              <AppLegalFooter />
+            <div className="w-full min-h-full bg-muted/10">
+              <div className="mx-auto w-full max-w-[1400px] px-3 sm:px-6 lg:px-10 py-4 lg:py-7">
+                {currentUserId && <NotificationPermissionBanner />}
+                {children}
+                <AppLegalFooter />
+              </div>
             </div>
           </main>
           

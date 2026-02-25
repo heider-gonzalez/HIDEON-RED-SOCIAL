@@ -42,7 +42,7 @@ export function LeaderboardGrid({ searchQuery }: { searchQuery: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Brain className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">No se encontraron coquitos</p>
+        <p className="text-muted-foreground">No encontramos personas con ese filtro</p>
       </div>
     );
   }
@@ -57,11 +57,6 @@ export function LeaderboardGrid({ searchQuery }: { searchQuery: string }) {
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              {/* Ranking número */}
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-                {leader.rank}
-              </div>
-              
               {/* Avatar */}
               <Avatar className="h-12 w-12">
                 <AvatarImage src={leader.avatar_url || undefined} />
@@ -79,12 +74,6 @@ export function LeaderboardGrid({ searchQuery }: { searchQuery: string }) {
                   {leader.career || "Usuario destacado"}
                 </p>
               </div>
-              
-              {/* Badge */}
-              <Badge className="bg-purple-500 text-white hover:bg-purple-600">
-                <Brain className="h-3 w-3 mr-1" />
-                {Math.round(Number(leader.score || 0))}
-              </Badge>
             </div>
           </CardContent>
         </Card>

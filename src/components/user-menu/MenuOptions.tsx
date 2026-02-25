@@ -92,7 +92,7 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
       
       <Separator className="my-1" />
       
-      {/* Coquitos Destacados */}
+      {/* Personas */}
       <div className="py-1">
         <Button
           variant="ghost"
@@ -103,7 +103,7 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
             <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center mr-3">
               <Brain className="h-5 w-5 text-primary" />
             </div>
-            <span className="font-medium">Coquitos Destacados</span>
+            <span className="font-medium">Personas</span>
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </Button>

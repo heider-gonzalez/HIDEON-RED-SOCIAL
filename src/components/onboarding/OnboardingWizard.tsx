@@ -116,8 +116,8 @@ export function OnboardingWizard({ onComplete, institutionName }: OnboardingWiza
       });
 
       toast({
-        title: "¡Bienvenido a H Social! 🎉",
-        description: "Tu perfil está listo. ¡Comienza a conectar y crear!"
+        title: "¡Bienvenido!",
+        description: "Tu perfil quedó listo. Tómalo con calma y disfruta la comunidad."
       });
 
       onComplete();
@@ -205,7 +205,7 @@ export function OnboardingWizard({ onComplete, institutionName }: OnboardingWiza
             <div className="text-center mb-6">
               <Rocket className="h-12 w-12 mx-auto mb-3 text-primary" />
               <h3 className="text-xl font-semibold">Tus objetivos</h3>
-              <p className="text-muted-foreground">¿Qué quieres lograr en H Social?</p>
+              <p className="text-muted-foreground">¿Qué te gustaría encontrar por aquí?</p>
             </div>
             
             <div className="space-y-2">
@@ -247,8 +247,7 @@ export function OnboardingWizard({ onComplete, institutionName }: OnboardingWiza
             <div className="p-4 bg-muted rounded-lg text-sm">
               <h4 className="font-medium mb-2">🚀 ¡Casi listo!</h4>
               <p className="text-muted-foreground">
-                Después de completar el registro podrás crear tu primer post, 
-                conectar con otros estudiantes y comenzar a construir tu red.
+                Después de esto puedes compartir algo, explorar proyectos y conocer gente.
               </p>
             </div>
           </div>

@@ -310,8 +310,8 @@ export default function Projects() {
     <Layout>
       <div className="min-h-screen bg-background">
         <Helmet>
-          <title>Proyectos Universitarios - HIDEON</title>
-          <meta name="description" content="Explora e inspírate con ideas innovadoras de proyectos universitarios" />
+          <title>Proyectos e Innovación - HIDEON</title>
+          <meta name="description" content="Explora e inspírate con ideas innovadoras de proyectos" />
         </Helmet>
 
         {/* Header Section */}
@@ -320,7 +320,7 @@ export default function Projects() {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="text-center lg:text-left">
                 <h1 className="text-3xl lg:text-4xl font-bold mb-2">
-                  Proyectos Universitarios
+                  Proyectos e Innovación
                 </h1>
                 <p className="text-lg opacity-90">
                   Explora e inspírate con ideas innovadoras

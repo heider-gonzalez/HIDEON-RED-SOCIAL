@@ -77,6 +77,9 @@ export function PostCreatorSimple({ onPostCreated }: PostCreatorSimpleProps) {
 
       toast({ title: "¡Publicado!", description: "Tu publicación se creó correctamente" });
       queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+      if (postType === "idea") {
+        queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      }
       
       setContent("");
       setSelectedFiles([]);

@@ -237,7 +237,7 @@ export function PrivateMessages() {
       console.error('Error deleting message:', error);
       toast({
         title: 'Error',
-        description: error.message || 'No se pudo eliminar el mensaje',
+        description: error.message || 'No pudimos eliminar el mensaje. Intenta de nuevo.',
         variant: 'destructive',
       });
     } finally {
@@ -870,7 +870,7 @@ export function PrivateMessages() {
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar conversaciones o usuarios..."
+              placeholder="Buscar conversaciones o personas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8"
@@ -1430,7 +1430,7 @@ export function PrivateMessages() {
                         setNewMessage(e.target.value);
                         // handleTyping(); // Trigger typing event
                       }}
-                      placeholder="Escribe un mensaje..."
+                      placeholder="Escribe un mensaje…"
                       className="flex-1"
                       disabled={sending}
                     />
@@ -1578,7 +1578,7 @@ export function PrivateMessages() {
                   <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Escribe un mensaje..."
+                    placeholder="Escribe un mensaje…"
                     className="flex-1"
                     disabled={sending}
                   />

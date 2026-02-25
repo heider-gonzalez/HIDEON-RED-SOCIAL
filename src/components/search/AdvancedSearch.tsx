@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { 
   Select,
   SelectContent,
@@ -145,97 +146,100 @@ export function AdvancedSearch({ isOpen, onClose }: AdvancedSearchProps) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-20">
       <Card className="w-full max-w-2xl max-h-[80vh] overflow-hidden">
-        <div className="p-4 border-b space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Búsqueda Avanzada
-            </h2>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2"
-              >
-                <Filter className="h-4 w-4" />
-                Filtros
-                {hasActiveFilters && (
-                  <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
-                    {[filters.career, filters.semester].filter(Boolean).length}
-                  </Badge>
-                )}
-              </Button>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
+        <div className="p-3 border-b">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar personas..."
+                value={filters.query}
+                onChange={(e) => setFilters(prev => ({ ...prev, query: e.target.value }))}
+                className="pl-11 pr-4 h-11 rounded-full border border-border/50 bg-muted/30 focus-visible:ring-0 focus-visible:ring-offset-0"
+                autoFocus
+              />
             </div>
-          </div>
 
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar estudiantes..."
-              value={filters.query}
-              onChange={(e) => setFilters(prev => ({ ...prev, query: e.target.value }))}
-              className="pl-10"
-              autoFocus
-            />
-          </div>
-
-          {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4" />
-                  Carrera
-                </label>
-                <Select 
-                  value={filters.career} 
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, career: value }))}
+            <Popover open={showFilters} onOpenChange={setShowFilters}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full"
+                  aria-label="Filtros"
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar carrera" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CAREERS.map((career) => (
-                      <SelectItem key={career} value={career}>
-                        {career}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <Filter className="h-4 w-4" />
+                  {hasActiveFilters && (
+                    <span className="sr-only">
+                      {[filters.career, filters.semester].filter(Boolean).length} filtros activos
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[320px] p-3">
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4" />
+                      Carrera
+                    </label>
+                    <Select
+                      value={filters.career}
+                      onValueChange={(value) => setFilters(prev => ({ ...prev, career: value }))}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CAREERS.map((career) => (
+                          <SelectItem key={career} value={career}>
+                            {career}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Semestre
-                </label>
-                <Select 
-                  value={filters.semester} 
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, semester: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar semestre" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SEMESTERS.map((semester) => (
-                      <SelectItem key={semester} value={semester}>
-                        Semestre {semester}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Semestre
+                    </label>
+                    <Select
+                      value={filters.semester}
+                      onValueChange={(value) => setFilters(prev => ({ ...prev, semester: value }))}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SEMESTERS.map((semester) => (
+                          <SelectItem key={semester} value={semester}>
+                            Semestre {semester}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {hasActiveFilters && (
-                <div className="md:col-span-2">
-                  <Button variant="outline" onClick={clearFilters} className="w-full">
-                    Limpiar filtros
-                  </Button>
+                  {hasActiveFilters && (
+                    <Button variant="outline" onClick={clearFilters} className="w-full">
+                      Limpiar filtros
+                    </Button>
+                  )}
                 </div>
-              )}
+              </PopoverContent>
+            </Popover>
+
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full" aria-label="Cerrar">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {hasActiveFilters && (
+            <div className="mt-2 flex items-center gap-2">
+              <Badge variant="secondary" className="h-6 rounded-full">
+                {[filters.career, filters.semester].filter(Boolean).length} filtros
+              </Badge>
             </div>
           )}
         </div>
@@ -247,7 +251,7 @@ export function AdvancedSearch({ isOpen, onClose }: AdvancedSearchProps) {
               <p className="text-muted-foreground">Buscando...</p>
             </div>
           ) : results.length > 0 ? (
-            <div className="p-4 space-y-2">
+            <div className="p-3 space-y-2">
               {results.map((user) => (
                 <div 
                   key={user.id}
@@ -288,15 +292,11 @@ export function AdvancedSearch({ isOpen, onClose }: AdvancedSearchProps) {
             </div>
           ) : (filters.query.length >= 2 || hasActiveFilters) ? (
             <div className="p-8 text-center text-muted-foreground">
-              <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>No se encontraron resultados</p>
-              <p className="text-sm">Intenta con otros criterios de búsqueda</p>
             </div>
           ) : (
             <div className="p-8 text-center text-muted-foreground">
-              <Search className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Escribe al menos 2 caracteres para buscar</p>
-              <p className="text-sm">O usa los filtros para explorar por carrera y semestre</p>
+              <p>Escribe para buscar</p>
             </div>
           )}
         </div>

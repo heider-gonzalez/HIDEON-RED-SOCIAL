@@ -48,8 +48,8 @@ export function AcademicOnboardingModal({
       if (error) throw error;
 
       toast({
-        title: "¡Perfil completado!",
-        description: "Tu información académica ha sido guardada exitosamente",
+        title: "Listo",
+        description: "Guardamos tu info. Puedes cambiarla cuando quieras.",
       });
 
       onComplete();
@@ -75,7 +75,7 @@ export function AcademicOnboardingModal({
             ¡Bienvenido a H Social! <Sparkles className="inline h-5 w-5 text-primary" />
           </DialogTitle>
           <DialogDescription className="text-center">
-            Completa tu perfil académico para obtener una experiencia personalizada
+            Si quieres, cuéntanos un poquito de ti. Es opcional.
           </DialogDescription>
         </DialogHeader>
 
@@ -172,7 +172,7 @@ export function AcademicOnboardingModal({
             disabled={loading}
             className="w-full"
           >
-            {loading ? "Guardando..." : "Completar perfil"}
+            {loading ? "Guardando..." : "Guardar"}
           </Button>
           <Button 
             variant="ghost" 
@@ -180,7 +180,7 @@ export function AcademicOnboardingModal({
             disabled={loading}
             className="w-full"
           >
-            Completar después
+            Ahora no
           </Button>
         </div>
       </DialogContent>

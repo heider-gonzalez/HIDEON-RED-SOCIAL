@@ -38,6 +38,8 @@ export function AuthorPostOptionsMenu({ postId, onEdit, onDelete, canDelete = tr
       } else {
         navigate("/");
       }
+
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
     } catch (error) {
       toast({
         title: "Error",
@@ -59,6 +61,7 @@ export function AuthorPostOptionsMenu({ postId, onEdit, onDelete, canDelete = tr
         });
         setEditDialogOpen(false);
         queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
+        queryClient.invalidateQueries({ queryKey: ["ideas"] });
         if (onEdit) {
           onEdit();
         }

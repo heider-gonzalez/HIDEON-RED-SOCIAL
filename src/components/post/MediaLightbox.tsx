@@ -115,11 +115,13 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
       }
 
       if (e.key === "ArrowLeft") {
+        if (total <= 1) return;
         setIndex((prev) => (prev - 1 + total) % total);
         return;
       }
 
       if (e.key === "ArrowRight") {
+        if (total <= 1) return;
         setIndex((prev) => (prev + 1) % total);
       }
     };
@@ -153,8 +155,14 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
 
   if (!isOpen || !current) return null;
 
-  const goPrev = () => setIndex((prev) => (prev - 1 + total) % total);
-  const goNext = () => setIndex((prev) => (prev + 1) % total);
+  const goPrev = () => {
+    if (total <= 1) return;
+    setIndex((prev) => (prev - 1 + total) % total);
+  };
+  const goNext = () => {
+    if (total <= 1) return;
+    setIndex((prev) => (prev + 1) % total);
+  };
 
   const SWIPE_THRESHOLD_PX = 60;
 
@@ -178,8 +186,8 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
       <DialogContent
         className={
           isDesktopPostViewer
-            ? "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100vh] max-w-none border-none rounded-none bg-black/90 overflow-hidden"
-            : "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100svh] max-w-none border-none rounded-none bg-black/90 overflow-hidden"
+            ? "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100vh] max-w-none border-none rounded-none bg-black/95 overflow-hidden [&>button]:hidden"
+            : "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100svh] max-w-none border-none rounded-none bg-black/95 overflow-hidden [&>button]:hidden"
         }
       >
         <DialogTitle className="sr-only">Visor de medios</DialogTitle>
@@ -191,7 +199,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="absolute top-5 left-5 z-[10002] rounded-full bg-black/50 text-white hover:bg-black/70"
+          className="absolute top-5 left-5 z-[10002] rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur"
           aria-label="Cerrar"
         >
           <X className="h-5 w-5" />
@@ -254,7 +262,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white z-[80]"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/55 hover:bg-black/80 text-white z-[80] h-11 w-11 rounded-full backdrop-blur"
                   onClick={(e) => {
                     e.stopPropagation();
                     goPrev();
@@ -269,14 +277,14 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                 <img
                   src={current.url}
                   alt={`Media ${index + 1} de ${total}`}
-                  className="max-h-full max-w-[calc(100vw-400px)] object-contain"
+                  className="max-h-full max-w-[calc(100vw-400px)] object-contain transition-opacity duration-200"
                   loading="eager"
                   decoding="async"
                 />
               ) : (
                 <video
                   src={current.url}
-                  className="max-h-full max-w-[calc(100vw-400px)] object-contain"
+                  className="max-h-full max-w-[calc(100vw-400px)] object-contain transition-opacity duration-200"
                   controls
                   autoPlay
                   muted
@@ -291,7 +299,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white z-[80]"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/55 hover:bg-black/80 text-white z-[80] h-11 w-11 rounded-full backdrop-blur"
                   onClick={(e) => {
                     e.stopPropagation();
                     goNext();

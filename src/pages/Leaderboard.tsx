@@ -17,7 +17,7 @@ export default function Leaderboard() {
   const { data: topUsers, isLoading } = useQuery<CoquitosRow[]>({
     queryKey: ["coquitos-leaderboard", 50, 30],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_coquitos_leaderboard", {
+      const { data, error } = await (supabase as any).rpc("get_coquitos_leaderboard", {
         limit_count: 50,
         window_days: 30,
       });
@@ -41,9 +41,9 @@ export default function Leaderboard() {
         <div className="flex items-center gap-3 mb-4">
           <Brain className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold">Coquitos Destacados</h1>
+            <h1 className="text-2xl font-bold">Personas</h1>
             <p className="text-sm text-muted-foreground">
-              Aportes verificados de profesionales y estudiantes que impulsan proyectos en HSocial
+              Personas que comparten, ayudan y hacen que la comunidad avance
             </p>
           </div>
         </div>
@@ -52,13 +52,10 @@ export default function Leaderboard() {
           {topUsers?.map((user) => (
             <Card 
               key={user.user_id} 
-              className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
+              className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
               onClick={() => navigate(`/profile/${user.user_id}`)}
             >
               <div className="flex items-center gap-4">
-                <div className="text-2xl font-bold text-muted-foreground min-w-[40px]">
-                  #{user.rank}
-                </div>
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={user.avatar_url} />
                   <AvatarFallback>{user.username?.[0]?.toUpperCase() || "U"}</AvatarFallback>
@@ -69,13 +66,6 @@ export default function Leaderboard() {
                     {user.career || "Sin carrera"}
                   </p>
                 </div>
-                <Badge
-                  variant="secondary"
-                  className="gap-2 flex-shrink-0 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
-                >
-                  <Brain className="h-3 w-3" />
-                  <span className="tabular-nums">{Math.round(Number(user.score || 0))}</span>
-                </Badge>
               </div>
             </Card>
           ))}

@@ -253,7 +253,7 @@ export function Feed({ userId, groupId, companyId }: FeedProps) {
 
     return (
       <div
-        className="feed-container mx-auto w-full max-w-[600px] px-2 lg:px-0"
+        className="feed-container mx-auto w-full max-w-[760px] px-3 sm:px-5 py-2"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -264,11 +264,13 @@ export function Feed({ userId, groupId, companyId }: FeedProps) {
             <span>{isPullRefreshing ? 'Actualizando…' : 'Desliza para actualizar'}</span>
           </div>
         )}
+
         <FeedContent
           posts={previewPosts}
           trackPostView={async () => {}}
           trackPostInteraction={async () => {}}
         />
+
         <div className="mt-6">
           <PublicFeedWall />
         </div>
@@ -276,43 +278,34 @@ export function Feed({ userId, groupId, companyId }: FeedProps) {
     );
   }
 
-  if (isLoading) {
-    return <FeedSkeleton />;
-  }
-
-  if (posts.length === 0) {
-    return <EmptyFeed />;
-  }
-
   return (
     <div
-      className="feed-container mx-auto w-full max-w-[600px] px-2 lg:px-0"
+      className="feed-container mx-auto w-full max-w-[760px] px-3 sm:px-5 py-2"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {isAuthenticated && newPostsCount > 0 && (
-        <div className="sticky top-0 z-10 py-2 bg-background/80 backdrop-blur">
-          <Button
-            variant="secondary"
-            className="w-full rounded-full"
-            onClick={handleSeeNewPosts}
-          >
-            Ver {newPostsCount} publicaciones nuevas
-          </Button>
-        </div>
-      )}
       {(pullDistance > 0 || isPullRefreshing) && (
         <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
           <div className={`w-4 h-4 border-2 border-current border-t-transparent rounded-full ${isPullRefreshing ? 'animate-spin' : ''}`} />
           <span>{isPullRefreshing ? 'Actualizando…' : 'Desliza para actualizar'}</span>
         </div>
       )}
+
+      {newPostsCount > 0 && (
+        <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
+          <Button variant="outline" className="rounded-full border-border/30" onClick={handleSeeNewPosts}>
+            Ver novedades ({newPostsCount})
+          </Button>
+        </div>
+      )}
+
       <FeedContent
         posts={posts as Post[]}
         trackPostView={trackPostView}
         trackPostInteraction={trackPostInteraction}
       />
+
       {/* Loader sentinel for IntersectionObserver */}
       <div ref={loaderRef} className="py-4 flex justify-center">
         {isFetchingNextPage && (

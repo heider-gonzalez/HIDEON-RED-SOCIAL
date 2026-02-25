@@ -42,17 +42,17 @@ export function EmptyFeed() {
           <div>
             <h2 className="text-xl font-semibold mb-2">¡Bienvenido a HIDEON!</h2>
             <p className="text-muted-foreground">
-              Conecta con socios, lanza tu proyecto y haz realidad tu emprendimiento.
+              Un lugar para compartir lo que estás construyendo, pedir ayuda y conocer gente con buena energía.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button onClick={() => setShowPostModal(true)} className="gap-2">
               <Rocket className="h-4 w-4" />
-              Publicar tu primera idea
+              Compartir algo
             </Button>
             <Button variant="outline" className="gap-2">
               <Search className="h-4 w-4" />
-              Explorar proyectos
+              Explorar
             </Button>
           </div>
         </div>
@@ -67,18 +67,18 @@ export function EmptyFeed() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Button variant="outline" size="sm" onClick={() => setShowPostModal(true)} className="h-auto p-3 flex flex-col items-start gap-1">
             <Rocket className="h-4 w-4 text-primary" />
-            <span className="font-medium">Publicar</span>
-            <span className="text-xs text-muted-foreground">Comparte tu idea</span>
+            <span className="font-medium">Compartir</span>
+            <span className="text-xs text-muted-foreground">Una idea, avance o pregunta</span>
           </Button>
           <Button variant="outline" size="sm" className="h-auto p-3 flex flex-col items-start gap-1">
             <MessageCircle className="h-4 w-4 text-blue-500" />
-            <span className="font-medium">Comentar</span>
-            <span className="text-xs text-muted-foreground">Interactúa con otros</span>
+            <span className="font-medium">Conversar</span>
+            <span className="text-xs text-muted-foreground">Responde y acompaña</span>
           </Button>
           <Button variant="outline" size="sm" className="h-auto p-3 flex flex-col items-start gap-1">
             <Users className="h-4 w-4 text-green-500" />
-            <span className="font-medium">Conectar</span>
-            <span className="text-xs text-muted-foreground">Encuentra colaboradores</span>
+            <span className="font-medium">Conocer gente</span>
+            <span className="text-xs text-muted-foreground">Encuentra afinidades</span>
           </Button>
         </div>
       </Card>

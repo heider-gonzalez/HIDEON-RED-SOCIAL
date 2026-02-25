@@ -159,7 +159,7 @@ export function GlobalChat() {
 
     if (receivers.length === 0) return;
 
-    await supabase
+    await (supabase as any)
       .from("notifications")
       .insert(
         receivers.map((r) => ({
@@ -213,7 +213,7 @@ export function GlobalChat() {
   const loadMessages = useCallback(async () => {
     try {
       // Primero obtener los mensajes
-      const { data: messagesData, error } = await supabase
+      const { data: messagesData, error } = await (supabase as any)
         .from("mensajes")
         .select(`
           id,
@@ -233,7 +233,7 @@ export function GlobalChat() {
       // Obtener perfiles de los autores
       let profilesMap: Record<string, { username: string; avatar_url: string }> = { ...authorCacheRef.current };
       if (authorIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
+        const { data: profiles, error: profilesError } = await (supabase as any)
           .from("profiles")
           .select("id, username, avatar_url")
           .in("id", authorIds);
@@ -261,7 +261,7 @@ export function GlobalChat() {
       console.error("Error loading messages:", error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los mensajes",
+        description: "No pudimos cargar los mensajes. Intenta de nuevo en un momento.",
         variant: "destructive",
       });
     } finally {
@@ -276,7 +276,7 @@ export function GlobalChat() {
 
     setSending(true);
     try {
-      const { data: messageData, error } = await supabase
+      const { data: messageData, error } = await (supabase as any)
         .from("mensajes")
         .insert({
           contenido: newMessage.trim(),
@@ -302,7 +302,7 @@ export function GlobalChat() {
       console.error("Error sending message:", error);
       toast({
         title: "Error",
-        description: "No se pudo enviar el mensaje",
+        description: "No pudimos enviar tu mensaje. Intenta de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -328,7 +328,7 @@ export function GlobalChat() {
     if (!messageToDelete || !currentUserId) return;
     setIsDeleting(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('mensajes')
         .delete()
         .eq('id', messageToDelete.id)
@@ -458,7 +458,7 @@ export function GlobalChat() {
       <div className="p-4 border-b border-border">
         <h2 className="text-xl font-semibold text-foreground">Chat Global</h2>
         <p className="text-sm text-muted-foreground">
-          {messages.length} mensajes
+          Un espacio para conversar con la comunidad
         </p>
       </div>
 
@@ -494,7 +494,7 @@ export function GlobalChat() {
               ref={inputRef}
               value={newMessage}
               onChange={handleInputChange}
-              placeholder="Escribe un mensaje... Usa @ para mencionar"
+              placeholder="Escribe algo... (usa @ para mencionar)"
               className="flex-1"
               disabled={sending || !currentUserId}
             />
