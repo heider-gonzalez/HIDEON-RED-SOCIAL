@@ -91,6 +91,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
   const pointerStartXRef = useRef<number | null>(null);
   const pointerStartYRef = useRef<number | null>(null);
   const pointerMovedRef = useRef(false);
+  const didPushHistoryRef = useRef(false);
   const isMobile = useIsMobile();
 
   const total = items.length;
@@ -127,6 +128,29 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isOpen, onClose, total]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      didPushHistoryRef.current = false;
+      return;
+    }
+
+    try {
+      if (!didPushHistoryRef.current) {
+        window.history.pushState({ __hsocial_lightbox: true }, "");
+        didPushHistoryRef.current = true;
+      }
+    } catch {
+      // ignore
+    }
+
+    const onPopState = () => {
+      onClose();
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !current) return null;
 
   const goPrev = () => setIndex((prev) => (prev - 1 + total) % total);
@@ -154,8 +178,8 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
       <DialogContent
         className={
           isDesktopPostViewer
-            ? "p-0 left-0 top-0 translate-x-0 translate-y-0 w-screen h-[100vh] max-w-none border-none rounded-none bg-black/90 overflow-hidden [&>button]:hidden"
-            : "p-0 left-0 top-0 translate-x-0 translate-y-0 w-screen h-[100svh] max-w-none border-none rounded-none bg-black/90 [&>button]:hidden"
+            ? "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100vh] max-w-none border-none rounded-none bg-black/90 overflow-hidden"
+            : "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100svh] max-w-none border-none rounded-none bg-black/90 overflow-hidden"
         }
       >
         <DialogTitle className="sr-only">Visor de medios</DialogTitle>
@@ -167,17 +191,17 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="absolute top-3 left-3 z-[80] rounded-full bg-black/50 text-white hover:bg-black/70"
+          className="absolute top-5 left-5 z-[10002] rounded-full bg-black/50 text-white hover:bg-black/70"
           aria-label="Cerrar"
         >
           <X className="h-5 w-5" />
         </Button>
 
         {isDesktopPostViewer ? (
-          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_400px] h-full">
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_400px] h-full min-h-0">
             {/* Left: Media */}
             <div
-              className="relative flex items-center justify-center bg-transparent"
+              className="relative flex items-center justify-center bg-transparent h-full w-full min-h-0"
               onWheel={handleWheel}
               onPointerDown={(e) => {
                 pointerStartXRef.current = e.clientX;
@@ -245,14 +269,14 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                 <img
                   src={current.url}
                   alt={`Media ${index + 1} de ${total}`}
-                  className="max-h-[100vh] max-w-[calc(100vw-400px)] object-contain"
+                  className="max-h-full max-w-[calc(100vw-400px)] object-contain"
                   loading="eager"
                   decoding="async"
                 />
               ) : (
                 <video
                   src={current.url}
-                  className="max-h-[100vh] max-w-[calc(100vw-400px)] object-contain"
+                  className="max-h-full max-w-[calc(100vw-400px)] object-contain"
                   controls
                   autoPlay
                   muted
@@ -283,7 +307,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
           </div>
         ) : (
           <div
-            className="relative flex-1 flex items-center justify-center overflow-hidden bg-black"
+            className="relative flex-1 flex items-center justify-center overflow-hidden bg-black h-full w-full"
             onClick={(e) => {
               if (e.target === e.currentTarget) onClose();
             }}
@@ -356,7 +380,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
               <img
                 src={current.url}
                 alt={`Media ${index + 1} de ${total}`}
-                className="max-h-[100svh] max-w-[100vw] object-contain"
+                className="max-h-full max-w-full object-contain"
                 onClick={(e) => e.stopPropagation()}
                 loading="eager"
                 decoding="async"
@@ -364,7 +388,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
             ) : (
               <video
                 src={current.url}
-                className="max-h-[100svh] max-w-[100vw] object-contain"
+                className="max-h-full max-w-full object-contain"
                 controls
                 autoPlay
                 muted

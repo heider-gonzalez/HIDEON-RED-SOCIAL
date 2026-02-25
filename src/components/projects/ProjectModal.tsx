@@ -54,16 +54,12 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
   const navigate = useNavigate();
   const fullscreenVideo = useFullscreenVideo();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const didPushHistoryRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [isMutedLocal, setIsMutedLocal] = useState(true);
   const [volumeLocal, setVolumeLocal] = useState(1);
-  const instanceIdRef = useRef<string>(
-    typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function'
-      ? (crypto as any).randomUUID()
-      : `pm_${Math.random().toString(16).slice(2)}_${Date.now()}`
-  );
 
   const formatTime = (seconds: number) => {
     const s = Math.max(0, Math.floor(seconds || 0));
@@ -92,7 +88,6 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
     if (!v) return;
     try {
       if (v.paused) {
-        setNowPlayingVideoId(`${instanceIdRef.current}:video`);
         await v.play();
       } else {
         v.pause();
@@ -108,7 +103,6 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
     try {
       v.muted = !v.muted;
       setIsMutedLocal(v.muted);
-      setSoundEnabled(!v.muted);
     } catch {
       // ignore
     }
@@ -147,6 +141,29 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
       v.removeEventListener('volumechange', onVolumeChange);
     };
   }, [primaryMediaUrl]);
+
+  useEffect(() => {
+    if (!open) {
+      didPushHistoryRef.current = false;
+      return;
+    }
+
+    try {
+      if (!didPushHistoryRef.current) {
+        window.history.pushState({ __hsocial_project_modal: true }, "");
+        didPushHistoryRef.current = true;
+      }
+    } catch {
+      // ignore
+    }
+
+    const onPopState = () => {
+      onOpenChange(false);
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [open, onOpenChange]);
 
   // Helper function to check if URL is a video
   const isVideoUrl = (url: string | undefined): boolean => {
@@ -211,423 +228,444 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">{project.title}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="p-0 fixed inset-0 w-screen h-[100vh] max-w-none border-none rounded-none bg-black/90 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="absolute top-5 left-5 z-[10002] rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors p-2"
+            aria-label="Cerrar"
+          >
+            <X size={20} />
+          </button>
 
-          <div className="space-y-6">
-            {/* Project Banner */}
-            {primaryMediaUrl && (
-              <div className="relative w-full h-64 rounded-lg overflow-hidden bg-black flex items-center justify-center">
-                <MediaRenderer
-                  url={primaryMediaUrl}
-                  className="w-full h-full"
-                  autoPlay={false}
-                  muted
-                  loop
-                  playsInline
-                  controls={false}
-                  videoRef={videoRef}
-                  onClick={() => openFullscreenFromModal(videoRef.current)}
-                />
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_420px] h-full min-h-0">
+            {/* Left: Media */}
+            <div className="relative flex items-center justify-center h-full min-h-0 w-full">
+              {primaryMediaUrl && (
+                <div className={"relative w-full h-full flex items-center justify-center " + (isVideo ? "bg-black" : "bg-transparent")}>
+                  <MediaRenderer
+                    url={primaryMediaUrl}
+                    alt={project.title}
+                    className={isVideo ? "w-full h-full object-contain" : "w-full h-full object-contain"}
+                    autoPlay={false}
+                    muted
+                    loop
+                    playsInline
+                    controls={false}
+                    videoRef={videoRef}
+                    onClick={() => {
+                      if (!isVideo) return;
+                      openFullscreenFromModal(videoRef.current);
+                    }}
+                  />
 
-                {/* Player bar (estilo Facebook) */}
-                {isVideo && (
-                  <div
-                    className="absolute left-0 right-0 bottom-0 z-40 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        className="h-8 w-8 inline-flex items-center justify-center text-white"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void togglePlay();
-                        }}
-                        aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
-                      >
-                        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                      </button>
+                  {isVideo && (
+                    <div
+                      className="absolute left-0 right-0 bottom-0 z-40 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="h-8 w-8 inline-flex items-center justify-center text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void togglePlay();
+                          }}
+                          aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+                        >
+                          {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                        </button>
 
-                      <div className="text-xs text-white tabular-nums min-w-[84px]">
-                        {formatTime(currentTime)} / {formatTime(duration)}
+                        <div className="text-xs text-white tabular-nums min-w-[84px]">
+                          {formatTime(currentTime)} / {formatTime(duration)}
+                        </div>
+
+                        <input
+                          type="range"
+                          min={0}
+                          max={duration || 0}
+                          step={0.1}
+                          value={Math.min(currentTime, duration || 0)}
+                          onChange={(e) => {
+                            const v = videoRef.current;
+                            if (!v) return;
+                            const t = Number(e.target.value);
+                            try {
+                              v.currentTime = t;
+                              setCurrentTime(t);
+                            } catch {
+                              // ignore
+                            }
+                          }}
+                          className="flex-1 h-1 accent-white"
+                        />
+
+                        <button
+                          type="button"
+                          className="h-8 w-8 inline-flex items-center justify-center text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMuteLocal();
+                          }}
+                          aria-label={isMutedLocal ? 'Activar sonido' : 'Silenciar'}
+                        >
+                          {isMutedLocal || volumeLocal === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="h-8 w-8 inline-flex items-center justify-center text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openFullscreenFromModal(videoRef.current);
+                          }}
+                          aria-label="Pantalla completa"
+                        >
+                          <Maximize className="h-5 w-5" />
+                        </button>
                       </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
-                      <input
-                        type="range"
-                        min={0}
-                        max={duration || 0}
-                        step={0.1}
-                        value={Math.min(currentTime, duration || 0)}
-                        onChange={(e) => {
-                          const v = videoRef.current;
-                          if (!v) return;
-                          const t = Number(e.target.value);
-                          try {
-                            v.currentTime = t;
-                            setCurrentTime(t);
-                          } catch {
-                            // ignore
-                          }
-                        }}
-                        className="flex-1 h-1 accent-white"
-                      />
+            {/* Right: Content */}
+            <div className="bg-background h-full min-h-0 overflow-y-auto">
+              <div className="p-4 border-b">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold">{project.title}</DialogTitle>
+                </DialogHeader>
+              </div>
 
-                      <button
-                        type="button"
-                        className="h-8 w-8 inline-flex items-center justify-center text-white"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleMuteLocal();
-                        }}
-                        aria-label={isMutedLocal ? 'Activar sonido' : 'Silenciar'}
-                      >
-                        {isMutedLocal || volumeLocal === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                      </button>
+              <div className="p-4 space-y-6">
+                {/* Status and Stats */}
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <Badge className={`${statusConfig.color} text-white px-3 py-1`}>
+                      {statusConfig.label}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      Categoría: {project.category}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm">
+                    {/* Reaction Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleReaction}
+                      className={`flex items-center gap-1 ${userReaction ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
+                    >
+                      <Heart size={16} fill={userReaction ? 'currentColor' : 'none'} />
+                      <span>{reactionsCount}</span>
+                    </Button>
+                    
+                    {/* Comments Count */}
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <MessageCircle size={16} />
+                      <span>{comments.length}</span>
+                    </div>
+                    
+                    {/* Views with hover card showing viewers */}
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <div className="flex items-center gap-1 text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                          <Eye size={16} />
+                          <span>{viewsCount}</span>
+                        </div>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-80">
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-semibold">Visto por</h4>
+                          {viewers.length > 0 ? (
+                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                              {viewers.map((viewer) => (
+                                <div key={viewer.viewer_id} className="flex items-center gap-2">
+                                  <Avatar className="w-6 h-6">
+                                    <AvatarImage src={viewer.avatar_url || undefined} />
+                                    <AvatarFallback>
+                                      {viewer.username?.charAt(0).toUpperCase() || 'U'}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">
+                                      {viewer.username || 'Usuario'}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {formatDistanceToNow(new Date(viewer.viewed_at), {
+                                        addSuffix: true,
+                                        locale: es
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              Aún no hay visualizaciones
+                            </p>
+                          )}
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  </div>
+                </div>
 
-                      <button
-                        type="button"
-                        className="h-8 w-8 inline-flex items-center justify-center text-white"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openFullscreenFromModal(videoRef.current);
-                        }}
-                        aria-label="Pantalla completa"
-                      >
-                        <Maximize className="h-5 w-5" />
-                      </button>
+                {/* Author and Professor */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-muted/30 rounded-lg p-4">
+                    <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
+                      <Users size={14} />
+                      Autor del Proyecto
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={project.author?.avatar_url} />
+                        <AvatarFallback>
+                          {project.author?.username?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{project.author?.username}</p>
+                        <p className="text-xs text-muted-foreground">Desarrollador Principal</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {project.professor && (
+                    <div className="bg-muted/30 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
+                        <Users size={14} />
+                        Profesor a Cargo
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarFallback>
+                            {project.professor.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{project.professor}</p>
+                          <p className="text-xs text-muted-foreground">Supervisor Académico</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* University and Date */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
+                    <p className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+                      <Calendar size={14} />
+                      Fecha de Creación
+                    </p>
+                    <p className="font-medium">
+                      {new Date(project.created_at).toLocaleDateString('es-ES', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+
+                  {project.duration && (
+                    <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground mb-1">Universidad</p>
+                      <p className="font-medium">Universidad Reformada</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div>
+                  <h3 className="font-semibold mb-2">Descripción</h3>
+                  <p className="text-muted-foreground leading-relaxed">{project.description}</p>
+                </div>
+
+                {/* Objectives */}
+                {project.objectives && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Objetivos</h3>
+                    <p className="text-muted-foreground leading-relaxed">{project.objectives}</p>
+                  </div>
+                )}
+
+                {/* Technologies */}
+                <div>
+                  <h3 className="font-semibold mb-2">Tecnologías</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {project.technologies.map((tech, index) => (
+                      <Badge key={index} variant="secondary" className="px-3 py-1">
+                        {tech}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Team Members */}
+                {project.team_members && project.team_members.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Miembros del Equipo</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {project.team_members.map((member, index) => (
+                        <Badge key={index} variant="outline" className="px-3 py-1">
+                          {member}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* Status and Stats */}
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Badge className={`${statusConfig.color} text-white px-3 py-1`}>
-                  {statusConfig.label}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  Categoría: {project.category}
-                </span>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                {/* Reaction Button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleReaction}
-                  className={`flex items-center gap-1 ${userReaction ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
-                >
-                  <Heart size={16} fill={userReaction ? 'currentColor' : 'none'} />
-                  <span>{reactionsCount}</span>
-                </Button>
-                
-                {/* Comments Count */}
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <MessageCircle size={16} />
-                  <span>{comments.length}</span>
+                {/* Contact Team Button */}
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={() => {
+                      trackProjectEvent('project_click_contact');
+                      setShowContactModal(true);
+                    }}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
+                  >
+                    <Mail size={16} />
+                    Contactar Equipo
+                  </Button>
+                  {project.github_url && (
+                    <Button variant="outline" className="flex items-center gap-2" asChild>
+                      <a href={project.github_url} target="_blank" rel="noopener noreferrer">
+                        <Github size={16} />
+                        Ver Código
+                      </a>
+                    </Button>
+                  )}
                 </div>
-                
-                {/* Views with hover card showing viewers */}
-                <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <div className="flex items-center gap-1 text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-                      <Eye size={16} />
-                      <span>{viewsCount}</span>
+
+                {/* Support Project Section */}
+                <div className="bg-gray-50 dark:bg-gray-950/20 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="text-2xl">💰</div>
+                    <div>
+                      <h3 className="font-semibold text-lg mb-1">Apoya este Proyecto</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Las donaciones monetarias estarán disponibles próximamente.
+                      </p>
                     </div>
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-80">
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-semibold">Visto por</h4>
-                      {viewers.length > 0 ? (
-                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                          {viewers.map((viewer) => (
-                            <div key={viewer.viewer_id} className="flex items-center gap-2">
-                              <Avatar className="w-6 h-6">
-                                <AvatarImage src={viewer.avatar_url || undefined} />
-                                <AvatarFallback>
-                                  {viewer.username?.charAt(0).toUpperCase() || 'U'}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">
-                                  {viewer.username || 'Usuario'}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {formatDistanceToNow(new Date(viewer.viewed_at), {
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <Button variant="outline" disabled className="border-2 border-gray-300 text-gray-400 cursor-not-allowed opacity-50">
+                      $10
+                    </Button>
+                    <Button variant="outline" disabled className="border-2 border-gray-300 text-gray-400 cursor-not-allowed opacity-50">
+                      $25
+                    </Button>
+                    <Button variant="outline" disabled className="border-2 border-gray-300 text-gray-400 cursor-not-allowed opacity-50">
+                      $50
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                    Próximamente
+                  </p>
+                </div>
+
+                {/* Demo and Documentation Links */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {project.demo_url && (
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2 justify-center"
+                      onClick={() => trackProjectEvent('project_click_demo')}
+                      asChild
+                    >
+                      <a href={project.demo_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink size={16} />
+                        Demo en Vivo
+                      </a>
+                    </Button>
+                  )}
+                  {project.documentation_url && (
+                    <Button variant="outline" className="flex items-center gap-2 justify-center" asChild>
+                      <a href={project.documentation_url} target="_blank" rel="noopener noreferrer">
+                        <Globe size={16} />
+                        Documentación
+                      </a>
+                    </Button>
+                  )}
+                </div>
+
+                {/* Comments Section */}
+                <div className="border-t pt-6">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <MessageCircle size={18} />
+                    Comentarios ({comments.length})
+                  </h3>
+
+                  {/* Comment Form */}
+                  <form onSubmit={handleSubmitComment} className="mb-6">
+                    <div className="flex gap-3">
+                      <Avatar className="w-8 h-8 flex-shrink-0">
+                        <AvatarFallback>U</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <Textarea
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          placeholder="Escribe un comentario..."
+                          className="min-h-[80px] resize-none"
+                          disabled={isSubmitting}
+                        />
+                        <div className="flex justify-end mt-2">
+                          <Button 
+                            type="submit" 
+                            size="sm" 
+                            className="flex items-center gap-1"
+                            disabled={isSubmitting || !newComment.trim()}
+                          >
+                            <Send size={14} />
+                            {isSubmitting ? 'Enviando...' : 'Comentar'}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+
+                  {/* Comments List */}
+                  <div className="space-y-4">
+                    {comments.length > 0 ? (
+                      comments.map((comment: any) => (
+                        <div key={comment.id} className="flex gap-3">
+                          <Avatar className="w-8 h-8 flex-shrink-0">
+                            <AvatarImage src={comment.profiles?.avatar_url} />
+                            <AvatarFallback>
+                              {comment.profiles?.username?.charAt(0).toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="bg-muted rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm">
+                                  {comment.profiles?.username || 'Usuario'}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(comment.created_at), { 
                                     addSuffix: true,
                                     locale: es
                                   })}
-                                </p>
+                                </span>
                               </div>
+                              <p className="text-sm">{comment.content}</p>
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          Aún no hay visualizaciones
-                        </p>
-                      )}
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
-              </div>
-            </div>
-
-            {/* Author and Professor */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-muted/30 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
-                  <Users size={14} />
-                  Autor del Proyecto
-                </p>
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={project.author?.avatar_url} />
-                    <AvatarFallback>
-                      {project.author?.username?.charAt(0).toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{project.author?.username}</p>
-                    <p className="text-xs text-muted-foreground">Desarrollador Principal</p>
-                  </div>
-                </div>
-              </div>
-
-              {project.professor && (
-                <div className="bg-muted/30 rounded-lg p-4">
-                  <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
-                    <Users size={14} />
-                    Profesor a Cargo
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarFallback>
-                        {project.professor.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{project.professor}</p>
-                      <p className="text-xs text-muted-foreground">Supervisor Académico</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* University and Date */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
-                  <Calendar size={14} />
-                  Fecha de Creación
-                </p>
-                <p className="font-medium">
-                  {new Date(project.created_at).toLocaleDateString('es-ES', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
-                </p>
-              </div>
-
-              {project.duration && (
-                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
-                  <p className="text-sm text-muted-foreground mb-1">Universidad</p>
-                  <p className="font-medium">Universidad Reformada</p>
-                </div>
-              )}
-            </div>
-
-            {/* Description */}
-            <div>
-              <h3 className="font-semibold mb-2">Descripción</h3>
-              <p className="text-muted-foreground leading-relaxed">{project.description}</p>
-            </div>
-
-            {/* Objectives */}
-            {project.objectives && (
-              <div>
-                <h3 className="font-semibold mb-2">Objetivos</h3>
-                <p className="text-muted-foreground leading-relaxed">{project.objectives}</p>
-              </div>
-            )}
-
-            {/* Technologies */}
-            <div>
-              <h3 className="font-semibold mb-2">Tecnologías</h3>
-              <div className="flex flex-wrap gap-2">
-                {project.technologies.map((tech, index) => (
-                  <Badge key={index} variant="secondary" className="px-3 py-1">
-                    {tech}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            {/* Team Members */}
-            {project.team_members && project.team_members.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-2">Miembros del Equipo</h3>
-                <div className="flex flex-wrap gap-2">
-                  {project.team_members.map((member, index) => (
-                    <Badge key={index} variant="outline" className="px-3 py-1">
-                      {member}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Contact Team Button */}
-            <div className="flex gap-3">
-              <Button 
-                onClick={() => {
-                  trackProjectEvent('project_click_contact');
-                  setShowContactModal(true);
-                }}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
-              >
-                <Mail size={16} />
-                Contactar Equipo
-              </Button>
-              {project.github_url && (
-                <Button variant="outline" className="flex items-center gap-2" asChild>
-                  <a href={project.github_url} target="_blank" rel="noopener noreferrer">
-                    <Github size={16} />
-                    Ver Código
-                  </a>
-                </Button>
-              )}
-            </div>
-
-            {/* Support Project Section */}
-            <div className="bg-gray-50 dark:bg-gray-950/20 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="text-2xl">💰</div>
-                <div>
-                  <h3 className="font-semibold text-lg mb-1">Apoya este Proyecto</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Las donaciones monetarias estarán disponibles próximamente.
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <Button variant="outline" disabled className="border-2 border-gray-300 text-gray-400 cursor-not-allowed opacity-50">
-                  $10
-                </Button>
-                <Button variant="outline" disabled className="border-2 border-gray-300 text-gray-400 cursor-not-allowed opacity-50">
-                  $25
-                </Button>
-                <Button variant="outline" disabled className="border-2 border-gray-300 text-gray-400 cursor-not-allowed opacity-50">
-                  $50
-                </Button>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                Próximamente
-              </p>
-            </div>
-
-            {/* Demo and Documentation Links */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {project.demo_url && (
-                <Button
-                  variant="outline"
-                  className="flex items-center gap-2 justify-center"
-                  onClick={() => trackProjectEvent('project_click_demo')}
-                  asChild
-                >
-                  <a href={project.demo_url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink size={16} />
-                    Demo en Vivo
-                  </a>
-                </Button>
-              )}
-              {project.documentation_url && (
-                <Button variant="outline" className="flex items-center gap-2 justify-center" asChild>
-                  <a href={project.documentation_url} target="_blank" rel="noopener noreferrer">
-                    <Globe size={16} />
-                    Documentación
-                  </a>
-                </Button>
-              )}
-            </div>
-
-            {/* Comments Section */}
-            <div className="border-t pt-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <MessageCircle size={18} />
-                Comentarios ({comments.length})
-              </h3>
-
-              {/* Comment Form */}
-              <form onSubmit={handleSubmitComment} className="mb-6">
-                <div className="flex gap-3">
-                  <Avatar className="w-8 h-8 flex-shrink-0">
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <Textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Escribe un comentario..."
-                      className="min-h-[80px] resize-none"
-                      disabled={isSubmitting}
-                    />
-                    <div className="flex justify-end mt-2">
-                      <Button 
-                        type="submit" 
-                        size="sm" 
-                        className="flex items-center gap-1"
-                        disabled={isSubmitting || !newComment.trim()}
-                      >
-                        <Send size={14} />
-                        {isSubmitting ? 'Enviando...' : 'Comentar'}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </form>
-
-              {/* Comments List */}
-              <div className="space-y-4">
-                {comments.length > 0 ? (
-                  comments.map((comment: any) => (
-                    <div key={comment.id} className="flex gap-3">
-                      <Avatar className="w-8 h-8 flex-shrink-0">
-                        <AvatarImage src={comment.profiles?.avatar_url} />
-                        <AvatarFallback>
-                          {comment.profiles?.username?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="bg-muted rounded-lg p-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm">
-                              {comment.profiles?.username || 'Usuario'}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(comment.created_at), { 
-                                addSuffix: true,
-                                locale: es
-                              })}
-                            </span>
                           </div>
-                          <p className="text-sm">{comment.content}</p>
                         </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    Sé el primero en comentar este proyecto
-                  </p>
-                )}
+                      ))
+                    ) : (
+                      <p className="text-center text-muted-foreground py-8">
+                        Sé el primero en comentar este proyecto
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
