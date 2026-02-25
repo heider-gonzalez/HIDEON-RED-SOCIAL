@@ -419,6 +419,11 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   // Carrusel estilo Instagram (para 1 o múltiples medios)
   return (
     <div className={`relative w-full ${className}`}>
+      {mediaItems[currentIndex]?.type === 'video' && isMuted && (
+        <div className="pointer-events-none absolute top-3 left-3 z-10 rounded-full bg-black/40 text-white px-2 py-1 text-xs">
+          🔇
+        </div>
+      )}
       {!isMobile ? (
         <div className="relative w-full bg-black" style={{ width: '100%', height: 'min(520px, 72vh)' }}>
           <div

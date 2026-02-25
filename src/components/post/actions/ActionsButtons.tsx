@@ -38,6 +38,7 @@ export function ActionsButtons({
 }: ActionsButtonsProps) {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const reactionsRootRef = useRef<HTMLDivElement | null>(null);
   const closeReactionsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
   const pointerMovedRef = useRef(false);
@@ -125,6 +126,25 @@ export function ActionsButtons({
     };
   }, [cancelCloseReactions, cancelHoverOpen]);
 
+  useEffect(() => {
+    if (!showReactions) return;
+
+    const onPointerDown = (e: PointerEvent) => {
+      const root = reactionsRootRef.current;
+      if (!root) return;
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (root.contains(target)) return;
+      setShowReactions(false);
+      setActiveReaction(null);
+    };
+
+    document.addEventListener('pointerdown', onPointerDown, { capture: true });
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, { capture: true } as any);
+    };
+  }, [showReactions, setActiveReaction, setShowReactions]);
+
   const scheduleCloseReactions = useCallback(() => {
     cancelCloseReactions();
     closeReactionsTimeoutRef.current = setTimeout(() => {
@@ -145,6 +165,7 @@ export function ActionsButtons({
       <div className="flex items-center justify-between gap-1">
         {/* Reaction button */}
         <div
+          ref={reactionsRootRef}
           className="relative flex-1"
           onWheelCapture={() => {
             lastWheelAtRef.current = Date.now();
