@@ -78,6 +78,11 @@ export function PostCard({ post }: PostCardProps) {
 
   const openFullscreenFromFeed = (v?: HTMLVideoElement | null) => {
     const video = v ?? videoRef.current;
+    try {
+      video?.pause();
+    } catch {
+      // ignore
+    }
     fullscreenVideo.open({
       initialPostId: post.id,
       initialUrl: primaryMediaUrl,
@@ -294,7 +299,15 @@ export function PostCard({ post }: PostCardProps) {
                 playsInline
                 loop
                 preload="metadata"
-                onClick={() => openFullscreenFromFeed(videoRef.current)}
+                onClick={() => {
+                  try {
+                    videoRef.current?.pause();
+                  } catch {
+                    // ignore
+                  }
+                  setLightboxStart(0);
+                  setLightboxOpen(true);
+                }}
               >
                 Tu navegador no soporta el elemento de video.
               </video>
@@ -352,16 +365,6 @@ export function PostCard({ post }: PostCardProps) {
                   >
                     {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
                   </button>
-
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={isMuted ? 0 : volume}
-                    onChange={(e) => changeVolume(Number(e.target.value))}
-                    className="w-20 h-1 accent-white"
-                  />
 
                   <button
                     type="button"

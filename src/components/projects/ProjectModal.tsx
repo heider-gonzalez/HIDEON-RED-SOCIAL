@@ -6,6 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { MediaRenderer } from "@/components/media/MediaRenderer";
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -73,6 +75,11 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
   const openFullscreenFromModal = (v?: HTMLVideoElement | null) => {
     const video = v ?? videoRef.current;
     if (!primaryMediaUrl) return;
+    try {
+      video?.pause();
+    } catch {
+      // ignore
+    }
     fullscreenVideo.open({
       initialUrl: primaryMediaUrl,
       initialTime: video?.currentTime ?? 0,
@@ -212,99 +219,87 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
           <div className="space-y-6">
             {/* Project Banner */}
             {primaryMediaUrl && (
-              <div className="w-full h-64 rounded-lg overflow-hidden bg-black">
-                {isVideo ? (
-                  <>
-                    <video
-                      ref={videoRef}
-                      src={primaryMediaUrl}
-                      muted
-                      loop
-                      playsInline
-                      className="w-full h-full object-contain"
-                      poster={project.image_url}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openFullscreenFromModal(videoRef.current);
-                      }}
-                    >
-                      Tu navegador no soporta el elemento de video.
-                    </video>
+              <div className="relative w-full h-64 rounded-lg overflow-hidden bg-black flex items-center justify-center">
+                <MediaRenderer
+                  url={primaryMediaUrl}
+                  className="w-full h-full"
+                  autoPlay={false}
+                  muted
+                  loop
+                  playsInline
+                  controls={false}
+                  videoRef={videoRef}
+                  onClick={() => openFullscreenFromModal(videoRef.current)}
+                />
 
-                    {/* Player bar (estilo Facebook) */}
-                    <div
-                      className="absolute left-0 right-0 bottom-0 z-40 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          className="h-8 w-8 inline-flex items-center justify-center text-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void togglePlay();
-                          }}
-                          aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
-                        >
-                          {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                        </button>
+                {/* Player bar (estilo Facebook) */}
+                {isVideo && (
+                  <div
+                    className="absolute left-0 right-0 bottom-0 z-40 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="h-8 w-8 inline-flex items-center justify-center text-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void togglePlay();
+                        }}
+                        aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+                      >
+                        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                      </button>
 
-                        <div className="text-xs text-white tabular-nums min-w-[84px]">
-                          {formatTime(currentTime)} / {formatTime(duration)}
-                        </div>
-
-                        <input
-                          type="range"
-                          min={0}
-                          max={duration || 0}
-                          step={0.1}
-                          value={Math.min(currentTime, duration || 0)}
-                          onChange={(e) => {
-                            const v = videoRef.current;
-                            if (!v) return;
-                            const t = Number(e.target.value);
-                            try {
-                              v.currentTime = t;
-                              setCurrentTime(t);
-                            } catch {
-                              // ignore
-                            }
-                          }}
-                          className="flex-1 h-1 accent-white"
-                        />
-
-                        <button
-                          type="button"
-                          className="h-8 w-8 inline-flex items-center justify-center text-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleMuteLocal();
-                          }}
-                          aria-label={isMutedLocal ? 'Activar sonido' : 'Silenciar'}
-                        >
-                          {isMutedLocal || volumeLocal === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                        </button>
-
-                        <button
-                          type="button"
-                          className="h-8 w-8 inline-flex items-center justify-center text-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openFullscreenFromModal(videoRef.current);
-                          }}
-                          aria-label="Pantalla completa"
-                        >
-                          <Maximize className="h-5 w-5" />
-                        </button>
+                      <div className="text-xs text-white tabular-nums min-w-[84px]">
+                        {formatTime(currentTime)} / {formatTime(duration)}
                       </div>
+
+                      <input
+                        type="range"
+                        min={0}
+                        max={duration || 0}
+                        step={0.1}
+                        value={Math.min(currentTime, duration || 0)}
+                        onChange={(e) => {
+                          const v = videoRef.current;
+                          if (!v) return;
+                          const t = Number(e.target.value);
+                          try {
+                            v.currentTime = t;
+                            setCurrentTime(t);
+                          } catch {
+                            // ignore
+                          }
+                        }}
+                        className="flex-1 h-1 accent-white"
+                      />
+
+                      <button
+                        type="button"
+                        className="h-8 w-8 inline-flex items-center justify-center text-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleMuteLocal();
+                        }}
+                        aria-label={isMutedLocal ? 'Activar sonido' : 'Silenciar'}
+                      >
+                        {isMutedLocal || volumeLocal === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="h-8 w-8 inline-flex items-center justify-center text-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openFullscreenFromModal(videoRef.current);
+                        }}
+                        aria-label="Pantalla completa"
+                      >
+                        <Maximize className="h-5 w-5" />
+                      </button>
                     </div>
-                  </>
-                ) : (
-                  <img
-                    src={primaryMediaUrl}
-                    alt={project.title}
-                    className="w-full h-full object-cover"
-                  />
+                  </div>
                 )}
               </div>
             )}

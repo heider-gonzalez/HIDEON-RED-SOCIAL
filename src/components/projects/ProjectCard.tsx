@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Eye, Heart, MessageCircle, Users, Calendar, X, ChevronLeft, ChevronRight, Edit, Trash2, MoreHorizontal, ExternalLink, ChevronUp, ChevronDown, Volume2, VolumeX, Volume1, Play, Pause, Maximize } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { MediaRenderer } from "@/components/media/MediaRenderer";
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
@@ -86,6 +87,11 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const openFullscreenFromCard = (v?: HTMLVideoElement | null) => {
     const video = v ?? videoRef.current;
     if (!primaryVideoUrl) return;
+    try {
+      video?.pause();
+    } catch {
+      // ignore
+    }
     fullscreenVideo.open({
       initialUrl: primaryVideoUrl,
       initialTime: video?.currentTime ?? 0,
@@ -133,6 +139,32 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
     const next = Math.max(0, (v.volume || 0) - 0.1);
     changeVolumeLocal(next);
   };
+
+  // Get all images from media_urls or use image_url as fallback, but filter out videos
+  const isVideoUrl = (url: string) => {
+    if (!url) return false;
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv', '.m4v'];
+    const lowerUrl = url.toLowerCase();
+    return videoExtensions.some((ext) => lowerUrl.includes(ext));
+  };
+
+  // Priorizar demo_url si existe, luego filtrar media_urls para separar imágenes de videos
+  const videoUrl = project.demo_url;
+  const allMediaUrls = project.media_urls || [];
+  
+  // Separar imágenes y videos
+  const imageUrls = allMediaUrls.filter(url => !isVideoUrl(url));
+  const videoUrls = allMediaUrls.filter(url => isVideoUrl(url));
+  
+  // Usar video_url principal si existe, o el primer video de media_urls
+  const primaryVideoUrl = videoUrl || videoUrls[0];
+  
+  // Para imágenes: usar image_url si no hay imágenes en media_urls
+  const projectImages = imageUrls.length > 0 
+    ? imageUrls 
+    : project.image_url 
+      ? [project.image_url] 
+      : [];
 
   const changeVolumeLocal = (next: number) => {
     const v = videoRef.current;
@@ -215,47 +247,6 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
     });
   }, []);
 
-  // Get all images from media_urls or use image_url as fallback, but filter out videos
-  const isVideoUrl = (url: string) => {
-    if (!url) return false;
-    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv', '.m4v'];
-    const lowerUrl = url.toLowerCase();
-    return videoExtensions.some(ext => lowerUrl.includes(ext)) || 
-           lowerUrl.includes('video') || 
-           lowerUrl.includes('stream');
-  };
-
-  // Priorizar demo_url si existe, luego filtrar media_urls para separar imágenes de videos
-  const videoUrl = project.demo_url;
-  const allMediaUrls = project.media_urls || [];
-  
-  // Separar imágenes y videos
-  const imageUrls = allMediaUrls.filter(url => !isVideoUrl(url));
-  const videoUrls = allMediaUrls.filter(url => isVideoUrl(url));
-  
-  // Usar video_url principal si existe, o el primer video de media_urls
-  const primaryVideoUrl = videoUrl || videoUrls[0];
-  
-  // Para imágenes: usar image_url si no hay imágenes en media_urls
-  const projectImages = imageUrls.length > 0 
-    ? imageUrls 
-    : project.image_url 
-      ? [project.image_url] 
-      : [];
-
-  // Debug: Log media data to understand what's being received
-  console.log('🎬 ProjectCard Debug - Media Data:', {
-    projectTitle: project.title,
-    demo_url: project.demo_url,
-    image_url: project.image_url,
-    media_urls: project.media_urls,
-    allMediaUrls: allMediaUrls,
-    imageUrls: imageUrls,
-    videoUrls: videoUrls,
-    primaryVideoUrl: primaryVideoUrl,
-    projectImages: projectImages
-  });
-  
   const displayTechs = project.technologies.slice(0, 4);
   const remainingTechsCount = project.technologies.length - 4;
 
@@ -463,13 +454,19 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
               </>
             ) : projectImages.length > 0 ? (
               <>
-                <img
-                  src={projectImages[0]}
+                <MediaRenderer
+                  url={projectImages[0]}
                   alt={project.title}
                   className="relative z-10 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-pointer"
-                  loading="lazy"
-                  decoding="async"
-                  onClick={handleImageClick}
+                  stopPropagationOnClick
+                  onClick={() => {
+                    // Keep behavior identical to previous img onClick
+                    if (primaryVideoUrl) return;
+                    if (projectImages.length > 0) {
+                      setShowImageGallery(true);
+                      setCurrentImageIndex(0);
+                    }
+                  }}
                 />
                 
                 {/* Image counter and "Ver más" overlay for multiple images */}

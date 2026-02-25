@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Maximize, Pause, Play, Volume2, VolumeX, Volume1 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize, Pause, Play, Volume2, VolumeX, Volume1 } from "lucide-react";
 import { PostImage } from "@/components/ui/optimized-image";
 import { MediaLightbox } from "./MediaLightbox";
 import { useFullscreenVideo } from "@/components/video/FullscreenVideoContext";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MediaRenderer } from "@/components/media/MediaRenderer";
 import {
   getSoundEnabled,
   setNowPlayingVideoId,
@@ -10,6 +12,7 @@ import {
   subscribeNowPlayingVideoId,
   subscribeSoundEnabled,
 } from "@/lib/media/global-media";
+import type { Post } from "@/types/post";
 
 interface MediaItem {
   url: string;
@@ -22,10 +25,12 @@ interface MediaCarouselProps {
   audioUrl?: string;
   audioMetadata?: any | null;
   reelsPostId?: string;
+  post?: Post;
 }
 
-export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetadata, reelsPostId }: MediaCarouselProps) {
+export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetadata, reelsPostId, post }: MediaCarouselProps) {
   const fullscreenVideo = useFullscreenVideo();
+  const isMobile = useIsMobile();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxStartIndex, setLightboxStartIndex] = useState(0);
@@ -70,14 +75,19 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
 
   if (!mediaItems || mediaItems.length === 0) return null;
 
-  const imageItems = useMemo(() => {
-    return mediaItems.filter((i) => i.type === 'image');
+  const lightboxItems = useMemo(() => {
+    return mediaItems;
   }, [mediaItems]);
 
   const openFullscreenActive = () => {
     const item = mediaItems[currentIndex];
     if (!item || item.type !== 'video') return;
     const v = videoRefs.current[currentIndex];
+    try {
+      v?.pause();
+    } catch {
+      // ignore
+    }
     fullscreenVideo.open({
       initialPostId: reelsPostId,
       initialUrl: item.url,
@@ -377,24 +387,19 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
 
     if (item.type === 'video') {
       const v = videoRefs.current[index];
-      fullscreenVideo.open({
-        initialPostId: reelsPostId,
-        initialUrl: item.url,
-        initialTime: v?.currentTime ?? 0,
-        muted: v?.muted ?? true,
-      });
-      return;
+      try {
+        v?.pause();
+      } catch {
+        // ignore
+      }
     }
-
-    const imageIndex = imageItems.findIndex((img) => img.url === item.url);
-    if (imageIndex < 0) return;
     setCurrentIndex(index);
-    setLightboxStartIndex(imageIndex);
+    setLightboxStartIndex(Math.max(0, index));
     setIsLightboxOpen(true);
   };
 
   // Distinguish tap/click from drag (Instagram-like: swipe changes slide, tap opens)
-  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerDownRef = useRef<{ x: number; y: number; index: number } | null>(null);
   const pointerMovedRef = useRef(false);
   const DRAG_THRESHOLD_PX = 8;
 
@@ -403,95 +408,71 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   const dragStartXRef = useRef(0);
   const dragStartScrollLeftRef = useRef(0);
 
+  const desktopSwipeStartXRef = useRef<number | null>(null);
+  const desktopSwipeMovedRef = useRef(false);
+  const DESKTOP_SWIPE_THRESHOLD_PX = 50;
+
+  useEffect(() => {
+    setCurrentIndex((prev) => Math.min(Math.max(0, prev), Math.max(mediaItems.length - 1, 0)));
+  }, [mediaItems.length]);
+
   // Carrusel estilo Instagram (para 1 o múltiples medios)
   return (
     <div className={`relative w-full ${className}`}>
-      <div
-        ref={scrollRef}
-        className="flex w-full overflow-x-auto snap-x snap-mandatory scroll-smooth"
-        style={{ WebkitOverflowScrolling: 'touch' }}
-        onPointerDown={(e) => {
-          const el = scrollRef.current;
-          if (!el) return;
-          // Only left button for mouse
-          if (e.pointerType === 'mouse' && e.button !== 0) return;
-          isDraggingRef.current = true;
-          dragStartXRef.current = e.clientX;
-          dragStartScrollLeftRef.current = el.scrollLeft;
-          try {
-            (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-          } catch {
-            // ignore
-          }
-        }}
-        onPointerMove={(e) => {
-          const el = scrollRef.current;
-          if (!el || !isDraggingRef.current) return;
-          const dx = e.clientX - dragStartXRef.current;
-          if (Math.abs(dx) > DRAG_THRESHOLD_PX) {
-            pointerMovedRef.current = true;
-          }
-          el.scrollLeft = dragStartScrollLeftRef.current - dx;
-        }}
-        onPointerUp={(e) => {
-          isDraggingRef.current = false;
-          try {
-            (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
-          } catch {
-            // ignore
-          }
-        }}
-        onPointerCancel={() => {
-          isDraggingRef.current = false;
-        }}
-      >
-          {mediaItems.map((item, idx) => (
+      {!isMobile ? (
+        <div className="relative w-full bg-black" style={{ width: '100%', height: 'min(520px, 72vh)' }}>
+          <div
+            className="relative h-full w-full overflow-hidden"
+            onPointerDown={(e) => {
+              desktopSwipeStartXRef.current = e.clientX;
+              desktopSwipeMovedRef.current = false;
+            }}
+            onPointerMove={(e) => {
+              if (desktopSwipeStartXRef.current === null) return;
+              const dx = e.clientX - desktopSwipeStartXRef.current;
+              if (Math.abs(dx) > 10) desktopSwipeMovedRef.current = true;
+            }}
+            onPointerUp={(e) => {
+              if (desktopSwipeStartXRef.current === null) return;
+              const dx = e.clientX - desktopSwipeStartXRef.current;
+              desktopSwipeStartXRef.current = null;
+              if (!desktopSwipeMovedRef.current) return;
+              if (Math.abs(dx) < DESKTOP_SWIPE_THRESHOLD_PX) return;
+              if (dx < 0) setCurrentIndex((prev) => Math.min(mediaItems.length - 1, prev + 1));
+              else setCurrentIndex((prev) => Math.max(0, prev - 1));
+            }}
+            onPointerCancel={() => {
+              desktopSwipeStartXRef.current = null;
+              desktopSwipeMovedRef.current = false;
+            }}
+          >
             <div
-              key={`${item.url}_${idx}`}
-              className="relative flex-none w-full snap-start"
-              onClick={() => {
-                if (pointerMovedRef.current) return;
-                pointerMovedRef.current = false;
-                openAtIndex(idx);
+              className="flex h-full w-full"
+              style={{
+                transform: `translateX(-${currentIndex * 100}%)`,
+                transition: 'transform 0.3s ease',
               }}
             >
-              {item.type === 'image' ? (
+              {mediaItems.map((item, idx) => (
                 <div
-                  className="w-full bg-black flex items-center justify-center"
-                  style={{ width: '100%', height: 'min(500px, 70vh)' }}
+                  key={`${item.url}_${idx}`}
+                  className="h-full w-full flex-none flex items-center justify-center"
                 >
-                  <PostImage
-                    src={item.url}
+                  <MediaRenderer
+                    url={item.url}
                     alt={`Media ${idx + 1} de ${mediaItems.length}`}
-                    className="w-full h-full object-cover md:object-contain rounded-none"
-                    lazy={idx !== 0}
-                  />
-                </div>
-              ) : (
-                <div
-                  className="w-full bg-black flex items-center justify-center"
-                  style={{ width: '100%', height: 'min(500px, 70vh)' }}
-                >
-                  <video
-                    src={item.url}
                     className="w-full h-full object-contain rounded-none"
-                    autoPlay
-                    muted
-                    playsInline
-                    preload="metadata"
-                    loop
-                    onLoadedMetadata={(e) => {
-                      const v = e.currentTarget;
-                      if (!isInView) return;
-                      // Ensure muted autoplay attempt after metadata is available (prod browsers can be stricter)
-                      try {
-                        v.muted = true;
-                        v.play().catch(() => {});
-                      } catch {
-                        // ignore
-                      }
+                    stopPropagationOnClick
+                    onClick={() => {
+                      pointerMovedRef.current = false;
+                      openAtIndex(idx);
                     }}
-                    ref={(el) => {
+                    autoPlay={item.type === 'video'}
+                    muted
+                    loop={item.type === 'video'}
+                    playsInline
+                    videoRef={(el) => {
+                      if (item.type !== 'video') return;
                       videoRefs.current[idx] = el;
                       if (el) {
                         try {
@@ -501,60 +482,163 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
                         }
                       }
                     }}
+                    onLoadedMetadata={(e) => {
+                      if (item.type !== 'video') return;
+                      const v = e.currentTarget;
+                      if (!isInView) return;
+                      try {
+                        v.muted = true;
+                        v.play().catch(() => {});
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {mediaItems.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors inline-flex items-center justify-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIndex((prev) => Math.max(0, prev - 1));
+                  }}
+                  aria-label="Anterior"
+                  disabled={currentIndex === 0}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors inline-flex items-center justify-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIndex((prev) => Math.min(mediaItems.length - 1, prev + 1));
+                  }}
+                  aria-label="Siguiente"
+                  disabled={currentIndex === mediaItems.length - 1}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+
+                <div className="absolute top-3 right-3 z-20 rounded-full bg-black/55 text-white text-xs px-2 py-1 tabular-nums">
+                  {currentIndex + 1}/{mediaItems.length}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div
+          ref={scrollRef}
+          className="flex w-full overflow-x-auto snap-x snap-mandatory scroll-smooth"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+          onPointerDown={(e) => {
+            const el = scrollRef.current;
+            if (!el) return;
+            // Only left button for mouse
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            pointerMovedRef.current = false;
+            isDraggingRef.current = true;
+            dragStartXRef.current = e.clientX;
+            dragStartScrollLeftRef.current = el.scrollLeft;
+          }}
+          onPointerMove={(e) => {
+            const el = scrollRef.current;
+            if (!el || !isDraggingRef.current) return;
+            const dx = e.clientX - dragStartXRef.current;
+            if (Math.abs(dx) > DRAG_THRESHOLD_PX) {
+              pointerMovedRef.current = true;
+            }
+            el.scrollLeft = dragStartScrollLeftRef.current - dx;
+          }}
+          onPointerUp={(e) => {
+            const dx = e.clientX - dragStartXRef.current;
+            pointerMovedRef.current = Math.abs(dx) > DRAG_THRESHOLD_PX;
+            isDraggingRef.current = false;
+          }}
+          onPointerCancel={() => {
+            pointerMovedRef.current = false;
+            isDraggingRef.current = false;
+          }}
+        >
+          {mediaItems.map((item, idx) => (
+            <div
+              key={`${item.url}_${idx}`}
+              className="snap-center shrink-0 w-full"
+              style={{ width: '100%', height: 'min(500px, 70vh)' }}
+              onClick={() => {
+                pointerMovedRef.current = false;
+                openAtIndex(idx);
+              }}
+            >
+              {item.type === 'image' ? (
+                <div
+                  className="bg-black flex items-center justify-center"
+                  style={{ width: '100%', height: 'min(500px, 70vh)' }}
+                >
+                  <MediaRenderer
+                    url={item.url}
+                    alt={`Media ${idx + 1} de ${mediaItems.length}`}
+                    className="w-full h-full object-cover md:object-contain rounded-none"
+                    stopPropagationOnClick
+                    onClick={() => {
+                      pointerMovedRef.current = false;
+                      openAtIndex(idx);
+                    }}
+                  />
+                </div>
+              ) : (
+                <div
+                  className="bg-black flex items-center justify-center"
+                  style={{ width: '100%', height: 'min(500px, 70vh)' }}
+                >
+                  <MediaRenderer
+                    url={item.url}
+                    alt={`Media ${idx + 1} de ${mediaItems.length}`}
+                    className="w-full h-full object-contain rounded-none"
+                    stopPropagationOnClick
+                    onClick={() => {
+                      pointerMovedRef.current = false;
+                      openAtIndex(idx);
+                    }}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    videoRef={(el) => {
+                      videoRefs.current[idx] = el;
+                      if (el) {
+                        try {
+                          el.setAttribute('webkit-playsinline', 'true');
+                        } catch {
+                          // ignore
+                        }
+                      }
+                    }}
+                    onLoadedMetadata={(e) => {
+                      const v = e.currentTarget;
+                      if (!isInView) return;
+                      try {
+                        v.muted = true;
+                        v.play().catch(() => {});
+                      } catch {
+                        // ignore
+                      }
+                    }}
                   />
                 </div>
               )}
             </div>
           ))}
-      </div>
-
-      {mediaItems[currentIndex]?.type === 'video' && !hasAudio && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            const nextEnabled = !soundEnabled;
-            setSoundEnabled(nextEnabled);
-            const v = videoRefs.current[currentIndex];
-            if (!v) return;
-
-            if (!nextEnabled) {
-              // going to muted
-              try {
-                v.muted = true;
-              } catch {
-                // ignore
-              }
-              return;
-            }
-
-            // going to sound on
-            // Start playback muted (autoplay-safe), then unmute.
-            try {
-              v.muted = true;
-              setNowPlayingVideoId(`${instanceIdRef.current}:${currentIndex}`);
-              v
-                .play()
-                .then(() => {
-                  try {
-                    v.muted = false;
-                  } catch {
-                    // ignore
-                  }
-                })
-                .catch(() => {});
-            } catch {
-              // ignore
-            }
-          }}
-          className="absolute bottom-3 right-3 z-20 rounded-full bg-black/50 text-white p-2 backdrop-blur-sm"
-          aria-label={!soundEnabled ? 'Activar sonido' : 'Silenciar'}
-        >
-          {!soundEnabled ? <VolumeX size={18} /> : <Volume2 size={18} />}
-        </button>
+        </div>
       )}
 
-      {mediaItems[currentIndex]?.type === 'video' && (
+      {isMobile && mediaItems[currentIndex]?.type === 'video' && (
         <div
           className="absolute left-0 right-0 bottom-0 z-30 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2"
           onClick={(e) => e.stopPropagation()}
@@ -623,7 +707,7 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
         </div>
       )}
 
-      {mediaItems.length > 1 && (
+      {isMobile && mediaItems.length > 1 && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/20 px-2 py-1 rounded-full">
           {mediaItems.map((_, idx) => (
             <span
@@ -637,7 +721,7 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
         </div>
       )}
 
-      {hasAudio && (
+      {isMobile && hasAudio && (
         <button
           type="button"
           onClick={(e) => {
@@ -655,8 +739,9 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
       <MediaLightbox
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
-        items={imageItems}
+        items={lightboxItems}
         startIndex={lightboxStartIndex}
+        post={post}
       />
     </div>
   );

@@ -1,24 +1,20 @@
 import { Link, NavLink } from "react-router-dom";
 import {
-  Bell,
   Bookmark,
   Briefcase,
-  Compass,
-  Home,
-  MessageCircle,
+  Lightbulb,
   Plus,
   User,
   UserPlus,
   Users,
-  Video,
 } from "lucide-react";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useNavigation } from "@/components/navigation/use-navigation";
-import { useUnreadMessages } from "@/hooks/use-unread-messages";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { Fragment, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LeftSidebarProps {
@@ -34,14 +30,13 @@ type SidebarItem = {
 };
 
 export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebarProps) {
-  const { unreadNotifications, handleHomeClick, handleNotificationClick, handleExploreClick } = useNavigation();
+  useNavigation();
   const debug = import.meta.env.DEV;
-  if (debug) console.log('🔔 LeftSidebar - currentUserId prop:', currentUserId);
-  const { getTotalUnreadCount, unreadMessages } = useUnreadMessages(currentUserId || undefined);
-  if (debug) console.log('🔔 LeftSidebar - unreadMessages array:', unreadMessages);
+  if (debug) console.log(' LeftSidebar - currentUserId prop:', currentUserId);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const unreadMessagesCount = unreadMessages.reduce((total, msg) => total + msg.unread_count, 0);
-  if (debug) console.log('🔔 LeftSidebar - unreadMessagesCount:', unreadMessagesCount);
+  const [myGroups, setMyGroups] = useState<any[]>([]);
+  const [recommendedGroups, setRecommendedGroups] = useState<any[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
 
   const iconStyles: Record<string, { bg: string; fg: string; activeBg: string; activeFg: string }> = {};
 
@@ -54,22 +49,17 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
 
   const getIconStyle = (path: string) => iconStyles[path] ?? defaultIconStyle;
 
-  const quickAccessItems: SidebarItem[] = [
-    { icon: MessageCircle, label: "Mensajes", path: "/messages" },
-    { icon: Bell, label: "Notificaciones", path: "/notifications", onClick: handleNotificationClick },
-    { icon: UserPlus, label: "Seguidores", path: "/followers" },
-  ];
-
   const menuItems: SidebarItem[] = [
-    { icon: Users, label: "Grupos", path: "/groups" },
+    { icon: Lightbulb, label: "Ideas", path: "/ideas" },
     { icon: Briefcase, label: "Proyectos", path: "/projects" },
+    { icon: Users, label: "Grupos", path: "/groups" },
     { icon: Bookmark, label: "Guardados", path: "/saved" },
   ];
 
   // Load user profile
   useEffect(() => {
     if (!currentUserId) return;
-    
+
     const loadProfile = async () => {
       const { data } = await supabase
         .from('profiles')
@@ -78,8 +68,50 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
         .single();
       setUserProfile(data);
     };
-    
+
     loadProfile();
+  }, [currentUserId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadGroups = async () => {
+      setGroupsLoading(true);
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        const userId = userData?.user?.id;
+
+        const [mine, publicGroups] = await Promise.all([
+          userId
+            ? (supabase as any).rpc("get_user_groups", { user_id_param: userId })
+            : Promise.resolve({ data: [], error: null } as any),
+          (supabase as any).rpc("get_public_groups", { limit_count: 12 }),
+        ]);
+
+        if (mine?.error) throw mine.error;
+        if (publicGroups?.error) throw publicGroups.error;
+        if (cancelled) return;
+
+        const mineRows = (mine?.data ?? []) as any[];
+        const publicRows = (publicGroups?.data ?? []) as any[];
+
+        setMyGroups(mineRows.slice(0, 6));
+        const mineIds = new Set(mineRows.map((g) => String(g?.id)).filter(Boolean));
+        const recs = publicRows.filter((g) => !mineIds.has(String(g?.id))).slice(0, 6);
+        setRecommendedGroups(recs);
+      } catch {
+        if (cancelled) return;
+        setMyGroups([]);
+        setRecommendedGroups([]);
+      } finally {
+        if (!cancelled) setGroupsLoading(false);
+      }
+    };
+
+    loadGroups();
+    return () => {
+      cancelled = true;
+    };
   }, [currentUserId]);
 
   return (
@@ -108,10 +140,9 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
       </div>
 
       <nav className="flex-1 px-3">
-        <div className="mb-2">
-          {quickAccessItems.map((item) => (
+        {menuItems.map((item, index) => (
+          <Fragment key={item.path}>
             <NavLink
-              key={item.path}
               to={item.path}
               onClick={item.onClick}
               className={({ isActive }) =>
@@ -143,79 +174,13 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
                       <item.icon className={iconClassName} />
                     </span>
                     <span className={labelClassName}>{item.label}</span>
-                    {item.path === "/notifications" && unreadNotifications > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="h-5 min-w-[20px] flex items-center justify-center p-0 text-xs"
-                      >
-                        {unreadNotifications}
-                      </Badge>
-                    )}
-                    {item.path === "/messages" && unreadMessagesCount > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="h-5 min-w-[20px] flex items-center justify-center p-0 text-xs"
-                      >
-                        {unreadMessagesCount}
-                      </Badge>
-                    )}
-                    {item.path === "/followers" && pendingRequestsCount && pendingRequestsCount > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="h-5 min-w-[20px] flex items-center justify-center p-0 text-xs"
-                      >
-                        {pendingRequestsCount}
-                      </Badge>
-                    )}
                   </>
                 );
               }}
             </NavLink>
-          ))}
-        </div>
-
-        <div className="h-px bg-border my-3" />
-
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            onClick={item.onClick}
-            className={({ isActive }) =>
-              cn(
-                "group flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                isActive ? "bg-primary/5" : "hover:bg-muted/50"
-              )
-            }
-          >
-            {({ isActive }) => {
-              const style = getIconStyle(item.path);
-              const iconWrapperClassName = cn(
-                "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ease-out ring-1 ring-border/60 dark:ring-border/50 group-hover:shadow-sm group-hover:scale-[1.03] group-active:scale-[0.99]",
-                isActive ? style.activeBg : style.bg
-              );
-              const iconClassName = cn(
-                "h-5 w-5 transition-colors duration-200 group-hover:opacity-90",
-                isActive ? style.activeFg : style.fg
-              );
-              const labelClassName = cn(
-                "flex-1 truncate",
-                isActive
-                  ? "text-[#050505] dark:text-white [.tech_&]:text-white font-semibold"
-                  : "text-[#1C1E21] dark:text-slate-200 [.tech_&]:text-slate-200 font-medium"
-              );
-              return (
-                <>
-                  <span className={iconWrapperClassName}>
-                    <item.icon className={iconClassName} />
-                  </span>
-                  <span className={labelClassName}>{item.label}</span>
-                </>
-              );
-            }}
-          </NavLink>
+            {index < menuItems.length - 1 && <Separator className="my-3" />}
+          </Fragment>
         ))}
-
         <Separator className="my-3" />
 
         <NavLink
@@ -255,6 +220,62 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
             );
           }}
         </NavLink>
+
+        <div className="h-px bg-border my-3" />
+
+        <div className="px-4 py-1">
+          <p className="text-xs font-semibold text-muted-foreground">Grupos en los que estoy</p>
+        </div>
+
+        {groupsLoading ? (
+          <div className="px-4 py-2 text-sm text-muted-foreground">Cargando...</div>
+        ) : myGroups.length > 0 ? (
+          <div className="mb-2">
+            {myGroups.map((g) => (
+              <Link
+                key={String(g.id)}
+                to={`/groups/${g.slug || g.id}`}
+                className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-muted/50 transition-colors"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={g.avatar_url || undefined} />
+                  <AvatarFallback>{String(g.name || "G").slice(0, 1).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <span className="flex-1 truncate text-sm font-medium text-[#1C1E21] dark:text-slate-200 [.tech_&]:text-slate-200">
+                  {g.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="px-4 py-2 text-sm text-muted-foreground">Aún no estás en ningún grupo</div>
+            {recommendedGroups.length > 0 && (
+              <>
+                <div className="px-4 py-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Recomendados</p>
+                </div>
+                <div className="mb-2">
+                  {recommendedGroups.map((g) => (
+                    <Link
+                      key={String(g.id)}
+                      to={`/groups/${g.slug || g.id}`}
+                      className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={g.avatar_url || undefined} />
+                        <AvatarFallback>{String(g.name || "G").slice(0, 1).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <span className="flex-1 truncate text-sm font-medium text-[#1C1E21] dark:text-slate-200 [.tech_&]:text-slate-200">
+                        {g.name}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
       </nav>
     </aside>
   );
