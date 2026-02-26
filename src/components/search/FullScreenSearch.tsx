@@ -259,7 +259,7 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
       </div>
 
       {/* Content with Tabs - Ensure minimum height and proper z-index */}
-      <div className="flex-1 overflow-y-auto min-h-[50vh] z-50">
+      <div className="flex-1 overflow-y-auto min-h-[50vh] z-50 bg-background pt-20">
         {searchQuery.length >= 2 ? (
           // Search Results with Tabs
           <Tabs defaultValue="users" className="w-full">
@@ -399,31 +399,33 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
                   {friendSuggestions.map((suggestion) => (
                     <div
                       key={suggestion.id}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
+                      className="flex flex-row justify-between items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
                     >
-                      <Avatar
-                        className="cursor-pointer"
-                        onClick={() => handleUserClick(suggestion.id, suggestion.username)}
-                      >
-                        <AvatarImage src={suggestion.avatar_url || undefined} />
-                        <AvatarFallback>
-                          {suggestion.username?.[0]?.toUpperCase() || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div 
-                        className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => handleUserClick(suggestion.id, suggestion.username)}
-                      >
-                        <div className="font-medium">{suggestion.username}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {suggestion.careerMatch && suggestion.semesterMatch 
-                            ? "Misma carrera y semestre"
-                            : suggestion.careerMatch 
-                            ? "Misma carrera"
-                            : suggestion.semesterMatch
-                            ? "Mismo semestre"
-                            : "Universidad sugerida"
-                          }
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Avatar
+                          className="cursor-pointer"
+                          onClick={() => handleUserClick(suggestion.id, suggestion.username)}
+                        >
+                          <AvatarImage src={suggestion.avatar_url || undefined} />
+                          <AvatarFallback>
+                            {suggestion.username?.[0]?.toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div 
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => handleUserClick(suggestion.id, suggestion.username)}
+                        >
+                          <div className="font-medium">{suggestion.username}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {suggestion.careerMatch && suggestion.semesterMatch 
+                              ? "Misma carrera y semestre"
+                              : suggestion.careerMatch 
+                              ? "Misma carrera"
+                              : suggestion.semesterMatch
+                              ? "Mismo semestre"
+                              : "Universidad sugerida"
+                            }
+                          </div>
                         </div>
                       </div>
                       <Button
