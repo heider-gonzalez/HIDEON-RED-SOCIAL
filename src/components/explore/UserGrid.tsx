@@ -9,26 +9,28 @@ import { Button } from "@/components/ui/button";
 type ExploreUser = {
   id: string;
   username: string | null;
-  full_name: string | null;
+  google_name: string | null;
   avatar_url: string | null;
   career: string | null;
-  created_at: string;
+  updated_at: string | null;
 };
 
 export function UserGrid({ searchQuery }: { searchQuery: string }) {
   const navigate = useNavigate();
+  const normalizedQuery = searchQuery.trim();
   
   const { data: users, isLoading } = useQuery<ExploreUser[]>({
     queryKey: ['explore-users', searchQuery],
     queryFn: async () => {
       let query = supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, career, created_at')
-        .order('created_at', { ascending: false })
+        .select('id, username, google_name, avatar_url, career, updated_at')
+        .order('updated_at', { ascending: false })
         .limit(20);
       
-      if (searchQuery) {
-        query = query.or(`username.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%,career.ilike.%${searchQuery}%`);
+      if (normalizedQuery) {
+        const q = normalizedQuery.replace(/,/g, ' ');
+        query = query.or(`username.ilike.%${q}%,google_name.ilike.%${q}%,career.ilike.%${q}%`);
       }
       
       const { data, error } = await query;
