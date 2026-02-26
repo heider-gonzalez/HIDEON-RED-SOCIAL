@@ -88,12 +88,13 @@ export function AdvancedSearch({ isOpen, onClose }: AdvancedSearchProps) {
 
       let query = supabase
         .from('profiles')
-        .select('id, username, bio, avatar_url, career, semester')
+        .select('id, username, google_name, bio, avatar_url, career, semester')
         .neq('id', user.id);
 
       // Apply text search
-      if (debouncedQuery.length >= 2) {
-        query = query.or(`username.ilike.%${debouncedQuery}%,bio.ilike.%${debouncedQuery}%`);
+      const q = debouncedQuery.trim();
+      if (q.length >= 2) {
+        query = query.or(`username.ilike.%${q}%,google_name.ilike.%${q}%,bio.ilike.%${q}%`);
       }
 
       // Apply career filter
@@ -154,6 +155,12 @@ export function AdvancedSearch({ isOpen, onClose }: AdvancedSearchProps) {
                 placeholder="Buscar personas..."
                 value={filters.query}
                 onChange={(e) => setFilters(prev => ({ ...prev, query: e.target.value }))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performSearch();
+                  }
+                }}
                 className="pl-11 pr-4 h-11 rounded-full border border-border/50 bg-muted/30 focus-visible:ring-0 focus-visible:ring-offset-0"
                 autoFocus
               />

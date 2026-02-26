@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,42 +35,42 @@ export function FriendSearch() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const searchUsers = async () => {
-      if (debouncedSearch.length < 2) {
-        setSearchResults([]);
-        return;
-      }
+  const searchUsers = useCallback(async (raw?: string) => {
+    const q = String(raw ?? debouncedSearch).trim();
+    if (q.length < 2) {
+      setSearchResults([]);
+      return;
+    }
 
-      setIsSearching(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+    setIsSearching(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-        // Search users by username and bio
-        const { data, error } = await (supabase as any)
-          .from('profiles')
-          .select('id, username, bio, avatar_url')
-          .neq('id', user.id)
-          .or(`username.ilike.%${debouncedSearch}%,bio.ilike.%${debouncedSearch}%`)
-          .limit(5);
+      const { data, error } = await (supabase as any)
+        .from('profiles')
+        .select('id, username, google_name, bio, avatar_url')
+        .neq('id', user.id)
+        .or(`username.ilike.%${q}%,google_name.ilike.%${q}%,bio.ilike.%${q}%`)
+        .limit(5);
 
-        if (error) throw error;
-        setSearchResults(data || []);
-      } catch (error) {
-        console.error('Error searching users:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "No se pudo realizar la búsqueda"
-        });
-      } finally {
-        setIsSearching(false);
-      }
-    };
-
-    searchUsers();
+      if (error) throw error;
+      setSearchResults(data || []);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo realizar la búsqueda"
+      });
+    } finally {
+      setIsSearching(false);
+    }
   }, [debouncedSearch, toast]);
+
+  useEffect(() => {
+    searchUsers();
+  }, [searchUsers]);
 
   const handleUserClick = (userId: string) => {
     navigate(`/profile/${userId}`);
@@ -92,6 +92,12 @@ export function FriendSearch() {
               placeholder="Buscar usuarios..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  searchUsers((e.target as HTMLInputElement).value);
+                }
+              }}
               className="pl-9 pr-4 rounded-full border-gray-200 dark:border-gray-700 h-9 shadow-sm w-full"
             />
           </div>

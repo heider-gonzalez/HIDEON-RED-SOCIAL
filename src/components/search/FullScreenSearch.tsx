@@ -51,6 +51,11 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
   useEffect(() => {
     if (!isOpen) return;
 
+    const saved = sessionStorage.getItem('hsocial_fullscreen_search_query');
+    if (saved && !searchQuery) {
+      setSearchQuery(saved);
+    }
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
@@ -63,6 +68,11 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
       document.body.style.overflow = previousOverflow;
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    sessionStorage.setItem('hsocial_fullscreen_search_query', searchQuery);
+  }, [isOpen, searchQuery]);
 
   // Perform search when query changes
   useEffect(() => {
@@ -85,10 +95,14 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
     }
   };
 
-  const performSearch = async () => {
+  const performSearch = async (rawQuery?: string) => {
     setIsSearching(true);
     try {
-      const q = debouncedQuery.trim();
+      const q = String(rawQuery ?? debouncedQuery).trim();
+      if (q.length < 2) {
+        setSearchResults([]);
+        return;
+      }
       let query = supabase
         .from('profiles')
         .select('id, username, google_name, bio, avatar_url, career, semester')
@@ -129,6 +143,7 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
   const handleClose = () => {
     setSearchQuery("");
     setSearchResults([]);
+    sessionStorage.removeItem('hsocial_fullscreen_search_query');
     onClose();
   };
 
@@ -199,6 +214,12 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
             placeholder="Buscar en Hideon"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                performSearch((e.target as HTMLInputElement).value);
+              }
+            }}
             className="pl-10 pr-10 border-none bg-white dark:bg-muted/50 text-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
             autoFocus
             ref={inputRef}
