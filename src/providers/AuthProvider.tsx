@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { performanceMonitor } from '@/utils/performance-monitor';
+import { useToast } from '@/hooks/use-toast';
 
 function clearSupabaseAuthStorage() {
   try {
@@ -32,6 +33,30 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
 });
 
+function isNetworkError(error: any): boolean {
+  const message = String(error?.message ?? error ?? '');
+  return (
+    error instanceof TypeError ||
+    message.includes('Failed to fetch') ||
+    message.includes('ERR_EMPTY_RESPONSE') ||
+    message.toLowerCase().includes('network')
+  );
+}
+
+async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  let lastError: any;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (!isNetworkError(error) || attempt === retries) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -39,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const presenceIntervalRef = useRef<number | null>(null);
   const userIdRef = useRef<string | null>(null);
   const debug = import.meta.env.DEV;
+  const { toast } = useToast();
   
   // Cache for profile existence checks to avoid repeated DB queries
   const profileCacheRef = useRef<Map<string, boolean>>(new Map());
@@ -122,6 +148,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         if (debug) console.error('🔐 AuthProvider: Error getting session:', error);
 
+        if (isNetworkError(error)) {
+          setSession(null);
+          setUser(null);
+          userIdRef.current = null;
+          setLoading(false);
+          toast({
+            variant: 'destructive',
+            title: 'Sin conexión',
+            description: 'Revisa tu conexión a internet',
+          });
+          return;
+        }
+
         const message = (error as any)?.message as string | undefined;
         if (message && message.toLowerCase().includes('invalid refresh token')) {
           clearSupabaseAuthStorage();
@@ -155,15 +194,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const setPresence = async (status: 'online' | 'away' | 'offline') => {
       try {
         const now = new Date().toISOString();
-        await ensureProfileExists(user);
-        await (supabase as any)
-          .from('profiles')
-          .update({
-            status,
-            last_seen: now,
-            updated_at: now,
-          })
-          .eq('id', user.id);
+        await withRetry(() => ensureProfileExists(user));
+        await withRetry(async () => {
+          return await (supabase as any)
+            .from('profiles')
+            .update({
+              status,
+              last_seen: now,
+              updated_at: now,
+            })
+            .eq('id', user.id);
+        });
       } catch {
         // Best-effort
       }
@@ -219,11 +260,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         null;
 
       // 🚀 OPTIMIZATION: Use maybeSingle() instead of full query for better performance
-      const { data: existing, error: existingError } = await (supabase as any)
-        .from('profiles')
-        .select('id, username, name_manually_edited, career, semester, birth_date, account_type, person_status')
-        .eq('id', user.id)
-        .maybeSingle();
+      const { data: existing, error: existingError } = await withRetry(async () => {
+        return await (supabase as any)
+          .from('profiles')
+          .select('id, username, name_manually_edited, career, semester, birth_date, account_type, person_status')
+          .eq('id', user.id)
+          .maybeSingle();
+      });
 
       if (existingError) throw existingError;
 
@@ -250,11 +293,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 🚀 OPTIMIZATION: Use insert instead of upsert to avoid onConflict 404
-      const { error } = await (supabase as any)
-        .from('profiles')
-        .insert(payload)
-        .select('id')
-        .single();
+      const { error } = await withRetry(async () => {
+        return await (supabase as any)
+          .from('profiles')
+          .insert(payload)
+          .select('id')
+          .single();
+      });
       
       // Ignore duplicate key / conflict (row created elsewhere in parallel)
       if (error) {
@@ -267,6 +312,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (debug) console.log('🚀 Auth Cache: Profile created and cached for user:', user.id);
     } catch (error) {
       if (debug) console.error('❌ Error ensuring profile exists:', error);
+      if (isNetworkError(error)) {
+        toast({
+          variant: 'destructive',
+          title: 'Sin conexión',
+          description: 'Revisa tu conexión a internet',
+        });
+      }
       throw error;
     }
   };

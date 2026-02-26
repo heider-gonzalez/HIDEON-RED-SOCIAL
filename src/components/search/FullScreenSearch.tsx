@@ -28,6 +28,30 @@ interface SearchResult {
   semester?: string;
 }
 
+function isNetworkError(error: any): boolean {
+  const message = String(error?.message ?? error ?? "");
+  return (
+    error instanceof TypeError ||
+    message.includes("Failed to fetch") ||
+    message.includes("ERR_EMPTY_RESPONSE") ||
+    message.toLowerCase().includes("network")
+  );
+}
+
+async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  let lastError: any;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (!isNetworkError(error) || attempt === retries) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -100,10 +124,18 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
   const loadFriendSuggestions = async () => {
     setIsLoadingSuggestions(true);
     try {
-      const suggestions = await getFriendSuggestions();
+      const suggestions = await withRetry(() => getFriendSuggestions());
       setFriendSuggestions(suggestions.slice(0, 8)); // Show only first 8
     } catch (error) {
       console.error('Error loading friend suggestions:', error);
+      if (isNetworkError(error)) {
+        setFriendSuggestions([]);
+        toast({
+          variant: "destructive",
+          title: "Sin conexión",
+          description: "Revisa tu conexión a internet"
+        });
+      }
     } finally {
       setIsLoadingSuggestions(false);
     }
@@ -119,27 +151,38 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
         setSearchResults([]);
         return;
       }
-      let query = supabase
-        .from('profiles')
-        .select('id, username, google_name, bio, avatar_url, career, semester')
-        .or(`username.ilike.%${q}%,google_name.ilike.%${q}%,bio.ilike.%${q}%,career.ilike.%${q}%`)
-        .limit(20);
+      const { data, error } = await withRetry(async () => {
+        let query = supabase
+          .from('profiles')
+          .select('id, username, google_name, bio, avatar_url, career, semester')
+          .or(`username.ilike.%${q}%,google_name.ilike.%${q}%,bio.ilike.%${q}%,career.ilike.%${q}%`)
+          .limit(20);
 
-      if (currentUserId) {
-        query = query.neq('id', currentUserId);
-      }
+        if (currentUserId) {
+          query = query.neq('id', currentUserId);
+        }
 
-      const { data, error } = await query;
+        return await query;
+      });
 
       if (error) throw error;
       setSearchResults(data || []);
     } catch (error) {
       console.error('Error searching:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo realizar la búsqueda"
-      });
+      if (isNetworkError(error)) {
+        setSearchResults([]);
+        toast({
+          variant: "destructive",
+          title: "Sin conexión",
+          description: "Revisa tu conexión a internet"
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo realizar la búsqueda"
+        });
+      }
     } finally {
       setIsSearching(false);
     }
@@ -174,12 +217,14 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
         return;
       }
 
-      const { error } = await supabase
-        .from("followers")
-        .insert({
-          follower_id: user.id,
-          following_id: friendId
-        });
+      const { error } = await withRetry(async () => {
+        return await (supabase as any)
+          .from("followers" as any)
+          .insert({
+            follower_id: user.id,
+            following_id: friendId
+          } as any);
+      });
 
       if (error) throw error;
 
@@ -192,6 +237,14 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
       setFriendSuggestions(prev => prev.filter(s => s.id !== friendId));
     } catch (error: any) {
       console.error('Error sending friend request:', error);
+      if (isNetworkError(error)) {
+        toast({
+          variant: "destructive",
+          title: "Sin conexión",
+          description: "Revisa tu conexión a internet"
+        });
+        return;
+      }
       if (error.code === '23505') {
         toast({
           variant: "destructive",
@@ -211,7 +264,7 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-background z-[100] flex flex-col">
+    <div className="fixed inset-0 bg-background z-[100] flex flex-col h-[100dvh] overflow-hidden">
       {/* Hidden accessibility elements for Radix UI */}
       <div className="sr-only" role="dialog" aria-modal="true">
         <h2 id="search-dialog-title">Buscar en Hideon</h2>
@@ -259,7 +312,7 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
       </div>
 
       {/* Content with Tabs - Ensure minimum height and proper z-index */}
-      <div className="flex-1 overflow-y-auto min-h-[50vh] z-50 bg-background pt-20">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain z-50 bg-background pt-20">
         {searchQuery.length >= 2 ? (
           // Search Results with Tabs
           <Tabs defaultValue="users" className="w-full">
