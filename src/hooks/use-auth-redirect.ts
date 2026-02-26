@@ -25,14 +25,20 @@ export function useAuthRedirect() {
             // Ensure profile exists for Google users, but only set username/avatar on first registration
             try {
               // Check if profile already exists and has a username
-              const { data: existingProfile } = await supabase
+              const { data: existingProfileRow, error: existingProfileError } = await (supabase as any)
                 .from('profiles')
                 .select('username, avatar_url')
                 .eq('id', session.user.id)
-                .single();
+                .maybeSingle();
 
-              const shouldSetUsername = !existingProfile?.username;
-              const shouldSetAvatar = !existingProfile?.avatar_url && (session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture);
+              if (existingProfileError) {
+                console.error('Error checking existing profile:', existingProfileError);
+              }
+
+              const shouldSetUsername = !existingProfileRow?.username;
+              const shouldSetAvatar =
+                !existingProfileRow?.avatar_url &&
+                (session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture);
 
               const updateData: any = {
                 id: session.user.id,
@@ -49,14 +55,39 @@ export function useAuthRedirect() {
 
               // Only perform upsert if we actually have changes
               if (shouldSetUsername || shouldSetAvatar) {
-                const { error: profileError } = await supabase
+                // Try update first (works when row already exists)
+                const { data: updatedRow, error: updateError } = await (supabase as any)
                   .from('profiles')
-                  .upsert(updateData, {
-                    onConflict: 'id'
-                  });
-                
-                if (profileError) {
-                  console.error('Error updating profile for Google user:', profileError);
+                  .update(
+                    {
+                      ...(shouldSetUsername ? { username: updateData.username } : {}),
+                      ...(shouldSetAvatar ? { avatar_url: updateData.avatar_url } : {}),
+                      updated_at: updateData.updated_at,
+                    } as any
+                  )
+                  .eq('id', session.user.id)
+                  .select('id')
+                  .maybeSingle();
+
+                if (updateError) {
+                  console.error('Error updating profile for Google user:', updateError);
+                }
+
+                // If the profile row doesn't exist yet, insert it (ignore duplicates)
+                if (!updatedRow) {
+                  const { error: insertError } = await (supabase as any)
+                    .from('profiles')
+                    .insert(updateData)
+                    .select('id')
+                    .maybeSingle();
+
+                  if (insertError) {
+                    const code = (insertError as any)?.code as string | undefined;
+                    const status = (insertError as any)?.status as number | undefined;
+                    if (code !== '23505' && status !== 409) {
+                      console.error('Error inserting profile for Google user:', insertError);
+                    }
+                  }
                 }
               }
             } catch (error) {

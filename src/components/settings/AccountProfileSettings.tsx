@@ -30,9 +30,21 @@ export function AccountProfileSettings() {
         .from('profiles')
         .select('username, bio, location, career')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+
+      if (!data) {
+        const { error: insertError } = await (supabase as any)
+          .from('profiles')
+          .insert({ id: user.id, updated_at: new Date().toISOString() });
+
+        if (insertError) {
+          const code = (insertError as any)?.code as string | undefined;
+          const status = (insertError as any)?.status as number | undefined;
+          if (code !== '23505' && status !== 409) throw insertError;
+        }
+      }
 
       setUsername(data?.username || "");
       setEmail(user.email || "");

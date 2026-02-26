@@ -98,22 +98,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const prevUserId = userIdRef.current;
             if (prevUserId) {
-              // Use insert instead of upsert to avoid onConflict 404
-            const { error: cleanupError } = await (supabase as any)
-              .from('profiles')
-              .insert({
-                id: prevUserId,
-                status: 'offline',
-                last_seen: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              })
-              .select('id')
-              .single();
-            
-            // Ignore duplicate key error (PGRST116)
-            if (cleanupError && !cleanupError.message?.includes('PGRST116')) {
-              throw cleanupError;
-            }
+              await (supabase as any)
+                .from('profiles')
+                .update({
+                  status: 'offline',
+                  last_seen: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', prevUserId);
             }
             userIdRef.current = null;
           } catch {
@@ -164,22 +156,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const now = new Date().toISOString();
         await ensureProfileExists(user);
-        // Use insert instead of upsert to avoid onConflict 404
-        const { error: presenceError } = await (supabase as any)
+        await (supabase as any)
           .from('profiles')
-          .insert({
-            id: user.id,
+          .update({
             status,
             last_seen: now,
             updated_at: now,
           })
-          .select('id')
-          .single();
-        
-        // Ignore duplicate key error (PGRST116)
-        if (presenceError && !presenceError.message?.includes('PGRST116')) {
-          throw presenceError;
-        }
+          .eq('id', user.id);
       } catch {
         // Best-effort
       }
@@ -272,9 +256,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select('id')
         .single();
       
-      // If already exists, ignore error (PGRST116)
-      if (error && !error.message?.includes('PGRST116')) {
-        throw error;
+      // Ignore duplicate key / conflict (row created elsewhere in parallel)
+      if (error) {
+        const code = (error as any)?.code as string | undefined;
+        const status = (error as any)?.status as number | undefined;
+        if (code !== '23505' && status !== 409) throw error;
       }
       
       profileCacheRef.current.set(user.id, true);

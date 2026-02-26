@@ -39,7 +39,8 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   const [isVertical, setIsVertical] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+  const startTimeRef = useRef<number | null>(null);
+
   const { userReaction, onReaction: handleReaction } = usePostReactions(post.id);
   
   // Control de volumen mejorado
@@ -52,21 +53,26 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
 
   useEffect(() => {
     if (isActive && isIntersecting && videoRef.current) {
-      setStartTime(Date.now());
+      if (startTimeRef.current === null) {
+        const now = Date.now();
+        startTimeRef.current = now;
+        setStartTime(now);
+      }
       videoRef.current.play().catch(console.error);
     } else if (videoRef.current && (!isActive || !isIntersecting)) {
       videoRef.current.pause();
 
       // Track view duration
-      if (startTime) {
-        const duration = Math.floor((Date.now() - startTime) / 1000);
+      if (startTimeRef.current) {
+        const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
         if (duration > 1) { // Solo trackear si vio más de 1 segundo
           onViewTracked(post.id, duration);
         }
+        startTimeRef.current = null;
         setStartTime(null);
       }
     }
-  }, [isActive, isIntersecting, post.id, startTime, onViewTracked]);
+  }, [isActive, isIntersecting, post.id, onViewTracked]);
 
   // Sync play/pause state with actual video events
   useEffect(() => {
@@ -135,7 +141,9 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
     if (videoRef.current) {
       if (videoRef.current.paused) {
         videoRef.current.play();
-        setStartTime(Date.now());
+        const now = Date.now();
+        startTimeRef.current = now;
+        setStartTime(now);
       } else {
         videoRef.current.pause();
       }

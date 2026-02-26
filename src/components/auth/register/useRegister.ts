@@ -55,20 +55,26 @@ export function useRegister(setLoading: (loading: boolean) => void, sendVerifica
 
       // Actualizar perfil con datos disponibles
       if (data.user) {
-        const { error: profileError } = await (supabase as any).from('profiles').upsert({
-          id: data.user.id,
-          username,
-          account_type: accountType,
-          person_status: accountType === 'person' ? (personStatus || null) : null,
-          career: career.trim(),
-          semester: semester || null,
-          gender: gender || null,
-          institution_name: institutionName || null,
-          academic_role: academicRole || null,
-        });
+        const { error: profileError } = await (supabase as any)
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            username,
+            account_type: accountType,
+            person_status: accountType === 'person' ? (personStatus || null) : null,
+            career: career.trim(),
+            semester: semester || null,
+            gender: gender || null,
+            institution_name: institutionName || null,
+            academic_role: academicRole || null,
+          });
         
         if (profileError) {
-          console.error("Error updating profile:", profileError);
+          const code = (profileError as any)?.code as string | undefined;
+          const status = (profileError as any)?.status as number | undefined;
+          if (code !== '23505' && status !== 409) {
+            console.error("Error updating profile:", profileError);
+          }
         }
       }
 

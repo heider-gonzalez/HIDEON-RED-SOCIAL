@@ -49,14 +49,18 @@ export function useRegisterSimple(setLoading: (loading: boolean) => void, sendVe
         try {
           const { error: profileError } = await (supabase as any)
             .from('profiles')
-            .upsert({
+            .insert({
               id: data.user.id,
               username: username || email.split('@')[0],
               account_type: accountType,
             });
           
           if (profileError) {
-            console.log('Profile update failed (non-critical):', profileError);
+            const code = (profileError as any)?.code as string | undefined;
+            const status = (profileError as any)?.status as number | undefined;
+            if (code !== '23505' && status !== 409) {
+              console.log('Profile update failed (non-critical):', profileError);
+            }
           }
         } catch (profileError) {
           console.log('Profile update failed (non-critical):', profileError);

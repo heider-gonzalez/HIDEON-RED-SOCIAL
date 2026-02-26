@@ -32,13 +32,12 @@ export function ProjectGrid({ searchQuery }: { searchQuery: string }) {
           user_id,
           created_at,
           content,
-          title,
           idea,
           project_status,
           media_url,
           media_type,
           media_urls,
-          profiles!posts_user_id_fkey(username, avatar_url)
+          profiles:profiles(username, avatar_url)
         `)
         .in('post_type', ['project', 'proyecto'])
         .eq('visibility', 'public')
@@ -47,7 +46,7 @@ export function ProjectGrid({ searchQuery }: { searchQuery: string }) {
       
       if (normalizedQuery) {
         const q = normalizedQuery.replace(/,/g, ' ');
-        query = query.or(`content.ilike.%${q}%,title.ilike.%${q}%`);
+        query = query.or(`content.ilike.%${q}%`);
       }
       
       const { data, error } = await query;
