@@ -89,8 +89,9 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
             .eq('id', notification.post_id)
             .single()
             .then(({ data }) => {
-              if (data) {
-                const postContent = data.content || 'tu publicación';
+              const row = (data ?? null) as any;
+              if (row) {
+                const postContent = row.content || 'tu publicación';
                 if (notification.type === 'post_like') {
                   showReaction(senderName, postContent, notification.post_id);
                 } else {
@@ -118,8 +119,6 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
   const setupRealtimeSubscription = useCallback(() => {
     if (!userId) return;
 
-    console.log("🔔 Setting up realtime notification handler for user:", userId);
-
     const channel = supabase
       .channel('realtime-notifications')
       .on(
@@ -131,18 +130,16 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
           filter: `receiver_id=eq.${userId}`,
         },
         async (payload) => {
-          console.log("🔔 New notification received:", payload);
-
           const notification = payload.new as any;
 
           // Get sender info
-          const { data: senderData } = await supabase
+          const { data: senderData } = await (supabase as any)
             .from('profiles')
             .select('username, avatar_url')
             .eq('id', notification.sender_id)
-            .single();
+            .maybeSingle();
 
-          const senderName = senderData?.username || 'Usuario desconocido';
+          const senderName = (senderData as any)?.username || 'Usuario desconocido';
 
           // Show toast immediately
           const toastTitle = getToastTitle(notification.type, senderName);
@@ -165,12 +162,9 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
         }
       )
       .subscribe((status) => {
-        console.log("🔔 Notification subscription status:", status);
-
         if (status === 'SUBSCRIBED') {
           reconnectAttemptsRef.current = 0; // Reset on successful subscription
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          console.warn("🔔 Notification subscription closed/error, attempting reconnect...");
           attemptReconnect();
         }
       });
@@ -185,7 +179,6 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
     }
 
     const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current); // Exponential backoff
-    console.log(`🔔 Attempting reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
 
     reconnectTimeoutRef.current = setTimeout(() => {
       reconnectAttemptsRef.current++;
@@ -197,7 +190,6 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
     const channel = setupRealtimeSubscription();
 
     return () => {
-      console.log("🔔 Cleaning up notification handler");
       if (channel) {
         supabase.removeChannel(channel);
       }

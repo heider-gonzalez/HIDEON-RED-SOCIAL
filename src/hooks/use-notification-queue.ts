@@ -31,8 +31,6 @@ export function useNotificationQueue(options: QueueProcessingOptions = {}) {
     isProcessingRef.current = true;
 
     try {
-      console.log('🔔 Processing notification queue...');
-
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         console.log('🔔 No authenticated user, skipping queue processing');
@@ -68,7 +66,6 @@ export function useNotificationQueue(options: QueueProcessingOptions = {}) {
       }
 
       const result = await response.json();
-      console.log('🔔 Queue processing result:', result);
 
       // Reset retry count on success
       retryCountRef.current = 0;

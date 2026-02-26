@@ -11,8 +11,6 @@ interface CleanupOptions {
 export function useNotificationCleanup() {
   const cleanupNotifications = useCallback(async (options: CleanupOptions = {}) => {
     try {
-      console.log('🧹 Starting notification cleanup...', options);
-
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         throw new Error('No authenticated session for cleanup-notifications');
@@ -39,7 +37,6 @@ export function useNotificationCleanup() {
       }
 
       const result = await response.json();
-      console.log('🧹 Cleanup result:', result);
 
       return result;
     } catch (error) {
