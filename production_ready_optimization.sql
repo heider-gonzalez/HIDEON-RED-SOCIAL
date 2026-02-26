@@ -7,12 +7,12 @@
 -- ========================================
 
 -- Notifications (CRÍTICO - Feed de actividad)
-CREATE INDEX idx_notifications_receptor_id_creado_en 
-ON notifications(receptor_id, creado_en DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_receiver_id_created_at 
+ON notifications(receiver_id, created_at DESC);
 
-CREATE INDEX idx_notifications_receptor_id_leer 
-ON notifications(receptor_id, leer) 
-WHERE leer = false;
+CREATE INDEX IF NOT EXISTS idx_notifications_receiver_id_read 
+ON notifications(receiver_id, read) 
+WHERE read = false;
 
 -- Comments (CRÍTICO - Interacciones)
 CREATE INDEX idx_comments_user_id_created_at 
@@ -33,28 +33,16 @@ CREATE INDEX idx_posts_is_pinned_created_at
 ON posts(is_pinned, created_at DESC) 
 WHERE is_pinned = true;
 
--- Subscriptions (CRÍTICO - Premium)
-CREATE INDEX idx_subscriptions_user_status 
-ON subscriptions(user_id, status);
-
-CREATE INDEX idx_subscriptions_user_end_date 
-ON subscriptions(user_id, end_date DESC);
-
--- Premium Hearts (CRÍTICO - Sistema premium)
-CREATE INDEX idx_premium_hearts_user_reset_date 
-ON premium_hearts(user_id, last_reset_date);
-
 -- ========================================
 -- ÍNDICES DE RENDIMIENTO ADICIONALES
 -- ========================================
 
--- Messages (Chat)
-CREATE INDEX idx_messages_sender_receiver_created_at 
-ON messages(sender_id, receiver_id, created_at DESC);
+-- Mensajes (Chat) - tabla activa: mensajes
+CREATE INDEX IF NOT EXISTS idx_mensajes_id_canal_created_at 
+ON mensajes(id_canal, created_at DESC);
 
-CREATE INDEX idx_messages_receiver_read_created_at 
-ON messages(receiver_id, read, created_at DESC) 
-WHERE read = false;
+CREATE INDEX IF NOT EXISTS idx_mensajes_id_autor_created_at 
+ON mensajes(id_autor, created_at DESC);
 
 -- Reactions (Interacciones)
 CREATE INDEX idx_reactions_post_id_created_at 

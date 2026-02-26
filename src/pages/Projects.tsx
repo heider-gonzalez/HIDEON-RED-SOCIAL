@@ -88,7 +88,7 @@ export default function Projects() {
             avatar_url
           )
         `)
-        .eq('post_type', 'project')
+        .in('post_type', ['project', 'proyecto'])
         .order('updated_at', { ascending: false });
 
       if (selectedStatus !== 'all') {

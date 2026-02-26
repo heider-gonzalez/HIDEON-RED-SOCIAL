@@ -6,7 +6,7 @@ import { Search, Lightbulb, FolderOpen, Users } from "lucide-react";
 import { IdeaGrid } from "@/components/explore/IdeaGrid";
 import { ProjectGrid } from "@/components/explore/ProjectGrid";
 import { GroupGrid } from "@/components/explore/GroupGrid";
-import { LeaderboardGrid } from "@/components/explore/LeaderboardGrid";
+import { UserGrid } from "@/components/explore/UserGrid";
 
 export default function Explore() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,7 +21,7 @@ export default function Explore() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Busca ideas, proyectos o personas…"
+              placeholder="Buscar en Hideon…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-11 rounded-lg bg-muted border-none text-foreground placeholder:text-muted-foreground"
@@ -75,7 +75,7 @@ export default function Explore() {
           </TabsContent>
 
           <TabsContent value="lideres" className="px-3 py-4 sm:p-4 mt-0">
-            <LeaderboardGrid searchQuery={searchQuery} />
+            <UserGrid searchQuery={searchQuery} />
           </TabsContent>
         </Tabs>
       </div>

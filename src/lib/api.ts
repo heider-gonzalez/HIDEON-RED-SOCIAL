@@ -329,6 +329,7 @@ export async function getPostsPage(params: {
       updated_at,
       user_id,
       media_url,
+      media_urls,
       media_type,
       visibility,
       is_pinned,

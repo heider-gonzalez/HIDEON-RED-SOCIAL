@@ -18,26 +18,26 @@ export function useReelsFeed() {
   // Filtrar solo posts con videos - simplificado para Supabase Storage
   const videosPosts = useMemo(() => {
     const realVideos = posts.filter((post: Post) => {
-      // Verificar que tenga media_urls array con contenido
-      if (!post.media_urls || !Array.isArray(post.media_urls) || post.media_urls.length === 0) {
-        return false;
+      const urls: string[] = [];
+      if (Array.isArray(post.media_urls)) {
+        for (const u of post.media_urls) {
+          if (typeof u === 'string' && u.trim()) urls.push(u);
+        }
       }
-      
-      // Verificar si alguna URL es un video
-      const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v'];
-      const hasVideoUrl = post.media_urls.some((url: string) => {
-        if (!url) return false;
-        const hasVideoExtension = videoExtensions.some(ext => 
-          url.toLowerCase().includes(ext)
-        );
-        return hasVideoExtension;
+      if (typeof post.media_url === 'string' && post.media_url.trim()) {
+        urls.push(post.media_url);
+      }
+
+      const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.ogg'];
+      const hasVideoUrl = urls.some((url) => {
+        const lower = url.toLowerCase();
+        return videoExtensions.some((ext) => lower.includes(ext));
       });
-      
-      // Verificar por media_type
-      const hasVideoType = post.media_type === 'video';
-      
-      const isVideo = hasVideoUrl || hasVideoType;
-      return isVideo;
+
+      const mediaType = typeof post.media_type === 'string' ? post.media_type.toLowerCase() : '';
+      const hasVideoType = mediaType === 'video' || mediaType.startsWith('video/');
+
+      return hasVideoUrl || hasVideoType;
     });
 
     // Si no hay videos reales, añadir videos de demo para testing

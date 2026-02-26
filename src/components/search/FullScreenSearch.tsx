@@ -88,18 +88,18 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
   const performSearch = async () => {
     setIsSearching(true);
     try {
+      let query = supabase
+        .from('profiles')
+        .select('id, username, full_name, bio, avatar_url, career, semester')
+        .or(`username.ilike.%${debouncedQuery}%,full_name.ilike.%${debouncedQuery}%,bio.ilike.%${debouncedQuery}%,career.ilike.%${debouncedQuery}%`)
+        .limit(20);
+
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setSearchResults([]);
-        return;
+      if (user?.id) {
+        query = query.neq('id', user.id);
       }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, bio, avatar_url, career, semester')
-        .neq('id', user.id)
-        .or(`username.ilike.%${debouncedQuery}%,bio.ilike.%${debouncedQuery}%`)
-        .limit(20);
+      const { data, error } = await query;
 
       if (error) throw error;
       setSearchResults(data || []);
@@ -195,7 +195,7 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar en HSocial"
+            placeholder="Buscar en Hideon"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 pr-10 border-none bg-white dark:bg-muted/50 text-foreground focus-visible:ring-0 focus-visible:ring-offset-0"

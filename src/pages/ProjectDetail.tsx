@@ -42,7 +42,7 @@ export default function ProjectDetail() {
           )
         `)
         .eq('id', postId)
-        .eq('post_type', 'project')
+        .in('post_type', ['project', 'proyecto'])
         .single();
 
       if (error) throw error;

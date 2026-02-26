@@ -2,28 +2,52 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { FolderOpen } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function ProjectGrid({ searchQuery }: { searchQuery: string }) {
   const navigate = useNavigate();
+  const [brokenMedia, setBrokenMedia] = useState<Record<string, boolean>>({});
+  const [loadedMedia, setLoadedMedia] = useState<Record<string, boolean>>({});
+  const normalizedQuery = useMemo(() => searchQuery.trim(), [searchQuery]);
+  const isVideoUrl = (url: string) => {
+    const lower = url.toLowerCase();
+    return (
+      lower.endsWith(".mp4") ||
+      lower.endsWith(".webm") ||
+      lower.endsWith(".mov") ||
+      lower.endsWith(".m4v") ||
+      lower.endsWith(".ogg")
+    );
+  };
   
-  const { data: projects, isLoading } = useQuery({
+  const { data: projects, isLoading } = useQuery<any[]>({
     queryKey: ['explore-projects', searchQuery],
     queryFn: async () => {
       let query = supabase
         .from('posts')
         .select(`
-          *,
-          profiles(username, avatar_url)
+          id,
+          user_id,
+          created_at,
+          content,
+          title,
+          idea,
+          project_status,
+          media_url,
+          media_type,
+          media_urls,
+          profiles!posts_user_id_fkey(username, avatar_url)
         `)
-        .eq('post_type', 'project')
+        .in('post_type', ['project', 'proyecto'])
         .eq('visibility', 'public')
         .order('created_at', { ascending: false })
         .limit(20);
       
-      if (searchQuery) {
-        query = query.or(`content.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
+      if (normalizedQuery) {
+        const q = normalizedQuery.replace(/,/g, ' ');
+        query = query.or(`content.ilike.%${q}%,title.ilike.%${q}%`);
       }
       
       const { data, error } = await query;
@@ -50,29 +74,84 @@ export function ProjectGrid({ searchQuery }: { searchQuery: string }) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-      {projects?.map((project) => (
+      {projects?.map((project: any) => (
+        (() => {
+          const idea = (project as any)?.idea && typeof (project as any).idea === 'object' && !Array.isArray((project as any).idea)
+            ? ((project as any).idea as any)
+            : {};
+          const title =
+            (project as any)?.title?.trim() ||
+            (idea?.title ? String(idea.title).trim() : "") ||
+            (project as any)?.content?.trim() ||
+            "Proyecto sin título";
+
+          const phase =
+            (idea?.project_phase ? String(idea.project_phase).trim() : "") ||
+            ((project as any)?.project_status === 'completed'
+              ? 'Completado'
+              : (project as any)?.project_status === 'in_progress'
+              ? 'En desarrollo'
+              : 'En desarrollo');
+
+          const phaseLabel = (phase || 'En desarrollo').toUpperCase();
+
+          const mediaUrl =
+            (Array.isArray((project as any)?.media_urls) && (project as any).media_urls.length > 0
+              ? (project as any).media_urls[0]
+              : (project as any)?.media_url) ||
+            "";
+          const isVideo = Boolean(
+            ((project as any)?.media_type && String((project as any).media_type).startsWith('video')) ||
+              (mediaUrl && isVideoUrl(mediaUrl))
+          );
+          const isBroken = Boolean(brokenMedia[project.id]);
+          const isLoaded = Boolean(loadedMedia[project.id]);
+
+          return (
         <Card 
           key={project.id} 
           className="overflow-hidden cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-300 bg-card border border-border"
-          onClick={() => navigate(`/projects`)}
+          onClick={() => navigate(`/project/${project.id}`)}
         >
-          {/* Imagen o placeholder */}
-          {project.media_url ? (
-            <img 
-              src={project.media_url} 
-              alt={project.content}
-              className="w-full h-40 object-cover"
-            />
-          ) : (
-            <div className="w-full h-40 bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-              <FolderOpen className="h-12 w-12 text-white" />
+          <div className="relative w-full h-40 bg-gradient-to-br from-blue-500 to-purple-500">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <FolderOpen className="h-12 w-12 text-white/90" />
             </div>
-          )}
+            {mediaUrl && !isBroken ? (
+              isVideo ? (
+                <video
+                  src={mediaUrl}
+                  className="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
+                  style={{ opacity: isLoaded ? 1 : 0 }}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  onLoadedData={() => setLoadedMedia((prev) => ({ ...prev, [project.id]: true }))}
+                  onError={() => setBrokenMedia((prev) => ({ ...prev, [project.id]: true }))}
+                />
+              ) : (
+                <img
+                  src={mediaUrl}
+                  alt={title}
+                  className="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
+                  style={{ opacity: isLoaded ? 1 : 0 }}
+                  loading="lazy"
+                  onLoad={() => setLoadedMedia((prev) => ({ ...prev, [project.id]: true }))}
+                  onError={() => setBrokenMedia((prev) => ({ ...prev, [project.id]: true }))}
+                />
+              )
+            ) : null}
+          </div>
           
           <CardContent className="p-3 space-y-2">
-            <h3 className="font-semibold text-sm line-clamp-2">
-              {project.content?.substring(0, 60) || 'Proyecto sin título'}...
-            </h3>
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-semibold text-sm line-clamp-2">
+                {title}
+              </h3>
+              <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {phaseLabel}
+              </span>
+            </div>
             
             <div className="flex items-center gap-2">
               <Avatar className="h-5 w-5">
@@ -87,6 +166,8 @@ export function ProjectGrid({ searchQuery }: { searchQuery: string }) {
             </div>
           </CardContent>
         </Card>
+          );
+        })()
       ))}
     </div>
   );
