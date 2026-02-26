@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UnreadMessage {
@@ -12,33 +12,26 @@ interface UnreadMessage {
 }
 
 export function useUnreadMessages(currentUserId?: string) {
-  const debug = import.meta.env.DEV;
-  if (debug) console.log('🔔 useUnreadMessages HOOK MOUNTED - currentUserId:', currentUserId);
   const [unreadMessages, setUnreadMessages] = useState<UnreadMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchUnreadMessages = async () => {
+  const fetchUnreadMessages = useCallback(async () => {
     if (!currentUserId) return;
-    if (debug) console.log('🔔 fetchUnreadMessages - START');
     setLoading(true);
     try {
-      if (debug) console.log('🔔 fetchUnreadMessages - currentUserId:', currentUserId);
-
       const { data, error } = await supabase.functions.invoke('get-unread-messages');
       if (error) {
-        if (debug) console.error('🔔 fetchUnreadMessages invoke error:', error);
         throw error;
       }
 
       const items = (data as any)?.unreadMessages;
       setUnreadMessages(Array.isArray(items) ? items : []);
-      if (debug) console.log('🔔 fetchUnreadMessages - STATE UPDATED');
     } catch (error) {
       console.error('Error fetching unread messages:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUserId]);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -52,13 +45,11 @@ export function useUnreadMessages(currentUserId?: string) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        if (debug) console.log('🔔 useUnreadMessages - visibilitychange -> resync');
         resyncUnread();
       }
     };
 
     const handleFocus = () => {
-      if (debug) console.log('🔔 useUnreadMessages - window focus -> resync');
       resyncUnread();
     };
 
@@ -66,7 +57,6 @@ export function useUnreadMessages(currentUserId?: string) {
       const detail = (event as CustomEvent | undefined)?.detail as any;
       const type = detail?.notification?.type ?? detail?.type;
       if (type !== 'message') return;
-      if (debug) console.log('🔔 useUnreadMessages - new-notification(message) -> resync');
       resyncUnread();
     };
 
@@ -74,7 +64,6 @@ export function useUnreadMessages(currentUserId?: string) {
       const data = (event as any)?.data;
       const type = data?.notification?.data?.type ?? data?.data?.type ?? data?.type;
       if (type !== 'message') return;
-      if (debug) console.log('🔔 useUnreadMessages - service worker message(message) -> resync');
       resyncUnread();
     };
 
@@ -170,15 +159,14 @@ export function useUnreadMessages(currentUserId?: string) {
       }
       supabase.removeChannel(channel);
     };
-  }, [currentUserId]);
+  }, [currentUserId, fetchUnreadMessages]);
 
   const getTotalUnreadCount = () => {
     const total = unreadMessages.reduce((total, message) => total + message.unread_count, 0);
-    if (debug) console.log('🔔 useUnreadMessages - unreadMessages:', unreadMessages, 'total:', total);
     return total;
   };
 
-  const markAsRead = async (senderId: string) => {
+  const markAsRead = useCallback(async (senderId: string) => {
     try {
       // Mark all messages from this sender as read
       const { error } = await (supabase
@@ -204,7 +192,7 @@ export function useUnreadMessages(currentUserId?: string) {
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
-  };
+  }, [currentUserId, fetchUnreadMessages]);
 
   return {
     unreadMessages,
