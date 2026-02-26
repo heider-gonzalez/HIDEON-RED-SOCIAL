@@ -98,17 +98,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const prevUserId = userIdRef.current;
             if (prevUserId) {
-              await (supabase as any)
-                .from('profiles')
-                .upsert(
-                  {
-                    id: prevUserId,
-                    status: 'offline',
-                    last_seen: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                  },
-                  { onConflict: 'id' }
-                );
+              // Use insert instead of upsert to avoid onConflict 404
+            const { error: cleanupError } = await (supabase as any)
+              .from('profiles')
+              .insert({
+                id: prevUserId,
+                status: 'offline',
+                last_seen: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .select('id')
+              .single();
+            
+            // Ignore duplicate key error (PGRST116)
+            if (cleanupError && !cleanupError.message?.includes('PGRST116')) {
+              throw cleanupError;
+            }
             }
             userIdRef.current = null;
           } catch {
@@ -159,17 +164,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const now = new Date().toISOString();
         await ensureProfileExists(user);
-        await (supabase as any)
+        // Use insert instead of upsert to avoid onConflict 404
+        const { error: presenceError } = await (supabase as any)
           .from('profiles')
-          .upsert(
-            {
-              id: user.id,
-              status,
-              last_seen: now,
-              updated_at: now,
-            },
-            { onConflict: 'id' }
-          );
+          .insert({
+            id: user.id,
+            status,
+            last_seen: now,
+            updated_at: now,
+          })
+          .select('id')
+          .single();
+        
+        // Ignore duplicate key error (PGRST116)
+        if (presenceError && !presenceError.message?.includes('PGRST116')) {
+          throw presenceError;
+        }
       } catch {
         // Best-effort
       }
@@ -255,10 +265,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         payload.google_name = googleName;
       }
 
-      // 🚀 OPTIMIZATION: Cache after successful creation
-      await (supabase as any)
+      // 🚀 OPTIMIZATION: Use insert instead of upsert to avoid onConflict 404
+      const { error } = await (supabase as any)
         .from('profiles')
-        .upsert(payload, { onConflict: 'id' });
+        .insert(payload)
+        .select('id')
+        .single();
+      
+      // If already exists, ignore error (PGRST116)
+      if (error && !error.message?.includes('PGRST116')) {
+        throw error;
+      }
       
       profileCacheRef.current.set(user.id, true);
       if (debug) console.log('🚀 Auth Cache: Profile created and cached for user:', user.id);
