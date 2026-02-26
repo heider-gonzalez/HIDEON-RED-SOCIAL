@@ -34,7 +34,7 @@ export function ProfileBadges({ profile }: ProfileBadgesProps) {
     try {
       const { data, error } = await supabase
         .from('profile_badges')
-        .select('*')
+        .select('id, badge_type, badge_name, badge_description, badge_icon, badge_color, earned_date, is_active')
         .eq('profile_id', profile.id)
         .eq('is_active', true)
         .order('earned_date', { ascending: false });

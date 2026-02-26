@@ -94,7 +94,7 @@ export function useNavigation() {
     const loadUnreadCount = async () => {
       const { count } = await supabase
         .from("notifications")
-        .select("*", { count: 'exact', head: true })
+        .select("id", { count: 'exact', head: true })
         .eq("receiver_id", currentUserId)
         .eq("read", false);
       

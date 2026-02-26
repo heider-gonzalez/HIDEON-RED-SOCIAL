@@ -209,25 +209,26 @@ async function enrichPosts(
 
 export async function getPosts(userId?: string, groupId?: string, companyId?: string) {
   try {
-    // Add a table query that includes the keys we need
-    const { data: tableInfo } = await supabase
-      .from('posts')
-      .select('*')
-      .limit(1);
-
-    // Determine which fields exist in the posts table
-    const hasSharedFields = tableInfo && tableInfo.length > 0 && 
-      ('shared_post_id' in tableInfo[0] || 'shared_from' in tableInfo[0]);
+    const hasSharedFields = await getHasSharedFields();
 
     let query: any = supabase
       .from("posts")
       .select(`
-        *,
-        profiles:profiles(*),
+        id,
+        content,
+        created_at,
+        updated_at,
+        user_id,
+        media_url,
+        media_type,
+        visibility,
+        is_pinned,
+        shared_post_id,
+        shared_from,
+        profiles:profiles(id, username, avatar_url, career),
         comments:comments(count)
       `);
 
-    // Si hay un userId, solo obtener los posts de ese usuario
     if (userId) {
       query = query.eq("user_id", userId);
     }
@@ -322,10 +323,19 @@ export async function getPostsPage(params: {
   let query: any = supabase
     .from('posts')
     .select(`
-      *,
+      id,
+      content,
+      created_at,
+      updated_at,
+      user_id,
+      media_url,
+      media_type,
+      visibility,
+      is_pinned,
+      shared_post_id,
+      shared_from,
       profiles:profiles(id, username, avatar_url, career),
-      comments:comments(count),
-      media_urls
+      comments:comments(count)
     `);
 
   if (userId) query = query.eq('user_id', userId);
@@ -700,7 +710,7 @@ export async function addCommentReaction(commentId: string, reactionType: string
     // Check if user already reacted to this comment
     const { data: existingReaction } = await (supabase
       .from("comment_reactions") as any)
-      .select("*")
+      .select("id, comment_id, user_id, reaction_type, created_at")
       .eq("comment_id", commentId)
       .eq("user_id", user.id)
       .single();

@@ -8,7 +8,7 @@ export function usePinnedProjects(userId: string | undefined) {
       if (!userId) return [];
       const { data, error } = await (supabase as any)
         .from("user_pinned_projects")
-        .select("*")
+        .select("id, user_id, post_id, position, created_at")
         .eq("user_id", userId)
         .order("position");
       if (error) throw error;

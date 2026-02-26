@@ -28,7 +28,7 @@ export function usePostCreator() {
       if (user) {
         const { data } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, username, avatar_url, career, semester')
           .eq('id', user.id)
           .single();
           

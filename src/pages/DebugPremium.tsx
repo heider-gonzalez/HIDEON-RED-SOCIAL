@@ -6,8 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function DebugPremium() {
   const [userId, setUserId] = useState<string | null>(null);
-  const [isPremium, setIsPremium] = useState<boolean>(false);
-  const [subscription, setSubscription] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -15,19 +13,6 @@ export default function DebugPremium() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-        
-        // Verificar si es premium
-        const { data: premiumData } = await (supabase as any).rpc("is_user_premium");
-        setIsPremium(Boolean(premiumData));
-        
-        // Verificar suscripción
-        const { data: subData } = await supabase
-          .from('user_subscriptions')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-        
-        setSubscription(subData);
       }
     };
 
@@ -35,44 +20,10 @@ export default function DebugPremium() {
   }, []);
 
   const activatePremium = async () => {
-    if (!userId) return;
-    
-    try {
-      const { error } = await supabase
-        .from('user_subscriptions')
-        .upsert({
-          user_id: userId,
-          plan: 'premium_pro',
-          status: 'active',
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 días
-          provider: 'mercadopago'
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message
-        });
-      } else {
-        toast({
-          title: "¡Premium activado!",
-          description: "Tu cuenta Premium Pro ha sido activada por 30 días."
-        });
-        
-        // Recargar datos
-        window.location.reload();
-      }
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message
-      });
-    }
+    toast({
+      title: "Funcionalidad deshabilitada",
+      description: "El sistema Premium/Suscripciones fue descartado y ya no está disponible."
+    });
   };
 
   return (
@@ -87,23 +38,16 @@ export default function DebugPremium() {
           </div>
           
           <div>
-            <strong>Estado Premium:</strong> {isPremium ? "✅ Activo" : "❌ Inactivo"}
+            <strong>Estado Premium:</strong> Deshabilitado
           </div>
           
           <div>
-            <strong>Suscripción:</strong>
-            {subscription ? (
-              <pre className="mt-2 p-2 bg-gray-100 rounded text-xs">
-                {JSON.stringify(subscription, null, 2)}
-              </pre>
-            ) : (
-              "No se encontró suscripción"
-            )}
+            <strong>Suscripción:</strong> No aplica
           </div>
           
-          {!isPremium && userId && (
+          {userId && (
             <Button onClick={activatePremium} className="mt-4">
-              Activar Premium Manualmente
+              Premium no disponible
             </Button>
           )}
         </CardContent>

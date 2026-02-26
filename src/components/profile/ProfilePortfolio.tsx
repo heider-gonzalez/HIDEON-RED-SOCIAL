@@ -59,12 +59,12 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
       const [cvResult, linksResult] = await Promise.all([
         (supabase as any)
           .from('profile_cv')
-          .select('*')
+          .select('id, file_url, file_name, upload_date, is_public')
           .eq('profile_id', profile.id)
           .single(),
         (supabase as any)
           .from('profile_portfolio_links')
-          .select('*')
+          .select('id, profile_id, title, url, description, type, created_at')
           .eq('profile_id', profile.id)
           .order('created_at', { ascending: false })
       ]);

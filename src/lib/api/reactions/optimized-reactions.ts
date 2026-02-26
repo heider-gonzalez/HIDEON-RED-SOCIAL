@@ -63,17 +63,19 @@ async function toggleCommentReactionDirect(
     }
 
     // Verificar si ya existe una reacción del usuario a este comentario
-    const { data: existingReaction } = await supabase
+    const { data: existingReaction } = await (supabase as any)
       .from('comment_reactions')
-      .select('*')
+      .select('id, reaction_type, comment_id, user_id')
       .eq('comment_id', commentId)
       .eq('user_id', user.id)
       .single();
 
-    if (existingReaction) {
+    const existing = existingReaction as any;
+
+    if (existing) {
       // Si la reacción es la misma, eliminarla
-      if (existingReaction.reaction_type === reactionType) {
-        const { error } = await supabase
+      if (existing.reaction_type === reactionType) {
+        const { error } = await (supabase as any)
           .from('comment_reactions')
           .delete()
           .eq('comment_id', commentId)
@@ -86,7 +88,7 @@ async function toggleCommentReactionDirect(
         return { success: true, action: 'removed', reaction_type: null };
       } else {
         // Si es diferente, actualizarla
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('comment_reactions')
           .update({ reaction_type: reactionType })
           .eq('comment_id', commentId)
@@ -100,7 +102,7 @@ async function toggleCommentReactionDirect(
       }
     } else {
       // Agregar nueva reacción
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('comment_reactions')
         .insert({
           comment_id: commentId,

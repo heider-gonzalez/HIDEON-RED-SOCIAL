@@ -13,7 +13,7 @@ export async function joinIdea(postId: string, profession: string): Promise<{ su
     // Check if the user is already a participant
     const { data: existingParticipant, error: checkError } = await supabase
       .from('idea_participants')
-      .select('*')
+      .select('id')
       .eq('post_id', postId)
       .eq('user_id', user.id)
       .single();
@@ -43,7 +43,7 @@ export async function joinIdea(postId: string, profession: string): Promise<{ su
     // Get the current post to update the idea data
     const { data: currentPost, error: postError } = await supabase
       .from('posts')
-      .select('*, idea')
+      .select('id, idea')
       .eq('id', postId)
       .single();
 
@@ -100,7 +100,7 @@ export async function leaveIdea(postId: string): Promise<{ success: boolean, mes
     // Check if the user is a participant
     const { data: existingParticipant, error: checkError } = await supabase
       .from('idea_participants')
-      .select('*')
+      .select('id')
       .eq('post_id', postId)
       .eq('user_id', user.id)
       .single();

@@ -24,7 +24,7 @@ export function useFriendRequestMutation() {
       // Comprobamos si ya existe una solicitud pendiente
       const { data: existingRequest } = await (supabase as any)
         .from('friendships')
-        .select('*')
+        .select('id')
         .eq('user_id', user.id)
         .eq('friend_id', friendId)
         .maybeSingle();

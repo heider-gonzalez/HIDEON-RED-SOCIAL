@@ -25,13 +25,11 @@ export interface Conversation {
 // Fetch messages for a specific channel with pagination
 export const fetchMessages = async (
   channelId: string,
-  pageParam: number = 0,
+  pageParam: string | null = null,
   pageSize: number = 50
-): Promise<{ data: Message[]; nextCursor: number | null }> => {
-  const from = pageParam * pageSize;
-  const to = from + pageSize - 1;
+): Promise<{ data: Message[]; nextCursor: string | null }> => {
 
-  const { data: messagesData, error } = await supabase
+  const { data: messagesData, error } = await (supabase as any)
     .from("mensajes")
     .select(`
       id,
@@ -40,17 +38,19 @@ export const fetchMessages = async (
       id_autor
     `)
     .eq("id_canal", channelId)
-    .order("created_at", { ascending: false }) // Fetch newest first for pagination
-    .range(from, to);
+    .lt("created_at", pageParam ?? new Date().toISOString())
+    .order("created_at", { ascending: false }) // Fetch newest first
+    .limit(pageSize + 1);
 
   if (error) throw error;
 
   // Get unique author IDs
-  const authorIds = [...new Set(messagesData?.map(m => m.id_autor).filter(Boolean) || [])];
+  const safeMessages: any[] = (messagesData || []) as any[];
+  const authorIds = [...new Set(safeMessages.map((m) => m.id_autor).filter(Boolean) || [])];
 
   let profilesMap: Record<string, { username: string; avatar_url: string }> = {};
   if (authorIds.length > 0) {
-    const { data: profiles, error: profilesError } = await supabase
+    const { data: profiles, error: profilesError } = await (supabase as any)
       .from("profiles")
       .select("id, username, avatar_url")
       .in("id", authorIds);
@@ -66,21 +66,27 @@ export const fetchMessages = async (
     }
   }
 
-  const messagesWithAuthors = (messagesData || []).map(message => ({
+  const messagesWithAuthors = safeMessages.map((message) => ({
     ...message,
     author: profilesMap[message.id_autor || ""] || { username: "Usuario", avatar_url: "" }
-  })).reverse(); // Reverse to show oldest first
+  }));
 
-  const hasNextPage = messagesData && messagesData.length === pageSize;
-  const nextCursor = hasNextPage ? pageParam + 1 : null;
+  const messagesSortedAsc = messagesWithAuthors
+    .slice()
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-  return { data: messagesWithAuthors, nextCursor };
+  const hasNextPage = safeMessages.length > pageSize;
+  const trimmed = hasNextPage ? messagesSortedAsc.slice(1) : messagesSortedAsc;
+  const oldest = trimmed.length > 0 ? trimmed[0] : null;
+  const nextCursor = oldest ? oldest.created_at : null;
+
+  return { data: trimmed, nextCursor };
 };
 
 // Fetch conversations for current user
 export const fetchConversations = async (currentUserId: string): Promise<Conversation[]> => {
   // Get private channels
-  const { data: userChannels, error: channelsError } = await supabase
+  const { data: userChannels, error: channelsError } = await (supabase as any)
     .from("miembros_canal")
     .select(`
       id_canal,
@@ -98,7 +104,7 @@ export const fetchConversations = async (currentUserId: string): Promise<Convers
     privateChannels.map(async (memberChannel: any) => {
       const channelId = memberChannel.id_canal;
 
-      const { data: otherMembers, error: membersError } = await supabase
+      const { data: otherMembers, error: membersError } = await (supabase as any)
         .from("miembros_canal")
         .select("id_usuario")
         .eq("id_canal", channelId)
@@ -106,9 +112,9 @@ export const fetchConversations = async (currentUserId: string): Promise<Convers
 
       if (membersError || !otherMembers || otherMembers.length === 0) return null;
 
-      const otherUserId = otherMembers[0].id_usuario;
+      const otherUserId = (otherMembers as any)[0].id_usuario;
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await (supabase as any)
         .from("profiles")
         .select("id, username, avatar_url")
         .eq("id", otherUserId)
@@ -116,7 +122,7 @@ export const fetchConversations = async (currentUserId: string): Promise<Convers
 
       if (profileError || !profile) return null;
 
-      const { data: lastMessage } = await supabase
+      const { data: lastMessage } = await (supabase as any)
         .from("mensajes")
         .select("id, contenido, created_at")
         .eq("id_canal", channelId)
@@ -128,8 +134,8 @@ export const fetchConversations = async (currentUserId: string): Promise<Convers
         id: otherUserId,
         username: profile.username || "Usuario",
         avatar_url: profile.avatar_url,
-        last_message: lastMessage?.contenido || "Inicia una conversación",
-        last_message_at: lastMessage?.created_at || new Date().toISOString(),
+        last_message: (lastMessage as any)?.contenido || "Inicia una conversación",
+        last_message_at: (lastMessage as any)?.created_at || new Date().toISOString(),
         unread_count: 0,
         channel_id: channelId
       };
@@ -142,7 +148,7 @@ export const fetchConversations = async (currentUserId: string): Promise<Convers
   );
 
   // Add global conversation
-  const { data: globalLastMessage } = await supabase
+  const { data: globalLastMessage } = await (supabase as any)
     .from("mensajes")
     .select("contenido, created_at")
     .eq("id_canal", "2f79759f-c53f-40ae-b786-59f6e69264a6")
@@ -170,7 +176,7 @@ export const sendMessage = async (
   channelId: string,
   authorId: string
 ): Promise<Message> => {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("mensajes")
     .insert({
       contenido: content,
@@ -188,7 +194,7 @@ export const sendMessage = async (
   if (error) throw error;
 
   // Get author profile
-  const { data: profile } = await supabase
+  const { data: profile } = await (supabase as any)
     .from("profiles")
     .select("username, avatar_url")
     .eq("id", authorId)
@@ -197,8 +203,8 @@ export const sendMessage = async (
   return {
     ...data,
     author: {
-      username: profile?.username || "Usuario",
-      avatar_url: profile?.avatar_url || ""
+      username: (profile as any)?.username || "Usuario",
+      avatar_url: (profile as any)?.avatar_url || ""
     }
   };
 };

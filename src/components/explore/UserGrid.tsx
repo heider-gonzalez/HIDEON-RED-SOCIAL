@@ -6,15 +6,24 @@ import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
+type ExploreUser = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  career: string | null;
+  created_at: string;
+};
+
 export function UserGrid({ searchQuery }: { searchQuery: string }) {
   const navigate = useNavigate();
   
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading } = useQuery<ExploreUser[]>({
     queryKey: ['explore-users', searchQuery],
     queryFn: async () => {
       let query = supabase
         .from('profiles')
-        .select('*')
+        .select('id, username, full_name, avatar_url, career, created_at')
         .order('created_at', { ascending: false })
         .limit(20);
       
@@ -24,7 +33,7 @@ export function UserGrid({ searchQuery }: { searchQuery: string }) {
       
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return (data || []) as ExploreUser[];
     }
   });
 

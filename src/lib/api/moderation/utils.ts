@@ -7,7 +7,7 @@ export async function tableExists(tableName: string): Promise<boolean> {
     // Use any type to bypass type checking for tables that might not be in the schema
     const { error } = await supabase
       .from(tableName as any)
-      .select('*')
+      .select('id')
       .limit(1);
     
     return !error;

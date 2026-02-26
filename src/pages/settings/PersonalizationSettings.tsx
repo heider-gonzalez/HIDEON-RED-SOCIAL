@@ -25,7 +25,7 @@ export default function PersonalizationSettings() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, username, avatar_url, cover_url, bio')
         .eq('id', user.id)
         .single();
 

@@ -79,9 +79,11 @@ export function useFeedData(userId?: string) {
 
       return transformedPosts;
     },
-    refetchInterval: false,
-    staleTime: 1 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,        // 30 segundos stale
+    gcTime: 5 * 60 * 1000,       // 5 minutos garbage collection
+    refetchInterval: false,       // No auto-refetch
+    refetchOnWindowFocus: false, // Optimización para latencia
+    retry: 2,
   });
 
   useEffect(() => {

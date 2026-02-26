@@ -33,9 +33,9 @@ export function useCommentReactions(commentId: string) {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('comment_reactions')
-        .select('*')
+        .select('id, comment_id, user_id, reaction_type, created_at')
         .eq('comment_id', commentId)
         .order('created_at', { ascending: false });
 
@@ -80,16 +80,16 @@ export function useCommentReactions(commentId: string) {
 
     try {
       // Verificar si ya existe una reacción del usuario
-      const { data: existingReaction } = await supabase
+      const { data: existingReaction } = await (supabase as any)
         .from('comment_reactions')
-        .select('*')
+        .select('id, comment_id, user_id, reaction_type, created_at')
         .eq('comment_id', commentId)
         .eq('user_id', user.id)
         .single();
 
       if (existingReaction) {
         // Actualizar reacción existente
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('comment_reactions')
           .update({ reaction_type: type })
           .eq('id', (existingReaction as CommentReaction).id);
@@ -97,7 +97,7 @@ export function useCommentReactions(commentId: string) {
         if (error) throw error;
       } else {
         // Insertar nueva reacción
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('comment_reactions')
           .insert({
             comment_id: commentId,
@@ -123,7 +123,7 @@ export function useCommentReactions(commentId: string) {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('comment_reactions')
         .delete()
         .eq('comment_id', commentId)

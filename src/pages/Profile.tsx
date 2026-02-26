@@ -96,17 +96,17 @@ export default function Profile() {
           // Seguidores: usuarios que siguen a este perfil (following_id = profileId)
           supabase
             .from('followers')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('following_id', profileId),
           // Seguidos: usuarios que este perfil sigue (follower_id = profileId)
           supabase
             .from('followers')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('follower_id', profileId),
           // Posts: publicaciones de este usuario
           supabase
             .from('posts')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('user_id', profileId),
           Promise.resolve({ count: 0, error: null })
         ]);

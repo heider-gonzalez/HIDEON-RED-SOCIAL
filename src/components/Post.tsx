@@ -108,8 +108,10 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
   const reactionsByType: Record<string, number> = {};
   
   // Priorizar el formato canonical del API (reactions_by_type)
-  if (post.reactions_by_type && typeof post.reactions_by_type === 'object') {
-    Object.assign(reactionsByType, post.reactions_by_type);
+  const postAny = post as any;
+  const reactionsByTypeAny = postAny?.reactions_by_type as unknown;
+  if (reactionsByTypeAny && typeof reactionsByTypeAny === 'object') {
+    Object.assign(reactionsByType, reactionsByTypeAny as Record<string, number>);
   } else if (Array.isArray(post.reactions)) {
     post.reactions.forEach((reaction: any) => {
       const type = reaction.reaction_type || reaction.type || "love";
@@ -333,7 +335,7 @@ function EventPostView({ post }: { post: PostType }) {
       try {
         const { data, error } = await (supabase as any)
           .from('academic_events')
-          .select('*')
+          .select('id, title, description, start_date, end_date, location, is_virtual, max_attendees, event_type, registration_required, registration_deadline, organizer_contact, banner_url')
           .eq('post_id', post.id)
           .maybeSingle();
         if (error) throw error;
@@ -449,6 +451,11 @@ function IdeaPostView({ post }: { post: PostType }) {
 // Componente para las publicaciones de tipo Proyecto
 function ProjectPostView({ post }: { post: PostType }) {
   if (!post.idea) return null;
+
+  const normalizedProjectStatus =
+    post.project_status === 'paused' || post.project_status === 'cancelled'
+      ? 'in_progress'
+      : post.project_status;
   
   return (
     <div className="px-0 md:px-4 pb-2">
@@ -457,7 +464,7 @@ function ProjectPostView({ post }: { post: PostType }) {
         idea={post.idea} 
         postId={post.id}
         postOwnerId={post.user_id}
-        projectStatus={post.project_status}
+        projectStatus={normalizedProjectStatus as any}
         technologies={post.technologies}
         demoUrl={post.demo_url}
       />

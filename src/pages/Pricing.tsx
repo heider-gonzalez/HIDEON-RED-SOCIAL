@@ -20,7 +20,6 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { PremiumWaitlistModal } from "@/components/premium/PremiumWaitlistModal";
 
 export default function Pricing() {
   return (
@@ -55,11 +54,9 @@ export default function Pricing() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                <PremiumWaitlistModal>
-                  <Button size="lg" className="sm:w-auto">
-                    Prueba 7 días gratis
-                  </Button>
-                </PremiumWaitlistModal>
+                <Button size="lg" className="sm:w-auto" disabled>
+                  Premium no disponible
+                </Button>
                 <Button asChild variant="outline" size="lg" className="sm:w-auto">
                   <a href="#incluye">Ver qué incluye</a>
                 </Button>
@@ -423,11 +420,9 @@ export default function Pricing() {
                       </p>
                     </div>
 
-                    <PremiumWaitlistModal>
-                      <Button size="lg" className="w-full">
-                        Prueba 7 días gratis
-                      </Button>
-                    </PremiumWaitlistModal>
+                    <Button size="lg" className="w-full" disabled>
+                      Premium no disponible
+                    </Button>
 
                     <Button asChild variant="outline" className="w-full">
                       <a href="#incluye">Ver qué incluye</a>
@@ -486,9 +481,11 @@ export default function Pricing() {
                 Prueba Premium Pro 7 días. Sin contrato. Pago seguro con MercadoPago.
               </p>
             </div>
-            <PremiumWaitlistModal>
-              <Button size="lg">Prueba 7 días gratis</Button>
-            </PremiumWaitlistModal>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <Button size="lg" disabled>
+                Premium no disponible
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

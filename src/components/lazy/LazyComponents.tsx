@@ -36,24 +36,6 @@ export const LazyPricingSection = lazy(() =>
   }))
 );
 
-export const LazySubscriptionStatus = lazy(() => 
-  import('@/components/subscription/SubscriptionStatus').then(module => ({
-    default: module.SubscriptionStatus
-  }))
-);
-
-export const LazyUsageLimits = lazy(() => 
-  import('@/components/subscription/UsageLimits').then(module => ({
-    default: module.UsageLimits
-  }))
-);
-
-export const LazyFounderAccessRequest = lazy(() => 
-  import('@/components/subscription/FounderAccessRequest').then(module => ({
-    default: module.FounderAccessRequest
-  }))
-);
-
 // Wrapper para lazy loading con fallback
 export const LazyWrapper = ({ children, fallback = <LoadingSpinner /> }: { 
   children: React.ReactNode;

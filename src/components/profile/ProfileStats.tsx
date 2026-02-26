@@ -62,7 +62,7 @@ export function ProfileStats({
       
       const query = supabase
         .from('profile_stats')
-        .select('*')
+        .select('total_views, project_views, profile_views, unique_visitors, company_views, total_projects, completed_projects, total_reactions, total_comments, last_updated')
         .eq('profile_id', profile.id)
         .single();
 

@@ -57,7 +57,7 @@ export default function CompanyDetail() {
       if (isUuid(slugOrIdSafe)) {
         const { data, error } = await (supabase as any)
           .from("companies")
-          .select("*")
+          .select("id, name, slug, description, logo_url, cover_url, website_url, status, created_by")
           .eq("id", slugOrIdSafe)
           .single();
         if (error) throw error;
@@ -66,7 +66,7 @@ export default function CompanyDetail() {
 
       const { data, error } = await (supabase as any)
         .from("companies")
-        .select("*")
+        .select("id, name, slug, description, logo_url, cover_url, website_url, status, created_by")
         .eq("slug", slugOrIdSafe)
         .single();
       if (error) throw error;
