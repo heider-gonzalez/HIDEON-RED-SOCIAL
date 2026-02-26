@@ -130,7 +130,10 @@ export function useRealtimeFeedSimple(userId?: string) {
               if (status === 'SUBSCRIBED') {
                 resolved = true;
                 resolve('SUBSCRIBED');
-              } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              } else if (status === 'TIMED_OUT') {
+                resolved = true;
+                resolve('TIMEOUT');
+              } else if (status === 'CHANNEL_ERROR') {
                 console.error(` ${name} channel subscription failed:`, status);
                 resolved = true;
                 resolve('FAILED');

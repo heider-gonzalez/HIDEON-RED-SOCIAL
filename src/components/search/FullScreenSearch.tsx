@@ -66,7 +66,7 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
 
   // Perform search when query changes
   useEffect(() => {
-    if (debouncedQuery.length >= 2) {
+    if (debouncedQuery.trim().length >= 2) {
       performSearch();
     } else {
       setSearchResults([]);
@@ -88,10 +88,11 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
   const performSearch = async () => {
     setIsSearching(true);
     try {
+      const q = debouncedQuery.trim();
       let query = supabase
         .from('profiles')
-        .select('id, username, full_name, bio, avatar_url, career, semester')
-        .or(`username.ilike.%${debouncedQuery}%,full_name.ilike.%${debouncedQuery}%,bio.ilike.%${debouncedQuery}%,career.ilike.%${debouncedQuery}%`)
+        .select('id, username, google_name, bio, avatar_url, career, semester')
+        .or(`username.ilike.%${q}%,google_name.ilike.%${q}%,bio.ilike.%${q}%,career.ilike.%${q}%`)
         .limit(20);
 
       const { data: { user } } = await supabase.auth.getUser();

@@ -6,6 +6,19 @@ export async function followUser(userId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Usuario no autenticado");
 
+    const { data: existing, error: existingError } = await supabase
+      .from('followers')
+      .select('follower_id')
+      .eq('follower_id', user.id)
+      .eq('following_id', userId)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+    if (existing) {
+      toast.success("Ya sigues a este usuario");
+      return true;
+    }
+
     const { error } = await supabase
       .from('followers')
       .insert({
