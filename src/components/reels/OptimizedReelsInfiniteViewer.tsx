@@ -58,7 +58,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
         startTimeRef.current = now;
         setStartTime(now);
       }
-      videoRef.current.play().catch(console.error);
+      videoRef.current.play().catch(() => {});
     } else if (videoRef.current && (!isActive || !isIntersecting)) {
       videoRef.current.pause();
 
@@ -140,7 +140,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   const togglePlay = useCallback(() => {
     if (videoRef.current) {
       if (videoRef.current.paused) {
-        videoRef.current.play();
+        videoRef.current.play().catch(() => {});
         const now = Date.now();
         startTimeRef.current = now;
         setStartTime(now);

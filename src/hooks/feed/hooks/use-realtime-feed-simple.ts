@@ -10,16 +10,13 @@ export function useRealtimeFeedSimple(userId?: string) {
   const queryClient = useQueryClient();
   const isSubscribedRef = useRef(false);
   const retryTimeoutRef = useRef<NodeJS.Timeout>();
-  const debug = import.meta.env.DEV;
 
   useEffect(() => {
     // Prevent multiple subscriptions from running simultaneously
     if (!userId || globalSubscriptionsActive || isSubscribedRef.current) {
-      if (debug) console.log(' Skipping realtime setup - already active or no userId');
       return;
     }
 
-    if (debug) console.log(' Setting up optimized realtime subscriptions...');
     globalSubscriptionsActive = true;
     isSubscribedRef.current = true;
     subscriptionCount++;
@@ -51,7 +48,6 @@ export function useRealtimeFeedSimple(userId?: string) {
               table: 'posts'
             },
             (payload) => {
-              if (debug) console.log(' New post detected:', payload.new?.id);
               // Debounced invalidation
               clearTimeout(retryTimeoutRef.current);
               retryTimeoutRef.current = setTimeout(() => {
@@ -67,7 +63,6 @@ export function useRealtimeFeedSimple(userId?: string) {
               table: 'posts'
             },
             (payload) => {
-              if (debug) console.log(' Post deleted:', payload.old?.id);
               clearTimeout(retryTimeoutRef.current);
               retryTimeoutRef.current = setTimeout(() => {
                 queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
@@ -86,7 +81,6 @@ export function useRealtimeFeedSimple(userId?: string) {
               table: 'reactions'
             },
             (payload) => {
-              if (debug) console.log(' Reaction change detected:', payload.new);
               const postId = (payload.new as any)?.post_id;
               // Throttled invalidation - only update every 2 seconds max
               clearTimeout(retryTimeoutRef.current);
@@ -111,7 +105,6 @@ export function useRealtimeFeedSimple(userId?: string) {
               table: 'comments'
             },
             (payload) => {
-              if (debug) console.log(' Comment change detected:', payload.new);
               const postId = (payload.new as any)?.post_id;
               // Throttled invalidation - only update every 2 seconds max
               clearTimeout(retryTimeoutRef.current);
@@ -133,9 +126,7 @@ export function useRealtimeFeedSimple(userId?: string) {
             
             channel.subscribe((status: string) => {
               if (resolved) return;
-              
-              if (debug) console.log(` ${name} subscription status:`, status);
-              
+
               if (status === 'SUBSCRIBED') {
                 resolved = true;
                 resolve('SUBSCRIBED');
@@ -149,7 +140,6 @@ export function useRealtimeFeedSimple(userId?: string) {
             // Longer timeout - 15 seconds
             setTimeout(() => {
               if (!resolved) {
-                if (debug) console.warn(` ${name} subscription timeout after 15s`);
                 resolved = true;
                 resolve('TIMEOUT');
               }
@@ -166,23 +156,18 @@ export function useRealtimeFeedSimple(userId?: string) {
         
         const commentsStatus = await subscribeWithRetry(commentsChannel, 'Comments');
 
-        if (debug) console.log(' Final subscription results:', { postsStatus, reactionsStatus, commentsStatus });
-        
         const successfulSubscriptions = [postsStatus, reactionsStatus, commentsStatus]
           .filter(status => status === 'SUBSCRIBED').length;
         
         if (successfulSubscriptions >= 1) { // Accept if at least 1 subscription works
-          if (debug) console.log(` ${successfulSubscriptions}/3 realtime subscriptions active`);
           reconnectAttempts = 0; // Reset on successful connection
         } else if (reconnectAttempts < maxReconnectAttempts) {
-          console.warn(` All realtime subscriptions failed, retrying in ${3000 * (reconnectAttempts + 1)}ms...`);
           reconnectAttempts++;
           setTimeout(() => subscribeChannels(), 3000 * reconnectAttempts);
         } else {
           console.error(' Max reconnection attempts reached - using fallback polling');
           // Fallback to periodic cache invalidation
           const fallbackInterval = setInterval(() => {
-            if (debug) console.log(' Fallback: Refreshing data...');
             queryClient.invalidateQueries({ queryKey: ["posts"] });
           }, 60000); // Every minute as fallback
           
@@ -206,8 +191,6 @@ export function useRealtimeFeedSimple(userId?: string) {
 
     // Cleanup function
     return () => {
-      if (debug) console.log(' Cleaning up realtime subscriptions...');
-      
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
         clearInterval(retryTimeoutRef.current as any);
@@ -220,8 +203,6 @@ export function useRealtimeFeedSimple(userId?: string) {
       globalSubscriptionsActive = false;
       isSubscribedRef.current = false;
       subscriptionCount--;
-      
-      if (debug) console.log(` Active subscription count: ${subscriptionCount}`);
     };
   }, [userId, queryClient]);
 

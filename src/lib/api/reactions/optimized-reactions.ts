@@ -127,6 +127,9 @@ async function toggleCommentReactionDirect(
  */
 export async function getUserPostReaction(postId: string): Promise<ReactionType | null> {
   try {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(String(postId || ''))) return null;
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 

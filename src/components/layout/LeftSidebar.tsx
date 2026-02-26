@@ -31,8 +31,6 @@ type SidebarItem = {
 
 export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebarProps) {
   useNavigation();
-  const debug = import.meta.env.DEV;
-  if (debug) console.log(' LeftSidebar - currentUserId prop:', currentUserId);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [myGroups, setMyGroups] = useState<any[]>([]);
   const [recommendedGroups, setRecommendedGroups] = useState<any[]>([]);
