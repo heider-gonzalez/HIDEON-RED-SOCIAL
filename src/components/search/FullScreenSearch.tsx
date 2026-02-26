@@ -35,6 +35,7 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const debouncedQuery = useDebounce(searchQuery, 300);
   const navigate = useNavigate();
@@ -74,6 +75,19 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
     sessionStorage.setItem('hsocial_fullscreen_search_query', searchQuery);
   }, [isOpen, searchQuery]);
 
+  // Get current user ID for validation
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUserId(session?.user?.id || null);
+    });
+    return () => subscription?.unsubscribe();
+  }, []);
+
   // Perform search when query changes
   useEffect(() => {
     if (debouncedQuery.trim().length >= 2) {
@@ -96,6 +110,8 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
   };
 
   const performSearch = async (rawQuery?: string) => {
+    if (!currentUserId) return; // Only search if user is authenticated
+
     setIsSearching(true);
     try {
       const q = String(rawQuery ?? debouncedQuery).trim();
@@ -109,9 +125,8 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
         .or(`username.ilike.%${q}%,google_name.ilike.%${q}%,bio.ilike.%${q}%,career.ilike.%${q}%`)
         .limit(20);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.id) {
-        query = query.neq('id', user.id);
+      if (currentUserId) {
+        query = query.neq('id', currentUserId);
       }
 
       const { data, error } = await query;
@@ -197,6 +212,12 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
 
   return (
     <div className="fixed inset-0 bg-background z-[100] flex flex-col">
+      {/* Hidden accessibility elements for Radix UI */}
+      <div className="sr-only" role="dialog" aria-modal="true">
+        <h2 id="search-dialog-title">Buscar en Hideon</h2>
+        <p id="search-dialog-description">Busca usuarios, ideas y proyectos</p>
+      </div>
+      
       {/* Header */}
       <div className="flex items-center gap-4 p-4 border-b">
         <Button
@@ -237,8 +258,8 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
         </div>
       </div>
 
-      {/* Content with Tabs */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Content with Tabs - Ensure minimum height and proper z-index */}
+      <div className="flex-1 overflow-y-auto min-h-[50vh] z-50">
         {searchQuery.length >= 2 ? (
           // Search Results with Tabs
           <Tabs defaultValue="users" className="w-full">
