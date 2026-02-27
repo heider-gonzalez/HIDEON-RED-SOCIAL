@@ -743,6 +743,31 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         sendIdeaPublishedAutoMessage(user.id);
       }
 
+      // Track analytics events for idea/project creation
+      if (insertedPostId) {
+        try {
+          if (selectedPostType === 'idea') {
+            await (supabase as any).rpc('track_analytics_event', {
+              event_name: 'idea_created',
+              entity_type: 'post',
+              entity_id: insertedPostId,
+              user_id: user.id,
+              metadata: {}
+            });
+          } else if (selectedPostType === 'proyecto') {
+            await (supabase as any).rpc('track_analytics_event', {
+              event_name: 'project_created',
+              entity_type: 'post',
+              entity_id: insertedPostId,
+              user_id: user.id,
+              metadata: {}
+            });
+          }
+        } catch (e) {
+          // ignore analytics errors
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
       queryClient.invalidateQueries({ queryKey: ['posts', undefined, undefined, undefined, 'infinite'] });

@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadToSupabase } from "@/lib/storage/cloudflare-r2";
 import type { ProjectFormData } from "@/types/project";
-import { trackAnalyticsEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 // Accept single File or array of Files for images/documents
 export async function createProject(data: ProjectFormData, files?: File | File[]) {
@@ -28,7 +27,7 @@ export async function createProject(data: ProjectFormData, files?: File | File[]
     }
 
     // Create post first
-    const { data: post, error: postError } = await (supabase as any)
+    const { data: post, error: postError } = await supabase
       .from('posts')
       .insert({
         user_id: user.id,
@@ -43,7 +42,7 @@ export async function createProject(data: ProjectFormData, files?: File | File[]
     if (postError) throw postError;
 
     // Create project showcase
-    const { data: project, error: projectError } = await (supabase as any)
+    const { data: project, error: projectError } = await supabase
       .from('project_showcases')
       .insert({
         post_id: post.id,
@@ -67,7 +66,7 @@ export async function createProject(data: ProjectFormData, files?: File | File[]
     if (projectError) throw projectError;
 
     // Add creator as first participant
-    const { error: participantError } = await (supabase as any)
+    const { error: participantError } = await supabase
       .from('idea_participants')
       .insert({
         post_id: post.id,
@@ -78,21 +77,6 @@ export async function createProject(data: ProjectFormData, files?: File | File[]
     if (participantError) {
       console.error('Error adding creator as participant:', participantError);
       // Don't throw, just log - the project is already created
-    }
-
-    // Track analytics event
-    if (post?.id) {
-      trackAnalyticsEvent({
-        eventType: ANALYTICS_EVENTS.PROJECT_CREATED,
-        entityType: "post",
-        entityId: post.id,
-        metadata: {
-          post_type: "project_showcase",
-          title: data.title,
-          category: data.category,
-          technologies: data.technologies,
-        },
-      });
     }
 
     return { post, project };

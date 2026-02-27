@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Post } from "@/types/post";
-import { trackAnalyticsEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 type CreateIdeaParams = {
   postData: Record<string, unknown>;
@@ -69,19 +68,6 @@ export function useCreateIdea() {
     },
     onSuccess: (createdPost, _vars, ctx) => {
       if (!ctx) return;
-
-      // Track analytics event
-      if (createdPost && 'id' in createdPost && createdPost.id) {
-        trackAnalyticsEvent({
-          eventType: ANALYTICS_EVENTS.IDEA_CREATED,
-          entityType: "post",
-          entityId: createdPost.id,
-          metadata: {
-            post_type: "idea",
-            title: (createdPost as any)?.content?.slice(0, 100),
-          },
-        });
-      }
 
       const replaceTemp = (list: Post[]) =>
         list.map((p) => (p?.id === ctx.tempId ? (createdPost as Post) : p));

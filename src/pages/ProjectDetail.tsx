@@ -32,7 +32,6 @@ import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { MediaCarousel } from "@/components/post/MediaCarousel";
 import { useToast } from "@/hooks/use-toast";
-import { trackAnalyticsEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 export default function ProjectDetail() {
   const { postId } = useParams();
@@ -142,14 +141,14 @@ export default function ProjectDetail() {
       }
 
       try {
-        await trackAnalyticsEvent({
-          eventType: ANALYTICS_EVENTS.APPLICATION_SENT,
-          entityType: "post",
-          entityId: postId,
+        await (supabase as any).rpc('track_analytics_event', {
+          event_name: 'application_sent',
+          entity_type: 'project_application',
+          entity_id: insertedApplication?.id || postId,
+          user_id: user.id,
           metadata: {
-            project_title: project?.post_title || 'Unknown',
-            applicant_message: applicationMessage.slice(0, 200),
-          },
+            project_id: postId
+          }
         });
       } catch {
         // ignore analytics errors
