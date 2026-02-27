@@ -12,11 +12,17 @@ import type { Post as PostType } from "@/types/post";
 import { JoinIdeaButton } from "@/components/post/actions/join-idea/JoinIdeaButton";
 import { toast } from "@/hooks/use-toast";
 
-export function IdeaGrid({ searchQuery }: { searchQuery: string }) {
+export function IdeaGrid({
+  searchQuery,
+  institutionName,
+}: {
+  searchQuery: string;
+  institutionName?: string;
+}) {
   const [selectedPost, setSelectedPost] = useState<PostType | null>(null);
   const [showPostModal, setShowPostModal] = useState(false);
 
-  const { data: ideas, isLoading } = useIdeas({ searchQuery, limit: 20 });
+  const { data: ideas, isLoading } = useIdeas({ searchQuery, institutionName, limit: 20 });
 
   const postIds = ideas?.map(idea => idea.id) || [];
   const { data: participantCounts } = useIdeaParticipantsCount(postIds);

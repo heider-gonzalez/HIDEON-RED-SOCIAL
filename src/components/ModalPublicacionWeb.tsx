@@ -21,6 +21,8 @@ import { uploadAudioFile, getAudioDuration } from "@/lib/api/posts/audio-storage
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { FirstPostBadge } from '@/components/badges/FirstPostBadge';
+import { InstitutionCombobox } from '@/components/filters/InstitutionCombobox';
+import { institutionsBarranquilla } from '@/data/institutions-barranquilla';
 
 export type PostType = 'idea' | 'proyecto' | 'encuesta' | 'evento' | 'empleo' | 'servicios' | null;
 
@@ -121,6 +123,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const privacyMenuRef = useRef<HTMLDivElement>(null);
   const [isPublishingInternal, setIsPublishingInternal] = useState(false);
 
+  const [institutionName, setInstitutionName] = useState('');
+  const [otherInstitutionName, setOtherInstitutionName] = useState('');
+
   const [ideaTitle, setIdeaTitle] = useState('');
   const [ideaDescription, setIdeaDescription] = useState('');
   const [projectTitle, setProjectTitle] = useState('');
@@ -204,6 +209,40 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       setShowAudioEditor(false);
     }
   }, [initialContent, initialMedia, isVisible]);
+
+  useEffect(() => {
+    const loadInstitution = async () => {
+      if (!isVisible) return;
+      if (institutionName.trim()) return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return;
+
+        const { data } = await supabase
+          .from('profiles')
+          .select('institution_name')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        const inst = (data as any)?.institution_name;
+        if (typeof inst === 'string' && inst.trim()) {
+          const normalized = inst.trim();
+          const isInList = institutionsBarranquilla.some((o) => o.name === normalized);
+          if (isInList) {
+            setInstitutionName(normalized);
+            setOtherInstitutionName('');
+          } else {
+            setInstitutionName('Otra (No listada)');
+            setOtherInstitutionName(normalized);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    void loadInstitution();
+  }, [isVisible, institutionName]);
 
   const handleMusicTrackSelect = (track: MusicTrack) => {
     setSelectedAudioFile(null);
@@ -422,6 +461,21 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           variant: 'destructive'
         });
         return;
+      }
+
+      const finalInstitutionName = (institutionName === 'Otra (No listada)'
+        ? otherInstitutionName.trim()
+        : institutionName.trim());
+
+      if ((selectedPostType === 'idea' || selectedPostType === 'proyecto') && finalInstitutionName) {
+        try {
+          await supabase
+            .from('profiles')
+            .update({ institution_name: finalInstitutionName })
+            .eq('id', user.id);
+        } catch {
+          // ignore
+        }
       }
 
       const mediaUrls: string[] = [];
@@ -932,6 +986,21 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 </SelectContent>
               </Select>
             </div>
+
+            {(selectedPostType === 'idea' || selectedPostType === 'proyecto') && (
+              <div className="min-w-[220px] max-w-full">
+                <InstitutionCombobox
+                  value={institutionName}
+                  onChange={(val) => {
+                    setInstitutionName(val);
+                    if (val !== 'Otra (No listada)') setOtherInstitutionName('');
+                  }}
+                  allLabel="Selecciona institución"
+                  includeAllOption={false}
+                  className="h-9 rounded-full"
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -963,6 +1032,20 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
         {/* Content */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4">
+          {(selectedPostType === 'idea' || selectedPostType === 'proyecto') && institutionName === 'Otra (No listada)' && (
+            <div className="mb-4 space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Escribe el nombre de tu institución
+              </label>
+              <input
+                value={otherInstitutionName}
+                onChange={(e) => setOtherInstitutionName(e.target.value)}
+                placeholder="Ej: Universidad Nacional"
+                className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+              />
+            </div>
+          )}
+
           {selectedPostType === 'idea' && (
             <div className="space-y-3 mb-4">
               <input

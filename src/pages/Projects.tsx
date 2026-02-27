@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
+import { InstitutionCombobox } from '@/components/filters/InstitutionCombobox';
 
 export default function Projects() {
   const [showPostModal, setShowPostModal] = useState(false);
@@ -22,6 +23,7 @@ export default function Projects() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [institutionName, setInstitutionName] = useState<string>('');
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deleteConfirmProject, setDeleteConfirmProject] = useState<string | null>(null);
 
@@ -74,7 +76,7 @@ export default function Projects() {
 
   // Query para obtener SOLO publicaciones tipo proyecto
   const { data: projectPosts = [], isLoading } = useQuery({
-    queryKey: ['project-posts', selectedStatus],
+    queryKey: ['project-posts', selectedStatus, institutionName],
     queryFn: async () => {
       console.log('🔍 Debug: Starting projects query...');
       
@@ -85,7 +87,8 @@ export default function Projects() {
           profiles!posts_user_id_fkey (
             id,
             username,
-            avatar_url
+            avatar_url,
+            institution_name
           )
         `)
         .in('post_type', ['project', 'proyecto'])
@@ -93,6 +96,10 @@ export default function Projects() {
 
       if (selectedStatus !== 'all') {
         projectsQuery = projectsQuery.eq('project_status', selectedStatus);
+      }
+
+      if (institutionName) {
+        projectsQuery = projectsQuery.eq('profiles.institution_name', institutionName);
       }
 
       const result = await projectsQuery;
@@ -350,6 +357,11 @@ export default function Projects() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 py-3 rounded-lg border-2 focus:border-primary bg-background text-foreground"
                 />
+              </div>
+
+              {/* Institution Filter */}
+              <div className="md:w-80">
+                <InstitutionCombobox value={institutionName} onChange={setInstitutionName} />
               </div>
               
               {/* Category Filter */}

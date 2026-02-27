@@ -7,6 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Eye, 
   Heart, 
@@ -23,10 +31,16 @@ import { useProjectViews, useProjectComments } from "@/hooks/projects";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { MediaCarousel } from "@/components/post/MediaCarousel";
+import { useToast } from "@/hooks/use-toast";
+import { trackAnalyticsEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 export default function ProjectDetail() {
   const { postId } = useParams();
   const [commentContent, setCommentContent] = useState("");
+  const { toast } = useToast();
+  const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
+  const [applicationMessage, setApplicationMessage] = useState("");
+  const [isSubmittingApplication, setIsSubmittingApplication] = useState(false);
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['project-detail', postId],
@@ -69,6 +83,93 @@ export default function ProjectDetail() {
       });
     } catch {
       // ignore
+    }
+  };
+
+  const handleSubmitApplication = async () => {
+    if (!postId) return;
+    const ownerId = (project as any)?.user_id;
+    if (!ownerId) return;
+
+    setIsSubmittingApplication(true);
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!session) {
+        toast({
+          title: "Error",
+          description: "Debes iniciar sesión para postularte",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error: insertError } = await (supabase as any)
+        .from('project_applications')
+        .insert({
+          post_id: postId,
+          applicant_id: session.user.id,
+          message: applicationMessage.trim() || null,
+        });
+
+      if (insertError) {
+        const msg = String((insertError as any)?.message || '');
+        if (msg.toLowerCase().includes('duplicate') || msg.toLowerCase().includes('unique')) {
+          toast({
+            title: "Ya postulaste",
+            description: "Ya enviaste una postulación a este proyecto.",
+          });
+          setIsApplyDialogOpen(false);
+          return;
+        }
+        throw insertError;
+      }
+
+      if (ownerId !== session.user.id) {
+        try {
+          await (supabase as any)
+            .from('notifications')
+            .insert({
+              type: 'project_application',
+              sender_id: session.user.id,
+              receiver_id: ownerId,
+              post_id: postId,
+              message: 'quiere unirse a tu proyecto 🤝',
+            });
+        } catch {
+          // ignore
+        }
+      }
+
+      try {
+        await trackAnalyticsEvent({
+          eventType: ANALYTICS_EVENTS.APPLICATION_SENT,
+          entityType: "post",
+          entityId: postId,
+          metadata: {
+            project_title: project?.post_title || 'Unknown',
+            applicant_message: applicationMessage.slice(0, 200),
+          },
+        });
+      } catch {
+        // ignore analytics errors
+      }
+
+      toast({
+        title: "Postulación enviada",
+        description: "El creador del proyecto ha sido notificado.",
+      });
+      setIsApplyDialogOpen(false);
+      setApplicationMessage("");
+    } catch (e) {
+      console.error('Error sending project application:', e);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar tu postulación. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingApplication(false);
     }
   };
 
@@ -250,12 +351,54 @@ export default function ProjectDetail() {
                 </a>
               </Button>
             )}
-            <Button variant="outline" className="w-full justify-start">
-              <Users className="h-4 w-4 mr-2" />
-              Buscando Colaboradores
+            <Button
+              variant="default"
+              className="w-full"
+              onClick={() => setIsApplyDialogOpen(true)}
+            >
+              Postularme
             </Button>
           </div>
         </Card>
+
+        <Dialog open={isApplyDialogOpen} onOpenChange={setIsApplyDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Postularme al proyecto</DialogTitle>
+              <DialogDescription>
+                Escribe un mensaje corto para presentarte.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-2">
+              <Textarea
+                placeholder="Ej: Hola, soy frontend y tengo experiencia con React. Me interesa aportar en..."
+                value={applicationMessage}
+                onChange={(e) => setApplicationMessage(e.target.value)}
+                className="min-h-[120px]"
+                disabled={isSubmittingApplication}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsApplyDialogOpen(false)}
+                disabled={isSubmittingApplication}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmitApplication}
+                disabled={isSubmittingApplication}
+              >
+                {isSubmittingApplication ? "Enviando..." : "Enviar postulación"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Separator />
 

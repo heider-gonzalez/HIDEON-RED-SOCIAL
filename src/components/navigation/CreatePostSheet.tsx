@@ -76,6 +76,26 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
 
+  const setTabWithTemplate = (tab: TabType) => {
+    setActiveTab(tab);
+
+    if (selectedFile) return;
+    if (content.trim()) return;
+
+    if (tab === "idea") {
+      setContent(
+        "Título: \n\n¿De qué trata?: \n\n¿A quién buscas (roles/skills)?: \n\nMeta en 2 semanas: \n\nContacto (WhatsApp/IG/Email): "
+      );
+      return;
+    }
+
+    if (tab === "project") {
+      setContent(
+        "Nombre del proyecto: \n\nProblema que resuelve: \n\nStack/Tecnologías: \n\nEstado (idea / en progreso / terminado): \n\nRoles que busco: \n\nLink (repo/demo): \n\nContacto: "
+      );
+    }
+  };
+
   React.useEffect(() => {
     if (user?.id) {
       supabase
@@ -327,7 +347,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
                   ? "border-foreground font-semibold" 
                   : "border-transparent"
               }`}
-              onClick={() => setActiveTab("post")}
+              onClick={() => setTabWithTemplate("post")}
             >
               <FileText className="h-4 w-4 mr-2" />
               Publicación
@@ -339,7 +359,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
                   ? "border-foreground font-semibold" 
                   : "border-transparent"
               }`}
-              onClick={() => setActiveTab("idea")}
+              onClick={() => setTabWithTemplate("idea")}
             >
               <Lightbulb className="h-4 w-4 mr-2" />
               Idea
@@ -351,7 +371,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
                   ? "border-foreground font-semibold" 
                   : "border-transparent"
               }`}
-              onClick={() => setActiveTab("project")}
+              onClick={() => setTabWithTemplate("project")}
             >
               <FolderKanban className="h-4 w-4 mr-2" />
               Proyecto

@@ -6,7 +6,13 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export function ProjectGrid({ searchQuery }: { searchQuery: string }) {
+export function ProjectGrid({
+  searchQuery,
+  institutionName,
+}: {
+  searchQuery: string;
+  institutionName?: string;
+}) {
   const navigate = useNavigate();
   const [brokenMedia, setBrokenMedia] = useState<Record<string, boolean>>({});
   const [loadedMedia, setLoadedMedia] = useState<Record<string, boolean>>({});
@@ -23,7 +29,7 @@ export function ProjectGrid({ searchQuery }: { searchQuery: string }) {
   };
   
   const { data: projects, isLoading } = useQuery<any[]>({
-    queryKey: ['explore-projects', searchQuery],
+    queryKey: ['explore-projects', searchQuery, institutionName || ''],
     queryFn: async () => {
       let query = supabase
         .from('posts')
@@ -37,12 +43,16 @@ export function ProjectGrid({ searchQuery }: { searchQuery: string }) {
           media_url,
           media_type,
           media_urls,
-          profiles:profiles(username, avatar_url)
+          profiles:profiles(username, avatar_url, institution_name)
         `)
         .in('post_type', ['project', 'proyecto'])
         .eq('visibility', 'public')
         .order('created_at', { ascending: false })
         .limit(20);
+
+      if (institutionName) {
+        query = query.eq('profiles.institution_name', institutionName);
+      }
       
       if (normalizedQuery) {
         const q = normalizedQuery.replace(/,/g, ' ');

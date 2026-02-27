@@ -48,6 +48,11 @@ const CompanyDetail = React.lazy(() => import("@/pages/CompanyDetail"));
 const TermsOfService = React.lazy(() => import("@/pages/TermsOfService"));
 const PrivacyPolicy = React.lazy(() => import("@/pages/PrivacyPolicy"));
 const Settings = React.lazy(() => import("@/pages/settings/Settings"));
+
+// MVP Pages lazy loaded
+const MVPLandingPage = React.lazy(() => import("@/features/marketing/pages/MVPLandingPage"));
+const MVPDashboardPage = React.lazy(() => import("@/features/projects/pages/MVPDashboardPage"));
+const MVPPitchesPage = React.lazy(() => import("@/features/pitches/pages/MVPPitchesPage"));
 const AccountSettings = React.lazy(() => import("@/pages/settings/AccountSettings"));
 const PersonalizationSettings = React.lazy(() => import("@/pages/settings/PersonalizationSettings"));
 const PrivacySettings = React.lazy(() => import("@/pages/settings/PrivacySettings"));
@@ -476,6 +481,23 @@ const App = () => {
                       </AuthGuard>
                     } />
                     
+                    {/* MVP Routes - New Professional UI */}
+                    <Route path="/mvp" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <MVPLandingPage />
+                      </Suspense>
+                    } />
+                    <Route path="/mvp/dashboard" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <MVPDashboardPage />
+                      </Suspense>
+                    } />
+                    <Route path="/mvp/pitches" element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <MVPPitchesPage />
+                      </Suspense>
+                    } />
+
                     {/* 404 fallback */}
                     <Route path="*" element={
                       <Suspense fallback={<LoadingSpinner />}>

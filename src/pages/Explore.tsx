@@ -7,25 +7,30 @@ import { IdeaGrid } from "@/components/explore/IdeaGrid";
 import { ProjectGrid } from "@/components/explore/ProjectGrid";
 import { GroupGrid } from "@/components/explore/GroupGrid";
 import { UserGrid } from "@/components/explore/UserGrid";
+import { InstitutionCombobox } from "@/components/filters/InstitutionCombobox";
 
 export default function Explore() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ideas");
+  const [institutionName, setInstitutionName] = useState("");
 
   return (
     <Layout hideLeftSidebar hideRightSidebar>
       <div className="min-h-screen bg-background">
         {/* Sticky search bar */}
         <div className="sticky top-14 z-40 bg-background border-b border-border px-3 sm:px-4 py-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Buscar en Hideon…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-11 rounded-lg bg-muted border-none text-foreground placeholder:text-muted-foreground"
-            />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Buscar en Hideon…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-11 rounded-lg bg-muted border-none text-foreground placeholder:text-muted-foreground"
+              />
+            </div>
+            <InstitutionCombobox value={institutionName} onChange={setInstitutionName} />
           </div>
         </div>
 
@@ -63,11 +68,11 @@ export default function Explore() {
           </TabsList>
 
           <TabsContent value="ideas" className="px-3 py-4 sm:p-4 mt-0">
-            <IdeaGrid searchQuery={searchQuery} />
+            <IdeaGrid searchQuery={searchQuery} institutionName={institutionName} />
           </TabsContent>
 
           <TabsContent value="proyectos" className="px-3 py-4 sm:p-4 mt-0">
-            <ProjectGrid searchQuery={searchQuery} />
+            <ProjectGrid searchQuery={searchQuery} institutionName={institutionName} />
           </TabsContent>
 
           <TabsContent value="grupos" className="px-3 py-4 sm:p-4 mt-0">

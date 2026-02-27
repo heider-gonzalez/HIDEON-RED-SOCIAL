@@ -3,12 +3,46 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lightbulb, Plus, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { IdeaGrid } from "@/components/explore/IdeaGrid";
+import ModalPublicacionWeb from "@/components/ModalPublicacionWeb";
+import { useUser } from "@/hooks/use-user";
+import { supabase } from "@/integrations/supabase/client";
+import { InstitutionCombobox } from "@/components/filters/InstitutionCombobox";
 
 export default function Ideas() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [institutionName, setInstitutionName] = useState("");
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const { user } = useUser();
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAvatar = async () => {
+      if (!showPublishModal || !user?.id) return;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      if (!isMounted) return;
+      if (error) {
+        setProfileAvatarUrl(null);
+        return;
+      }
+      setProfileAvatarUrl(data?.avatar_url ?? null);
+    };
+
+    void loadAvatar();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [showPublishModal, user?.id]);
 
   return (
     <Layout>
@@ -24,7 +58,7 @@ export default function Ideas() {
               Descubre ideas que buscan colaboradores
             </p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => setShowPublishModal(true)}>
             <Plus className="h-5 w-5" />
             Publicar Idea
           </Button>
@@ -41,6 +75,9 @@ export default function Ideas() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 h-11"
               />
+            </div>
+            <div className="sm:w-[320px]">
+              <InstitutionCombobox value={institutionName} onChange={setInstitutionName} />
             </div>
             <Button variant="outline" className="gap-2 h-11">
               <Filter className="h-5 w-5" />
@@ -67,9 +104,16 @@ export default function Ideas() {
 
         {/* Empty State */}
         <Card className="p-6">
-          <IdeaGrid searchQuery={searchTerm} />
+          <IdeaGrid searchQuery={searchTerm} institutionName={institutionName} />
         </Card>
       </div>
+
+      <ModalPublicacionWeb
+        isVisible={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        initialPostType={"idea"}
+        userAvatar={profileAvatarUrl || (user?.user_metadata as any)?.avatar_url}
+      />
     </Layout>
   );
 }
