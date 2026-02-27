@@ -2,17 +2,23 @@ import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, Lightbulb, FolderOpen, Users } from "lucide-react";
+import { Search, Lightbulb, FolderOpen, Users, Plus } from "lucide-react";
 import { IdeaGrid } from "@/components/explore/IdeaGrid";
 import { ProjectGrid } from "@/components/explore/ProjectGrid";
 import { GroupGrid } from "@/components/explore/GroupGrid";
 import { UserGrid } from "@/components/explore/UserGrid";
 import { InstitutionCombobox } from "@/components/filters/InstitutionCombobox";
+import { Button } from "@/components/ui/button";
+import ModalPublicacionWeb from "@/components/ModalPublicacionWeb";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Explore() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ideas");
   const [institutionName, setInstitutionName] = useState("");
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [postType, setPostType] = useState<'idea' | 'proyecto'>('idea');
+  const { user } = useAuth();
 
   return (
     <Layout hideLeftSidebar hideRightSidebar>
@@ -83,6 +89,29 @@ export default function Explore() {
             <UserGrid searchQuery={searchQuery} />
           </TabsContent>
         </Tabs>
+        
+        {/* Floating Action Button for authenticated users */}
+        {user && (
+          <div className="fixed bottom-6 right-6 z-50">
+            <Button
+              onClick={() => setShowPostModal(true)}
+              size="lg"
+              className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
+            >
+              <Plus className="h-6 w-6" />
+            </Button>
+          </div>
+        )}
+        
+        {/* Post Modal */}
+        {showPostModal && (
+          <ModalPublicacionWeb
+            isVisible={showPostModal}
+            isOpen={showPostModal}
+            onClose={() => setShowPostModal(false)}
+            initialPostType={postType}
+          />
+        )}
       </div>
     </Layout>
   );

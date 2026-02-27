@@ -1,16 +1,18 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { Image, Video, PlusSquare, Sparkles } from "lucide-react";
+import { Lightbulb, Rocket, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import ModalPublicacionWeb from "@/components/ModalPublicacionWeb";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 export function QuickPostBox({ initialContent = '', initialMedia = null, initialMediaType = null }: { initialContent?: string; initialMedia?: File | null; initialMediaType?: string | null } = {}) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<{ avatar_url: string | null; username: string } | null>(null);
   const [showPostModal, setShowPostModal] = useState(false);
+  const [postType, setPostType] = useState<'idea' | 'proyecto' | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
       if (data) {
         setProfile(data);
         // Check if user is new (less than 24 hours old)
-        const createdAt = new Date(data.created_at);
+        const createdAt = new Date((data as any).created_at);
         const now = new Date();
         const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
         setIsNewUser(hoursDiff < 24);
@@ -71,9 +73,7 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
                 onClick={() => setShowPostModal(true)}
                 className="flex-1 px-4 py-2.5 text-left rounded-full border border-border hover:bg-muted/50 transition-colors text-muted-foreground text-sm"
               >
-                {isNewUser 
-                  ? `¿Qué quieres compartir hoy, ${profile.username}?` 
-                  : `¿Qué quieres compartir hoy, ${profile.username}?`}
+                ¿Qué idea tienes en mente?
               </button>
             </TooltipTrigger>
             {isNewUser && (
@@ -85,30 +85,24 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
           </Tooltip>
 
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => setShowPostModal(true)}
-              className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center"
-              aria-label="Video"
-              title="Video"
+            <Button
+              onClick={() => { setPostType('idea'); setShowPostModal(true); }}
+              size="sm"
+              variant="ghost"
+              className="h-8 px-3 rounded-full text-xs"
             >
-              <Video className="h-5 w-5 text-muted-foreground" />
-            </button>
-            <button
-              onClick={() => setShowPostModal(true)}
-              className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center"
-              aria-label="Foto"
-              title="Foto"
+              <Lightbulb className="h-3 w-3 mr-1" />
+              Idea
+            </Button>
+            <Button
+              onClick={() => { setPostType('proyecto'); setShowPostModal(true); }}
+              size="sm"
+              variant="ghost"
+              className="h-8 px-3 rounded-full text-xs"
             >
-              <Image className="h-5 w-5 text-muted-foreground" />
-            </button>
-            <button
-              onClick={() => setShowPostModal(true)}
-              className="h-10 w-10 rounded-full hover:bg-muted/50 transition-colors flex items-center justify-center"
-              aria-label="Más"
-              title="Más"
-            >
-              <PlusSquare className="h-5 w-5 text-primary" />
-            </button>
+              <Rocket className="h-3 w-3 mr-1" />
+              Proyecto
+            </Button>
           </div>
           </div>
         </Card>
@@ -122,6 +116,7 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
             initialContent={initialContent}
             initialMedia={initialMedia}
             initialMediaType={initialMediaType}
+            initialPostType={postType || undefined}
           />
         )}
       </div>

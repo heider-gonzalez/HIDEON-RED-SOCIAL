@@ -16,8 +16,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useServiceWorker } from "@/hooks/use-service-worker";
 import { useNotificationQueue } from "@/hooks/use-notification-queue";
 import { useNotificationCleanup } from "@/hooks/use-notification-cleanup";
+import { useSessionCleanup } from "@/hooks/use-session-cleanup";
 import { FullscreenVideoProvider } from "@/components/video/FullscreenVideoContext";
 import { FullscreenVideoRoot } from "@/components/video/FullscreenVideoRoot";
+import { PerformanceOptimizer } from "@/components/performance/PerformanceOptimizer";
 
 // Critical pages loaded immediately
 import Index from "./pages/Index";
@@ -183,19 +185,23 @@ const App = () => {
     initializePortalContainer();
   }, []);
 
+  // Initialize session cleanup
+  const { triggerCleanup } = useSessionCleanup();
+
   return (
     <ErrorBoundary>
       <HelmetProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
-            <Toaster />
-            <BrowserRouter>
-              <AuthProvider>
-                <FullscreenVideoProvider>
-                  <RecoveryTokenHandler />
-                  <RealtimeNotificationsRoot />
-                  <ServiceWorkerRegistration />
-                  <FullscreenVideoRoot />
+            <PerformanceOptimizer>
+              <Toaster />
+              <BrowserRouter>
+                <AuthProvider>
+                  <FullscreenVideoProvider>
+                    <RecoveryTokenHandler />
+                    <RealtimeNotificationsRoot />
+                    <ServiceWorkerRegistration />
+                    <FullscreenVideoRoot />
                   <Routes>
                     {/* Critical pages - no lazy loading */}
                     <Route path="/auth" element={<Auth />} />
@@ -486,10 +492,11 @@ const App = () => {
                 </FullscreenVideoProvider>
               </AuthProvider>
             </BrowserRouter>
-          </ThemeProvider>
-        </QueryClientProvider>
-      </HelmetProvider>
-    </ErrorBoundary>
+          </PerformanceOptimizer>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
+  </ErrorBoundary>
   );
 };
 

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar, Music, Edit } from 'lucide-react';
+import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar, Music, Edit, FileText, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { AudioPlayer } from '@/components/media/AudioPlayer';
@@ -23,6 +23,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { FirstPostBadge } from '@/components/badges/FirstPostBadge';
 import { InstitutionCombobox } from '@/components/filters/InstitutionCombobox';
 import { institutionsBarranquilla } from '@/data/institutions-barranquilla';
+import { ideaTemplates, projectTemplates, getTemplatesByCategory, type Template } from '@/data/templates';
+import { useAutosave, type AutosaveData } from '@/hooks/use-autosave';
+import { useFormValidation, type ValidationResult } from '@/hooks/use-form-validation';
 
 export type PostType = 'idea' | 'proyecto' | 'encuesta' | 'evento' | 'empleo' | 'servicios' | null;
 
@@ -125,6 +128,14 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
   const [institutionName, setInstitutionName] = useState('');
   const [otherInstitutionName, setOtherInstitutionName] = useState('');
+  
+  // Template state
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  
+  // Autosave state
+  const [showRestoreDraft, setShowRestoreDraft] = useState(false);
+  const [autosaveData, setAutosaveData] = useState<AutosaveData | null>(null);
 
   const [ideaTitle, setIdeaTitle] = useState('');
   const [ideaDescription, setIdeaDescription] = useState('');
@@ -135,32 +146,11 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [projectObjectives, setProjectObjectives] = useState('');
   const [projectTeamMembers, setProjectTeamMembers] = useState<string[]>([]);
   const [projectGithubUrl, setProjectGithubUrl] = useState('');
-  const [teamMemberInput, setTeamMemberInput] = useState('');
   const [projectDemoUrl, setProjectDemoUrl] = useState('');
-
-  // Populate form fields when editing a project
-  useEffect(() => {
-    if (editingProject) {
-      setProjectTitle(editingProject.title || '');
-      setProjectDescription(editingProject.description || '');
-      setProjectStatus(
-        editingProject.status === 'development' ? 'in_progress' : 
-        editingProject.status === 'completed' ? 'completed' : 'idea'
-      );
-      setProjectTechnologies(editingProject.technologies || []);
-      setProjectObjectives(editingProject.objectives || '');
-      setProjectTeamMembers(editingProject.team_members || []);
-      setProjectGithubUrl(editingProject.github_url || '');
-      setProjectDemoUrl(editingProject.additional_links?.[0] || '');
-      setContent(editingProject.description || '');
-      setSelectedPostType('proyecto');
-    }
-  }, [editingProject]);
   const [techInput, setTechInput] = useState('');
-
+  const [teamMemberInput, setTeamMemberInput] = useState('');
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
-
   const [eventTitle, setEventTitle] = useState('');
   const [eventDescription, setEventDescription] = useState('');
   const [eventStartDate, setEventStartDate] = useState('');
@@ -272,7 +262,227 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     });
   };
 
-  // 🎵 Audio file processing function
+  // Template handlers
+  const handleTemplateSelect = (template: Template) => {
+    setSelectedTemplate(template);
+    setShowTemplateSelector(false);
+    
+    // Apply template to form fields
+    if (selectedPostType === 'idea') {
+      setIdeaTitle(template.fields.title);
+      setIdeaDescription(template.fields.content);
+    } else if (selectedPostType === 'proyecto') {
+      setProjectTitle(template.fields.title);
+      setProjectDescription(template.fields.content);
+    }
+  };
+
+  const handleClearTemplate = () => {
+    setSelectedTemplate(null);
+    if (selectedPostType === 'idea') {
+      setIdeaTitle('');
+      setIdeaDescription('');
+    } else if (selectedPostType === 'proyecto') {
+      setProjectTitle('');
+      setProjectDescription('');
+    }
+  };
+
+  const getAvailableTemplates = () => {
+    if (selectedPostType === 'idea') return ideaTemplates;
+    if (selectedPostType === 'proyecto') return projectTemplates;
+    return [];
+  };
+
+  // Autosave handlers
+  const handleRestoreDraft = () => {
+    if (!autosaveData) return;
+    
+    // Restore all fields from autosave data
+    if (autosaveData.content) setContent(autosaveData.content);
+    if (autosaveData.ideaTitle) setIdeaTitle(autosaveData.ideaTitle);
+    if (autosaveData.ideaDescription) setIdeaDescription(autosaveData.ideaDescription);
+    if (autosaveData.projectTitle) setProjectTitle(autosaveData.projectTitle);
+    if (autosaveData.projectDescription) setProjectDescription(autosaveData.projectDescription);
+    if (autosaveData.projectStatus) setProjectStatus(autosaveData.projectStatus);
+    if (autosaveData.projectTechnologies) setProjectTechnologies(autosaveData.projectTechnologies);
+    if (autosaveData.projectObjectives) setProjectObjectives(autosaveData.projectObjectives);
+    if (autosaveData.projectTeamMembers) setProjectTeamMembers(autosaveData.projectTeamMembers);
+    if (autosaveData.projectGithubUrl) setProjectGithubUrl(autosaveData.projectGithubUrl);
+    if (autosaveData.projectDemoUrl) setProjectDemoUrl(autosaveData.projectDemoUrl);
+    if (autosaveData.pollQuestion) setPollQuestion(autosaveData.pollQuestion);
+    if (autosaveData.pollOptions) setPollOptions(autosaveData.pollOptions);
+    if (autosaveData.eventTitle) setEventTitle(autosaveData.eventTitle);
+    if (autosaveData.eventDescription) setEventDescription(autosaveData.eventDescription);
+    if (autosaveData.eventStartDate) setEventStartDate(autosaveData.eventStartDate);
+    if (autosaveData.eventEndDate) setEventEndDate(autosaveData.eventEndDate);
+    if (autosaveData.eventLocationType) setEventLocationType(autosaveData.eventLocationType);
+    if (autosaveData.eventLocation) setEventLocation(autosaveData.eventLocation);
+    if (autosaveData.eventMeetingLink) setEventMeetingLink(autosaveData.eventMeetingLink);
+    if (autosaveData.eventCategory) setEventCategory(autosaveData.eventCategory as 'conference' | 'seminar' | 'workshop' | 'hackathon' | 'webinar' | 'networking' | 'career_fair');
+    if (autosaveData.eventMaxAttendees) setEventMaxAttendees(autosaveData.eventMaxAttendees);
+    if (autosaveData.serviceCategory) setServiceCategory(autosaveData.serviceCategory);
+    if (autosaveData.institutionName) setInstitutionName(autosaveData.institutionName);
+    if (autosaveData.otherInstitutionName) setOtherInstitutionName(autosaveData.otherInstitutionName);
+    
+    // Restore template if available
+    if (autosaveData.selectedTemplate) {
+      const template = [...ideaTemplates, ...projectTemplates].find(
+        t => t.id === autosaveData.selectedTemplate?.id
+      );
+      if (template) setSelectedTemplate(template);
+    }
+    
+    setShowRestoreDraft(false);
+    toast({
+      title: 'Borrador restaurado',
+      description: 'Tu contenido ha sido recuperado',
+    });
+  };
+
+  const handleClearDraft = () => {
+    // Clear all form fields
+    setContent('');
+    setIdeaTitle('');
+    setIdeaDescription('');
+    setProjectTitle('');
+    setProjectDescription('');
+    setProjectStatus('in_progress');
+    setProjectTechnologies([]);
+    setProjectObjectives('');
+    setProjectTeamMembers([]);
+    setProjectGithubUrl('');
+    setProjectDemoUrl('');
+    setPollQuestion('');
+    setPollOptions(['', '']);
+    setEventTitle('');
+    setEventDescription('');
+    setEventStartDate('');
+    setEventEndDate('');
+    setEventLocationType('presencial');
+    setEventLocation('');
+    setEventMeetingLink('');
+    setEventCategory('conference');
+    setEventMaxAttendees(100);
+    setServiceCategory('');
+    setInstitutionName('');
+    setOtherInstitutionName('');
+    setSelectedTemplate(null);
+    
+    setShowRestoreDraft(false);
+    toast({
+      title: 'Borrador eliminado',
+      description: 'El contenido guardado ha sido eliminado',
+    });
+  };
+
+  // Get current form data for autosave
+  const getCurrentFormData = (): Partial<AutosaveData> => {
+    return {
+      content,
+      ideaTitle,
+      ideaDescription,
+      projectTitle,
+      projectDescription,
+      projectStatus,
+      projectTechnologies,
+      projectObjectives,
+      projectTeamMembers,
+      projectGithubUrl,
+      projectDemoUrl,
+      pollQuestion,
+      pollOptions,
+      eventTitle,
+      eventDescription,
+      eventStartDate,
+      eventEndDate,
+      eventLocationType,
+      eventLocation,
+      eventMeetingLink,
+      eventCategory,
+      eventMaxAttendees,
+      serviceCategory,
+      institutionName,
+      otherInstitutionName,
+      selectedTemplate: selectedTemplate ? {
+        id: selectedTemplate.id,
+        name: selectedTemplate.name,
+        category: selectedTemplate.category,
+      } : undefined,
+    };
+  };
+
+  // Form validation
+  const formData = getCurrentFormData();
+  const validation = useFormValidation(selectedPostType, formData);
+
+  // Validation status helper
+  const getFieldValidationStatus = (fieldName: string) => {
+    return validation.fieldStatus[fieldName] || 'empty';
+  };
+
+  const getFieldErrors = (fieldName: string) => {
+    return validation.fieldErrors[fieldName] || [];
+  };
+
+  const isFieldValid = (fieldName: string) => {
+    return getFieldValidationStatus(fieldName) === 'valid';
+  };
+
+  const isFieldError = (fieldName: string) => {
+    return getFieldValidationStatus(fieldName) === 'error';
+  };
+
+  // Validation summary component
+  const ValidationSummary = () => {
+    if (validation.isValid) return null;
+    
+    return (
+      <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-sm font-medium text-yellow-800">
+            ⚠️ Completa los campos requeridos:
+          </span>
+        </div>
+        <ul className="text-xs text-yellow-700 space-y-1">
+          {validation.missingFields.map((field, index) => (
+            <li key={index}>• {field}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
+  // Autosave hook
+  const { saveData, loadSavedData, clearAutosave, hasSavedData } = useAutosave(
+    isVisible,
+    selectedPostType,
+    getCurrentFormData(),
+    (data) => setAutosaveData(data)
+  );
+
+  // Check for saved data when modal opens
+  useEffect(() => {
+    if (isVisible && !showRestoreDraft) {
+      const saved = loadSavedData();
+      if (saved && hasSavedData()) {
+        setAutosaveData(saved);
+        setShowRestoreDraft(true);
+      }
+    }
+  }, [isVisible, selectedPostType, hasSavedData, loadSavedData]);
+
+  // Clear autosave when modal closes and content is published
+  useEffect(() => {
+    if (!isVisible) {
+      const timeout = setTimeout(() => {
+        clearAutosave();
+        setAutosaveData(null);
+      }, 1000); // Wait 1 second before clearing
+      return () => clearTimeout(timeout);
+    }
+  }, [isVisible, clearAutosave]);
+
   const handleAudioFileSelect = (file: File) => {
     if (!file.type.startsWith('audio/')) {
       toast({
@@ -419,33 +629,12 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     return 'public' as const;
   }, [privacy]);
 
-  const isFormValid = useMemo(() => {
-    if (selectedPostType === 'idea') {
-      return ideaTitle.trim().length >= 3 && ideaDescription.trim().length >= 10;
-    }
-    if (selectedPostType === 'proyecto') {
-      return projectTitle.trim().length >= 3 && projectDescription.trim().length >= 10;
-    }
-    if (selectedPostType === 'encuesta') {
-      const cleanOptions = pollOptions.map(o => o.trim()).filter(Boolean);
-      return pollQuestion.trim().length >= 5 && cleanOptions.length >= 2;
-    }
-    if (selectedPostType === 'evento') {
-      const hasBasic = eventTitle.trim().length >= 3 && eventDescription.trim().length >= 10;
-      const hasDates = Boolean(eventStartDate);
-      const hasLocation = eventLocationType === 'virtual'
-        ? eventMeetingLink.trim().length > 0
-        : eventLocation.trim().length > 0;
-      return hasBasic && hasDates && hasLocation;
-    }
-    if (selectedPostType === 'empleo') {
-      return content.trim().length >= 10;
-    }
-    if (selectedPostType === 'servicios') {
-      return Boolean(serviceCategory.trim()) && Boolean(content.trim() || selectedFiles.length > 0);
-    }
-    return Boolean(content.trim() || selectedFiles.length > 0);
-  }, [content, selectedFiles.length, selectedPostType, ideaTitle, ideaDescription, projectTitle, projectDescription, projectStatus, projectTechnologies, projectObjectives, projectTeamMembers, projectGithubUrl, projectDemoUrl, pollQuestion, pollOptions, eventTitle, eventDescription, eventStartDate, eventLocationType, eventMeetingLink, eventLocation, serviceCategory]);
+  const isFormValid = validation.isValid;
+
+  // Update form validation when post type changes
+  useEffect(() => {
+    // This will trigger re-validation when post type changes
+  }, [selectedPostType, validation.isValid]);
 
   const handlePublish = async () => {
     if (effectivePublishing) return;
@@ -469,9 +658,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
       if ((selectedPostType === 'idea' || selectedPostType === 'proyecto') && finalInstitutionName) {
         try {
-          await supabase
+          await (supabase as any)
             .from('profiles')
-            .update({ institution_name: finalInstitutionName })
+            .update({ institution_name: finalInstitutionName } as any)
             .eq('id', user.id);
         } catch {
           // ignore
@@ -777,6 +966,11 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         title: editingProject ? 'Proyecto actualizado' : 'Publicado', 
         description: editingProject ? 'Tu proyecto se actualizó correctamente' : 'Tu publicación se creó correctamente' 
       });
+      
+      // Clear autosave after successful publish
+      clearAutosave();
+      setAutosaveData(null);
+      
       onClose();
     } catch (error: any) {
       console.error('Error publishing from ModalPublicacionWeb:', error);
@@ -876,6 +1070,36 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   };
 
   if (!isVisible && !isOpen) return null;
+
+  // Show restore draft dialog
+  if (showRestoreDraft && autosaveData) {
+    const timeAgo = new Date(autosaveData.savedAt).toLocaleString('es', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-background rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="flex items-center gap-2 mb-4">
+            <RotateCcw className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">Borrador encontrado</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Se encontró un borrador guardado a las {timeAgo}. ¿Quieres restaurarlo?
+          </p>
+          <div className="flex gap-3">
+            <Button onClick={handleClearDraft} variant="outline" className="flex-1">
+              Eliminar
+            </Button>
+            <Button onClick={handleRestoreDraft} className="flex-1">
+              Restaurar
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-black bg-opacity-50 ${(!isVisible && !isOpen) ? 'hidden' : ''} sm:px-4`}>
@@ -1055,6 +1279,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           </div>
         </div>
 
+        {/* Validation Summary */}
+        <ValidationSummary />
+
         {/* Content */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4">
           {(selectedPostType === 'idea' || selectedPostType === 'proyecto') && institutionName === 'Otra (No listada)' && (
@@ -1071,21 +1298,138 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
             </div>
           )}
 
+          {/* Template selector for ideas and projects */}
+          {(selectedPostType === 'idea' || selectedPostType === 'proyecto') && (
+            <div className="mb-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Plantilla (opcional)
+                </label>
+                {selectedTemplate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearTemplate}
+                    className="text-xs h-6 px-2"
+                  >
+                    Limpiar plantilla
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button
+                  variant={selectedTemplate ? "outline" : "ghost"}
+                  size="sm"
+                  onClick={() => setShowTemplateSelector(!showTemplateSelector)}
+                  className="justify-start h-8 px-3 text-xs"
+                >
+                  <FileText className="h-3 w-3 mr-1" />
+                  {selectedTemplate ? selectedTemplate.name : 'Elegir plantilla'}
+                </Button>
+                {selectedTemplate && (
+                  <div className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded">
+                    {selectedTemplate.category}
+                  </div>
+                )}
+              </div>
+              
+              {showTemplateSelector && (
+                <div className="border rounded-lg p-3 bg-muted/20 max-h-48 overflow-y-auto">
+                  <div className="space-y-2">
+                    {getAvailableTemplates().map((template) => (
+                      <Button
+                        key={template.id}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTemplateSelect(template)}
+                        className="w-full justify-start h-auto p-2 text-left"
+                      >
+                        <div className="text-xs font-medium">{template.name}</div>
+                        <div className="text-xs text-muted-foreground">{template.description}</div>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {selectedPostType === 'idea' && (
             <div className="space-y-3 mb-4">
-              <input
-                value={ideaTitle}
-                onChange={(e) => setIdeaTitle(e.target.value)}
-                placeholder="Título de la idea"
-                className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
-              />
-              <textarea
-                value={ideaDescription}
-                onChange={(e) => setIdeaDescription(e.target.value)}
-                placeholder={`Problema:\nDescribe qué problema has identificado y por qué es importante.\n\nPara quién:\n¿A quién afecta este problema? (estudiantes, empresas, comunidades, etc.)\n\nIdea / solución inicial:\n¿Qué propones hacer para resolverlo? No tiene que estar perfecta.\n\nQué buscas ahora:\n¿Equipo, feedback, validación, alguien con habilidades específicas?`}
-                rows={4}
-                className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
-              />
+              <div className="relative">
+                <input
+                  value={ideaTitle}
+                  onChange={(e) => setIdeaTitle(e.target.value)}
+                  placeholder={selectedTemplate ? selectedTemplate.fields.title : "Título de la idea"}
+                  className={`w-full rounded-md border px-3 py-2 text-sm pr-10 ${
+                    isFieldError('ideaTitle') 
+                      ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500' 
+                      : isFieldValid('ideaTitle')
+                      ? 'border-green-300 bg-green-50 focus:border-green-500 focus:ring-green-500'
+                      : 'border-gray-200 dark:border-gray-700 bg-transparent'
+                  }`}
+                />
+                {isFieldError('ideaTitle') && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <X className="h-4 w-4 text-red-500" />
+                  </div>
+                )}
+                {isFieldValid('ideaTitle') && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {getFieldErrors('ideaTitle').map((error, index) => (
+                <p key={index} className="text-xs text-red-600 mt-1">{error}</p>
+              ))}
+              
+              <div className="relative">
+                <textarea
+                  value={ideaDescription}
+                  onChange={(e) => setIdeaDescription(e.target.value)}
+                  placeholder={selectedTemplate ? selectedTemplate.fields.content : `Problema:
+Describe qué problema has identificado y por qué es importante.
+
+Para quién:
+¿A quién afecta este problema? (estudiantes, empresas, comunidades, etc.)
+
+Idea / solución inicial:
+¿Qué propones hacer para resolverlo? No tiene que estar perfecta.
+
+Qué buscas ahora:
+¿Equipo, feedback, validación, alguien con habilidades específicas?`}
+                  rows={4}
+                  className={`w-full resize-none rounded-md border px-3 py-2 text-sm pr-10 ${
+                    isFieldError('ideaDescription') 
+                      ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500' 
+                      : isFieldValid('ideaDescription')
+                      ? 'border-green-300 bg-green-50 focus:border-green-500 focus:ring-green-500'
+                      : 'border-gray-200 dark:border-gray-700 bg-transparent'
+                  }`}
+                />
+                {isFieldError('ideaDescription') && (
+                  <div className="absolute right-3 top-3">
+                    <X className="h-4 w-4 text-red-500" />
+                  </div>
+                )}
+                {isFieldValid('ideaDescription') && (
+                  <div className="absolute right-3 top-3">
+                    <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {getFieldErrors('ideaDescription').map((error, index) => (
+                <p key={index} className="text-xs text-red-600 mt-1">{error}</p>
+              ))}
+              
+              <div className="text-xs text-gray-500">
+                {ideaDescription.length}/2000 caracteres
+              </div>
             </div>
           )}
 
@@ -1139,7 +1483,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               <input
                 value={projectTitle}
                 onChange={(e) => setProjectTitle(e.target.value)}
-                placeholder="Título del proyecto"
+                placeholder={selectedTemplate ? selectedTemplate.fields.title : "Título del proyecto"}
                 className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
               
@@ -1160,184 +1504,16 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 </Select>
               </div>
               
-              {/* Campo Objetivos del proyecto */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Objetivos del proyecto:
-                </label>
-                <textarea
-                  value={projectObjectives}
-                  onChange={(e) => setProjectObjectives(e.target.value)}
-                  placeholder="¿Cuáles son los objetivos principales de este proyecto? ¿Qué impacto esperas lograr?"
-                  rows={3}
-                  className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                />
-              </div>
-              
-              {/* Campo Tecnologías */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Tecnologías utilizadas:
-                </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {projectTechnologies.map((tech, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
-                    >
-                      {tech}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProjectTechnologies(prev => prev.filter((_, i) => i !== index));
-                        }}
-                        className="ml-1 text-primary/80 hover:text-primary"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={techInput}
-                    onChange={(e) => setTechInput(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && techInput.trim()) {
-                        e.preventDefault();
-                        if (projectTechnologies.length < 8 && !projectTechnologies.includes(techInput.trim())) {
-                          setProjectTechnologies(prev => [...prev, techInput.trim()]);
-                          setTechInput('');
-                        }
-                      }
-                    }}
-                    placeholder="Ej: React, Node.js, Python..."
-                    className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9"
-                    onClick={() => {
-                      if (techInput.trim() && projectTechnologies.length < 8 && !projectTechnologies.includes(techInput.trim())) {
-                        setProjectTechnologies(prev => [...prev, techInput.trim()]);
-                        setTechInput('');
-                      }
-                    }}
-                    disabled={!techInput.trim() || projectTechnologies.length >= 8}
-                  >
-                    Agregar
-                  </Button>
-                </div>
-                {projectTechnologies.length >= 8 && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Máximo 8 tecnologías
-                  </p>
-                )}
-              </div>
-              
-              {/* Campo Miembros del equipo */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Miembros del equipo (opcional):
-                </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {projectTeamMembers.map((member, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm"
-                    >
-                      {member}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProjectTeamMembers(prev => prev.filter((_, i) => i !== index));
-                        }}
-                        className="ml-1 text-green-600 hover:text-green-800 dark:text-green-300 dark:hover:text-green-100"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={teamMemberInput}
-                    onChange={(e) => setTeamMemberInput(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && teamMemberInput.trim()) {
-                        e.preventDefault();
-                        if (projectTeamMembers.length < 5 && !projectTeamMembers.includes(teamMemberInput.trim())) {
-                          setProjectTeamMembers(prev => [...prev, teamMemberInput.trim()]);
-                          setTeamMemberInput('');
-                        }
-                      }
-                    }}
-                    placeholder="Ej: Ana García, Carlos Rodríguez..."
-                    className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9"
-                    onClick={() => {
-                      if (teamMemberInput.trim() && projectTeamMembers.length < 5 && !projectTeamMembers.includes(teamMemberInput.trim())) {
-                        setProjectTeamMembers(prev => [...prev, teamMemberInput.trim()]);
-                        setTeamMemberInput('');
-                      }
-                    }}
-                    disabled={!teamMemberInput.trim() || projectTeamMembers.length >= 5}
-                  >
-                    Agregar
-                  </Button>
-                </div>
-                {projectTeamMembers.length >= 5 && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Máximo 5 miembros
-                  </p>
-                )}
-              </div>
-              
-              {/* Campo URL GitHub */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  URL de GitHub (opcional):
-                </label>
-                <input
-                  type="url"
-                  value={projectGithubUrl}
-                  onChange={(e) => setProjectGithubUrl(e.target.value)}
-                  placeholder="https://github.com/usuario/proyecto"
-                  className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
-                />
-              </div>
-              
-              {/* Campo URL Demo */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Link de demo/preview (opcional):
-                </label>
-                <input
-                  type="url"
-                  value={projectDemoUrl}
-                  onChange={(e) => setProjectDemoUrl(e.target.value)}
-                  placeholder="https://mi-proyecto-demo.com"
-                  className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
-                />
-              </div>
-              
               <textarea
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder={`Describe tu proyecto de forma clara y concisa:
+                placeholder={selectedTemplate ? selectedTemplate.fields.content : `Describe tu proyecto de forma clara y concisa:
 
 • Objetivo principal
 • Estado actual
 • Qué buscas (colaboradores, feedback, etc.)`}
                 rows={4}
-                className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
             </div>
           )}
