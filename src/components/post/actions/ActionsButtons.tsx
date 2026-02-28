@@ -56,17 +56,14 @@ export function ActionsButtons({
     return false;
   }, [isAuthenticated, navigate]);
   
-  const handleReactionClick = (type: ReactionType) => {
+  const handleReactionClick = useCallback((type: ReactionType) => {
     if (handleAuthRequired()) return;
     if (onReaction) {
       onReaction(postId, type);
     } else if (handleReaction) {
       handleReaction(type);
-    } else {
-      // No handler provided
-      return;
     }
-  };
+  }, [handleAuthRequired, onReaction, postId, handleReaction]);
 
   const [animatingReaction, setAnimatingReaction] = useState<ReactionType | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -96,14 +93,14 @@ export function ActionsButtons({
     handleReactionClick(reactionType);
     setAnimatingReaction(reactionType);
     setTimeout(() => setAnimatingReaction(null), 600);
-  }, [userReaction]);
+  }, [userReaction, handleReactionClick]);
 
   const handleReactionSelected = useCallback((type: ReactionType) => {
     setAnimatingReaction(type);
     setTimeout(() => setAnimatingReaction(null), 600);
     handleReactionClick(type);
     setShowReactions(false);
-  }, [setShowReactions]);
+  }, [setShowReactions, handleReactionClick]);
 
   const cancelCloseReactions = useCallback(() => {
     if (closeReactionsTimeoutRef.current) {
@@ -163,7 +160,6 @@ export function ActionsButtons({
   return (
     <div className="px-2 sm:px-3 py-2">
       <div className="flex items-center justify-between gap-1">
-        {/* Reaction button */}
         <div
           ref={reactionsRootRef}
           className="relative flex-1"
@@ -258,7 +254,6 @@ export function ActionsButtons({
           </Button>
         </div>
         
-        {/* Comment button */}
         <Button
           variant="ghost"
           size="sm"
@@ -272,7 +267,6 @@ export function ActionsButtons({
           <span className="text-sm font-medium hidden sm:inline">Comentar</span>
         </Button>
         
-        {/* Repost button */}
         <Button
           variant="ghost"
           size="sm"
