@@ -295,7 +295,6 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
               }
             }}
             className="pl-10 pr-10 border-none bg-white dark:bg-muted/50 text-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
-            autoFocus
             ref={inputRef}
           />
           {searchQuery && (

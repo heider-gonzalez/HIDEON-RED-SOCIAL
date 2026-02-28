@@ -55,14 +55,14 @@ export function OnboardingWizard({ onComplete, institutionName }: OnboardingWiza
 
   const handleNext = () => {
     if (step < totalSteps) {
-      setStep(step + 1);
+      setStep(prev => prev + 1);
       trackUserMilestone('onboarding_step_completed', { step });
     }
   };
 
   const handleBack = () => {
     if (step > 1) {
-      setStep(step - 1);
+      setStep(prev => prev - 1);
     }
   };
 

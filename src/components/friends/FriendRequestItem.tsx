@@ -20,11 +20,13 @@ interface FriendRequestItemProps {
   onReject: (requestId: string) => Promise<void>;
 }
 
+const EMPTY_MUTUAL_FRIENDS: FriendRequestItemProps['mutual_friends'] = [];
+
 export function FriendRequestItem({ 
   id, 
   sender, 
   created_at, 
-  mutual_friends = [], 
+  mutual_friends = EMPTY_MUTUAL_FRIENDS, 
   onAccept, 
   onReject 
 }: FriendRequestItemProps) {

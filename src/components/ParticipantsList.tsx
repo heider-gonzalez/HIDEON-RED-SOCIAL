@@ -18,8 +18,10 @@ interface ParticipantsListProps {
   maxDisplay?: number;
 }
 
+const EMPTY_PARTICIPANTS: Participant[] = [];
+
 export function ParticipantsList({
-  participants = [],
+  participants = EMPTY_PARTICIPANTS,
   onParticipantAdd,
   showAddButton = false,
   maxDisplay = 10

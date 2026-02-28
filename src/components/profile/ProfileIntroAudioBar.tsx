@@ -77,6 +77,9 @@ export function ProfileIntroAudioBar({ profileId, isOwner, profile, onProfileUpd
   }, [currentTime, durationSeconds]);
 
   useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -96,12 +99,6 @@ export function ProfileIntroAudioBar({ profileId, isOwner, profile, onProfileUpd
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
     };
-  }, [url]);
-
-  useEffect(() => {
-    // Reset state when audio source changes
-    setIsPlaying(false);
-    setCurrentTime(0);
   }, [url]);
 
   const updateProfileIntroAudio = async (patch: Record<string, any>) => {

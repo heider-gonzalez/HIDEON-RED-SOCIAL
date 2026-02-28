@@ -18,6 +18,9 @@ export function ProfileAudioPlayButton({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -37,12 +40,6 @@ export function ProfileAudioPlayButton({
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
     };
-  }, [audioUrl]);
-
-  useEffect(() => {
-    // Reset state when audio source changes
-    setIsPlaying(false);
-    setCurrentTime(0);
   }, [audioUrl]);
 
   const togglePlay = async () => {

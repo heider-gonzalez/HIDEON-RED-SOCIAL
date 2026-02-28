@@ -93,6 +93,7 @@ export function InstitutionRequiredModal({
                   variant="outline"
                   role="combobox"
                   aria-expanded={comboOpen}
+                  aria-controls="institution-required-listbox"
                   className="w-full justify-between"
                 >
                   <span className={cn("truncate", !selected && "text-muted-foreground")}>
@@ -104,7 +105,7 @@ export function InstitutionRequiredModal({
               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                 <Command>
                   <CommandInput placeholder="Buscar institución..." />
-                  <CommandList>
+                  <CommandList id="institution-required-listbox">
                     <CommandEmpty>No se encontraron resultados.</CommandEmpty>
                     <CommandGroup>
                       {options.map((opt) => (

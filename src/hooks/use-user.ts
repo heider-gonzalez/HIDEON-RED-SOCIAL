@@ -75,5 +75,3 @@ export function useUser(): UseUserReturn {
     signOut,
   };
 }
-
-export default useUser;

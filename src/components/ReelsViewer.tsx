@@ -43,14 +43,14 @@ export const ReelsViewer = memo(function ReelsViewer({ posts, onReaction }: Reel
 
   const handleNext = useCallback(() => {
     if (currentIndex < posts.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      setCurrentIndex(prev => prev + 1);
       setIsPlaying(true);
     }
   }, [currentIndex, posts.length]);
 
   const handlePrevious = useCallback(() => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+      setCurrentIndex(prev => prev - 1);
       setIsPlaying(true);
     }
   }, [currentIndex]);

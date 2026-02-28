@@ -38,6 +38,7 @@ export function InstitutionCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-controls="institution-listbox"
           className={cn("w-full justify-between", className)}
         >
           <span className={cn("truncate", !selectedLabel && "text-muted-foreground")}>
@@ -49,7 +50,7 @@ export function InstitutionCombobox({
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command>
           <CommandInput placeholder="Buscar institución..." />
-          <CommandList>
+          <CommandList id="institution-listbox">
             <CommandEmpty>No se encontraron resultados.</CommandEmpty>
             <CommandGroup>
               {options.map((opt) => (

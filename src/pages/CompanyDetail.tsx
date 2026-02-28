@@ -308,7 +308,7 @@ export default function CompanyDetail() {
           <CardContent className="p-0 overflow-hidden">
             <div className="h-32 sm:h-40 bg-muted relative">
               {company.cover_url ? (
-                <img src={company.cover_url} className="h-full w-full object-cover" />
+                <img src={company.cover_url} alt="" className="h-full w-full object-cover" />
               ) : null}
             </div>
             <div className="p-4 sm:p-6 flex items-start gap-4">

@@ -430,10 +430,10 @@ function ReelsInfiniteViewerComponent({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'ArrowUp' && currentIndex > 0) {
         e.preventDefault();
-        setCurrentIndex(currentIndex - 1);
+        setCurrentIndex(prev => prev - 1);
       } else if (e.code === 'ArrowDown' && currentIndex < posts.length - 1) {
         e.preventDefault();
-        setCurrentIndex(currentIndex + 1);
+        setCurrentIndex(prev => prev + 1);
       }
     };
 

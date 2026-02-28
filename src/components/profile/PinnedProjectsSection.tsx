@@ -27,7 +27,9 @@ interface PinnedProjectsSectionProps {
   allProjects?: Project[];
 }
 
-export function PinnedProjectsSection({ profileId, isOwner, allProjects = [] }: PinnedProjectsSectionProps) {
+const EMPTY_PROJECTS: Project[] = [];
+
+export function PinnedProjectsSection({ profileId, isOwner, allProjects = EMPTY_PROJECTS }: PinnedProjectsSectionProps) {
   const { pinnedProjects, isLoading } = usePinnedProjects(profileId);
   const { toast } = useToast();
 

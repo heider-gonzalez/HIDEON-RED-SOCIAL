@@ -162,7 +162,6 @@ export function AdvancedSearch({ isOpen, onClose }: AdvancedSearchProps) {
                   }
                 }}
                 className="pl-11 pr-4 h-11 rounded-full border border-border/50 bg-muted/30 focus-visible:ring-0 focus-visible:ring-offset-0"
-                autoFocus
               />
             </div>
 

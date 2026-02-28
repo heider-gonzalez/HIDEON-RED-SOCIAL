@@ -48,6 +48,3 @@ export const db = {
     return data;
   }
 };
-
-// Export for easy use
-export default db;

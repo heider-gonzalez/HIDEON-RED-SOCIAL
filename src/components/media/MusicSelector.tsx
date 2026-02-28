@@ -17,6 +17,97 @@ interface MusicSelectorProps {
 
 type TabType = 'search' | 'popular' | 'categories' | 'favorites' | 'recent';
 
+interface TrackCardProps {
+  track: MusicTrack & { audio_analysis: any };
+  currentlyPlaying: string | null;
+  favorites: string[];
+  handleTrackSelect: (track: MusicTrack & { audio_analysis: any }) => void;
+  playPreview: (track: MusicTrack, event: React.MouseEvent) => void;
+  toggleFavorite: (trackId: string, event: React.MouseEvent) => void;
+  formatDuration: (seconds: number) => string;
+}
+
+function TrackCard({
+  track,
+  currentlyPlaying,
+  favorites,
+  handleTrackSelect,
+  playPreview,
+  toggleFavorite,
+  formatDuration,
+}: TrackCardProps) {
+  return (
+    <Card
+      className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+      onClick={() => handleTrackSelect(track)}
+    >
+      <div className="flex items-center space-x-3">
+        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+          {track.cover_art_url ? (
+            <img
+              src={track.cover_art_url}
+              alt={track.title}
+              className="w-full h-full object-cover rounded-lg"
+            />
+          ) : (
+            <Music className="h-6 w-6 text-white" />
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm text-gray-900 dark:text-white truncate">
+            {track.title}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            {track.artist}
+            {track.album && ` • ${track.album}`}
+          </div>
+          <div className="flex items-center space-x-2 mt-1">
+            <Badge variant="secondary" className="text-xs">
+              {track.genre || 'Pop'}
+            </Badge>
+            <span className="text-xs text-gray-400">
+              {formatDuration(track.duration)}
+            </span>
+            {track.audio_analysis?.bpm && (
+              <span className="text-xs text-gray-400">
+                {track.audio_analysis.bpm} BPM
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => playPreview(track, e)}
+            className="w-8 h-8 p-0"
+          >
+            {currentlyPlaying === track.id ? (
+              <Pause size={14} />
+            ) : (
+              <Play size={14} />
+            )}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => toggleFavorite(track.id, e)}
+            className="w-8 h-8 p-0"
+          >
+            <Heart
+              size={14}
+              className={favorites.includes(track.id) ? 'fill-red-500 text-red-500' : ''}
+            />
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export function MusicSelector({ onTrackSelect, onClose, className = '' }: MusicSelectorProps) {
   const [activeTab, setActiveTab] = useState<TabType>('search');
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,12 +122,10 @@ export function MusicSelector({ onTrackSelect, onClose, className = '' }: MusicS
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Load categories on mount
   useEffect(() => {
     loadCategories();
   }, []);
 
-  // Load tracks based on active tab
   useEffect(() => {
     loadTracks();
   }, [activeTab, searchQuery, selectedCategory]);
@@ -94,13 +183,10 @@ export function MusicSelector({ onTrackSelect, onClose, className = '' }: MusicS
     if (!user) return;
 
     try {
-      // Get best moment for the track
       const bestMoment = await MusicLibraryAPI.getBestMoment(track.id);
       
-      // Track usage for recommendations
       await MusicLibraryAPI.trackUsage(user.id, track.id);
       
-      // Stop any playing preview
       if (audioPreview) {
         audioPreview.pause();
         setAudioPreview(null);
@@ -139,7 +225,6 @@ export function MusicSelector({ onTrackSelect, onClose, className = '' }: MusicS
   const playPreview = async (track: MusicTrack, event: React.MouseEvent) => {
     event.stopPropagation();
     
-    // Stop current preview if playing
     if (audioPreview) {
       audioPreview.pause();
       if (currentlyPlaying === track.id) {
@@ -149,7 +234,6 @@ export function MusicSelector({ onTrackSelect, onClose, className = '' }: MusicS
       }
     }
 
-    // Start new preview
     const previewUrl = track.preview_url || track.file_url;
     const audio = new Audio(previewUrl);
     
@@ -173,85 +257,8 @@ export function MusicSelector({ onTrackSelect, onClose, className = '' }: MusicS
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const TrackCard = ({ track }: { track: MusicTrack & { audio_analysis: any } }) => (
-    <Card 
-      className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
-      onClick={() => handleTrackSelect(track)}
-    >
-      <div className="flex items-center space-x-3">
-        {/* Cover Art */}
-        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
-          {track.cover_art_url ? (
-            <img 
-              src={track.cover_art_url} 
-              alt={track.title}
-              className="w-full h-full object-cover rounded-lg"
-            />
-          ) : (
-            <Music className="h-6 w-6 text-white" />
-          )}
-        </div>
-
-        {/* Track Info */}
-        <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm text-gray-900 dark:text-white truncate">
-            {track.title}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-            {track.artist}
-            {track.album && ` • ${track.album}`}
-          </div>
-          <div className="flex items-center space-x-2 mt-1">
-            <Badge variant="secondary" className="text-xs">
-              {track.genre || 'Pop'}
-            </Badge>
-            <span className="text-xs text-gray-400">
-              {formatDuration(track.duration)}
-            </span>
-            {track.audio_analysis?.bpm && (
-              <span className="text-xs text-gray-400">
-                {track.audio_analysis.bpm} BPM
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center space-x-2">
-          {/* Play Preview */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => playPreview(track, e)}
-            className="w-8 h-8 p-0"
-          >
-            {currentlyPlaying === track.id ? (
-              <Pause size={14} />
-            ) : (
-              <Play size={14} />
-            )}
-          </Button>
-
-          {/* Favorite */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => toggleFavorite(track.id, e)}
-            className="w-8 h-8 p-0"
-          >
-            <Heart 
-              size={14} 
-              className={favorites.includes(track.id) ? 'fill-red-500 text-red-500' : ''}
-            />
-          </Button>
-        </div>
-      </div>
-    </Card>
-  );
-
   return (
     <div className={`bg-white dark:bg-gray-900 rounded-lg shadow-lg ${className}`}>
-      {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold">Seleccionar Música</h3>
         {onClose && (
@@ -261,7 +268,6 @@ export function MusicSelector({ onTrackSelect, onClose, className = '' }: MusicS
         )}
       </div>
 
-      {/* Search Bar */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -274,7 +280,6 @@ export function MusicSelector({ onTrackSelect, onClose, className = '' }: MusicS
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex border-b border-gray-200 dark:border-gray-700">
         {[
           { id: 'search' as TabType, label: 'Buscar', icon: Search },
@@ -298,7 +303,6 @@ export function MusicSelector({ onTrackSelect, onClose, className = '' }: MusicS
         ))}
       </div>
 
-      {/* Content */}
       <div className="flex-1">
         {activeTab === 'categories' && !selectedCategory && (
           <div className="p-4">
@@ -342,7 +346,16 @@ export function MusicSelector({ onTrackSelect, onClose, className = '' }: MusicS
                 </div>
               ) : (
                 tracks.map((track) => (
-                  <TrackCard key={track.id} track={track} />
+                  <TrackCard
+                    key={track.id}
+                    track={track}
+                    currentlyPlaying={currentlyPlaying}
+                    favorites={favorites}
+                    handleTrackSelect={handleTrackSelect}
+                    playPreview={playPreview}
+                    toggleFavorite={toggleFavorite}
+                    formatDuration={formatDuration}
+                  />
                 ))
               )}
             </div>

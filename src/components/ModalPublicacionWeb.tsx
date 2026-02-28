@@ -57,6 +57,25 @@ interface ModalPublicacionWebProps {
    }
  }
 
+const ValidationSummary = ({ validation }: { validation: ValidationResult }) => {
+  if (validation.isValid) return null;
+
+  return (
+    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm font-medium text-yellow-800">
+          ⚠️ Completa los campos requeridos:
+        </span>
+      </div>
+      <ul className="text-xs text-yellow-700 space-y-1">
+        {validation.missingFields.map((field, index) => (
+          <li key={index}>• {field}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
 const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   isVisible,
   isOpen,
@@ -431,26 +450,6 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
   const isFieldError = (fieldName: string) => {
     return getFieldValidationStatus(fieldName) === 'error';
-  };
-
-  // Validation summary component
-  const ValidationSummary = () => {
-    if (validation.isValid) return null;
-    
-    return (
-      <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-sm font-medium text-yellow-800">
-            ⚠️ Completa los campos requeridos:
-          </span>
-        </div>
-        <ul className="text-xs text-yellow-700 space-y-1">
-          {validation.missingFields.map((field, index) => (
-            <li key={index}>• {field}</li>
-          ))}
-        </ul>
-      </div>
-    );
   };
 
   // Autosave hook
@@ -1280,7 +1279,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         </div>
 
         {/* Validation Summary */}
-        <ValidationSummary />
+        <ValidationSummary validation={validation} />
 
         {/* Content */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4">

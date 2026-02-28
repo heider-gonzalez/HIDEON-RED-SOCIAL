@@ -36,13 +36,13 @@ export function ProjectCreatorModal({ open, onOpenChange }: ProjectCreatorModalP
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
+      setCurrentStep(prev => prev + 1);
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+      setCurrentStep(prev => prev - 1);
     }
   };
 
