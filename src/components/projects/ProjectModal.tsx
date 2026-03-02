@@ -61,6 +61,20 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
   const [isMutedLocal, setIsMutedLocal] = useState(true);
   const [volumeLocal, setVolumeLocal] = useState(1);
 
+  // Helper function to get the first media URL (video or image)
+  const getPrimaryMediaUrl = (): string | undefined => {
+    // Check media_urls array first
+    if (project.media_urls && project.media_urls.length > 0) {
+      return project.media_urls[0];
+    }
+    // Fallback to image_url
+    return project.image_url;
+  };
+
+  const primaryMediaUrl = getPrimaryMediaUrl();
+  const isVideo = primaryMediaUrl ? /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(primaryMediaUrl) : false;
+  const statusConfig = PROJECT_STATUS_CONFIG[project.status];
+
   const formatTime = (seconds: number) => {
     const s = Math.max(0, Math.floor(seconds || 0));
     const m = Math.floor(s / 60);
@@ -164,13 +178,6 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, [open, onOpenChange]);
-
-  // Helper function to check if URL is a video
-  const isVideoUrl = (url: string | undefined): boolean => {
-    if (!url) return false;
-    const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v'];
-    return videoExtensions.some(ext => url.toLowerCase().includes(ext));
-  };
   
   // Hooks for views, reactions, and comments
   const { viewsCount, viewers } = useProjectViews(project.id, project.author_id);
