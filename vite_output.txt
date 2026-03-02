@@ -1,0 +1,82 @@
+Port 8080 is in use, trying another one...
+
+  [32m[1mVITE[22m v5.4.10[39m  [2mready in [0m[1m426[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m8081[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.1.58:[1m8081[22m/[39m
+Browserslist: browsers data (caniuse-lite) is 17 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+[1m[33mwarn[39m[22m - As of Tailwind CSS v3.3, the `@tailwindcss/line-clamp` plugin is now included by default.
+[1m[33mwarn[39m[22m - Remove it from the `plugins` array in your configuration to eliminate this warning.
+[2m7:05:59 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/reactions/ReactionMenu.tsx, /src/index.css[22m
+[2m7:06:32 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/actions/ActionsButtons.tsx, /src/index.css[22m
+[2m7:06:41 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/post/actions/ActionsButtons.tsx, /src/components/post/comments/CommentReactionsEnhanced.tsx[22m
+[2m7:07:04 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/comments/CommentReactionsEnhanced.tsx, /src/index.css[22m
+[2m7:14:31 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/comments/CommentReactionsEnhanced.tsx, /src/index.css[22m
+[2m7:17:05 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/comments/CommentReactionsEnhanced.tsx, /src/index.css[22m
+[2m7:27:24 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/navigation/TopNavigation.tsx, /src/index.css[22m
+[2m7:27:50 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/navigation/TopNavigation.tsx, /src/index.css[22m
+[2m7:28:03 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/navigation/TopNavigation.tsx, /src/index.css[22m
+[2m7:29:19 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/navigation/TopNavigation.tsx, /src/index.css[22m
+[2m7:29:49 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/navigation/TopNavigation.tsx, /src/index.css[22m
+[2m7:29:55 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ModalPublicacionWeb.tsx, /src/index.css[22m
+[2m7:29:55 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/chat/PrivateMessages.tsx[22m
+[2m7:29:55 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/chat/PrivateMessages.tsx[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/filters/InstitutionCombobox.tsx, /src/index.css[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/filters/InstitutionCombobox.tsx, /src/index.css[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/media/MusicSelector.tsx, /src/index.css[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/navigation/TopNavigation.tsx, /src/index.css[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/onboarding/InstitutionRequiredModal.tsx[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/MediaCarousel.tsx, /src/index.css[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/actions/ActionsButtons.tsx, /src/index.css[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/comments/CommentReactionsEnhanced.tsx, /src/index.css[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/MediaCarousel.tsx, /src/index.css[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/actions/ActionsButtons.tsx, /src/index.css[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/reactions/ReactionMenu.tsx, /src/index.css[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/post/reactions/hooks/use-long-press.ts[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/profile/ProfileAudioPlayButton.tsx[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/comments/CommentReactionsEnhanced.tsx, /src/index.css[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/profile/ProfileIntroAudioBar.tsx[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.tsx[22m
+[2m7:29:56 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.tsx[22m
+[2m7:47:52 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/App.tsx[22m
+[2m7:47:54 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/filters/InstitutionCombobox.tsx, /src/index.css[22m
+[2m7:47:57 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/onboarding/InstitutionRequiredModal.tsx[22m
+[2m7:48:41 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/filters/InstitutionCombobox.tsx, /src/index.css[22m
+[2m7:49:21 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/onboarding/InstitutionRequiredModal.tsx[22m
+[2m7:50:09 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/profile/ProfileAudioPlayButton.tsx[22m
+[2m7:50:48 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/profile/ProfileIntroAudioBar.tsx[22m
+[2m7:51:40 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ModalPublicacionWeb.tsx, /src/index.css[22m
+[2m7:52:03 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/media/MusicSelector.tsx, /src/index.css[22m
+[2m7:54:15 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ModalPublicacionWeb.tsx, /src/index.css[22m
+[2m7:57:08 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/chat/PrivateMessages.tsx[22m
+[2m7:57:50 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/chat/PrivateMessages.tsx[22m
+[2m8:00:05 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/MediaCarousel.tsx, /src/index.css[22m
+[2m8:04:47 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/command.tsx, /src/index.css[22m
+[2m8:04:48 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/MediaCarousel.tsx, /src/index.css[22m
+[2m8:04:54 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/friends/FriendRequestItem.tsx[22m
+[2m8:04:57 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ParticipantsList.tsx, /src/index.css[22m
+[2m8:05:02 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/profile/PinnedProjectsSection.tsx[22m
+[2m8:05:10 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ReelsViewer.tsx[22m
+[2m8:05:12 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/reels/ReelsInfiniteViewer.tsx, /src/index.css[22m
+[2m8:05:13 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/reels/OptimizedReelsInfiniteViewer.tsx, /src/index.css[22m
+[2m8:05:15 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/projects/ProjectCreatorModal.tsx[22m
+[2m8:05:16 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/navigation/TopNavigation.tsx[22m
+[2m8:05:16 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/onboarding/OnboardingWizard.tsx[22m
+[2m8:05:23 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/post/idea/IdeaDisplay.tsx, /src/components/post/idea/ParticipantsList.tsx[22m
+[2m8:06:31 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/ui/pagination.tsx[22m
+[2m8:07:24 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/search/FullScreenSearch.tsx, /src/index.css[22m
+[2m8:07:54 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/search/AdvancedSearch.tsx, /src/index.css[22m
+[2m8:08:03 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/friends/FriendRequestItem.tsx[22m
+[2m8:08:12 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ParticipantsList.tsx, /src/index.css[22m
+[2m8:08:30 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/profile/PinnedProjectsSection.tsx[22m
+[2m8:29:11 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/reels/ReelsInfiniteViewer.tsx, /src/components/reels/OptimizedReelsInfiniteViewer.tsx, /src/components/Post.tsx, /src/components/post/MediaLightbox.tsx[22m
+[2m8:29:47 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/post/actions/ActionsButtons.tsx, /src/index.css[22m
+[2m8:30:08 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/reels/ReelsInfiniteViewer.tsx, /src/components/reels/OptimizedReelsInfiniteViewer.tsx, /src/components/Post.tsx, /src/components/post/MediaLightbox.tsx[22m
+[2m9:07:04 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/reels/ReelsInfiniteViewer.tsx, /src/index.css[22m
+[2m9:07:04 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/projects/ProjectCreatorModal.tsx[22m
+[2m9:07:04 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/reels/OptimizedReelsInfiniteViewer.tsx, /src/index.css[22m
+[2m9:07:34 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/ModalPublicacionWeb.tsx[22m
+[2m9:10:07 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/components/profile/ProfileBadges.tsx[22m

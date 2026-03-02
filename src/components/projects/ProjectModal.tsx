@@ -171,20 +171,6 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
     const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v'];
     return videoExtensions.some(ext => url.toLowerCase().includes(ext));
   };
-
-  // Helper function to get the first media URL (video or image)
-  const getPrimaryMediaUrl = (): string | undefined => {
-    // Check media_urls array first
-    if (project.media_urls && project.media_urls.length > 0) {
-      return project.media_urls[0];
-    }
-    // Fallback to image_url
-    return project.image_url;
-  };
-
-  const primaryMediaUrl = getPrimaryMediaUrl();
-  const isVideo = isVideoUrl(primaryMediaUrl);
-  const statusConfig = PROJECT_STATUS_CONFIG[project.status];
   
   // Hooks for views, reactions, and comments
   const { viewsCount, viewers } = useProjectViews(project.id, project.author_id);

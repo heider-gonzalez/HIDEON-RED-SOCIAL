@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Crown, Award, Star, Shield, CheckCircle, Trophy, Zap, Target, Rocket, Gem } from "lucide-react";
+import { Crown, Award, Star, Shield, CheckCircle, Trophy, Zap, Target, Rocket, Gem, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { institutionsBarranquilla } from "@/data/institutions-barranquilla";
 import type { Profile } from "@/pages/Profile";
 
 interface ProfileBadgesProps {
   profile: Profile;
+}
+
+interface VerificationData {
+  is_verified: boolean;
+  institution_id: string;
+  verified_at: string | null;
 }
 
 interface BadgeData {
@@ -22,11 +29,13 @@ interface BadgeData {
 
 export function ProfileBadges({ profile }: ProfileBadgesProps) {
   const [badges, setBadges] = useState<BadgeData[]>([]);
+  const [verification, setVerification] = useState<VerificationData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (profile?.id) {
       loadBadges();
+      loadVerification();
     }
   }, [profile?.id]);
 
@@ -45,6 +54,22 @@ export function ProfileBadges({ profile }: ProfileBadgesProps) {
       console.error('Error loading badges:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadVerification = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('university_verifications')
+        .select('is_verified, institution_id, verified_at')
+        .eq('user_id', profile.id)
+        .eq('is_verified', true)
+        .maybeSingle();
+
+      if (error) throw error;
+      setVerification(data || null);
+    } catch {
+      // Table might not exist yet
     }
   };
 
@@ -89,6 +114,10 @@ export function ProfileBadges({ profile }: ProfileBadgesProps) {
     return priorityMap[badgeType] || 999;
   };
 
+  const verifiedInstitution = verification
+    ? institutionsBarranquilla.find((i) => i.id === verification.institution_id)
+    : null;
+
   if (loading) {
     return (
       <Card>
@@ -106,7 +135,7 @@ export function ProfileBadges({ profile }: ProfileBadgesProps) {
     );
   }
 
-  if (badges.length === 0) {
+  if (badges.length === 0 && !verification) {
     return (
       <Card>
         <CardHeader>
@@ -122,7 +151,6 @@ export function ProfileBadges({ profile }: ProfileBadgesProps) {
     );
   }
 
-  // Ordenar badges por prioridad
   const sortedBadges = badges
     .filter((b) => b.badge_type !== 'premium')
     .sort((a, b) => getBadgePriority(a.badge_type) - getBadgePriority(b.badge_type));
@@ -134,7 +162,34 @@ export function ProfileBadges({ profile }: ProfileBadgesProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Badges Especiales */}
+          {verification?.is_verified && (
+            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full text-white">
+                <Shield className="h-4 w-4" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-green-900 dark:text-green-300">Estudiante Verificado</h4>
+                  <Badge variant="default" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Verificado
+                  </Badge>
+                </div>
+                {verifiedInstitution && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <GraduationCap className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                    <span className="text-sm text-green-700 dark:text-green-400">{verifiedInstitution.name}</span>
+                  </div>
+                )}
+                {verification.verified_at && (
+                  <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                    Verificado: {new Date(verification.verified_at).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           {sortedBadges.filter(b => b.badge_type === 'special').map((badge) => (
             <div key={badge.id} className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
               <div className="p-2 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full text-white">
@@ -153,32 +208,32 @@ export function ProfileBadges({ profile }: ProfileBadgesProps) {
             </div>
           ))}
 
-          {/* Badges de Logros */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-muted-foreground">Logros</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {sortedBadges.filter(b => b.badge_type === 'achievement' || b.badge_type === 'milestone').map((badge) => (
-                <div key={badge.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50">
-                  <div className="p-2 bg-muted rounded-full">
-                    {getBadgeIcon(badge.badge_icon)}
+          {sortedBadges.some(b => b.badge_type === 'achievement' || b.badge_type === 'milestone') && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground">Logros</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {sortedBadges.filter(b => b.badge_type === 'achievement' || b.badge_type === 'milestone').map((badge) => (
+                  <div key={badge.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50">
+                    <div className="p-2 bg-muted rounded-full">
+                      {getBadgeIcon(badge.badge_icon)}
+                    </div>
+                    <div className="flex-1">
+                      <h5 className="font-medium text-sm">{badge.badge_name}</h5>
+                      <p className="text-xs text-muted-foreground">{badge.badge_description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(badge.earned_date).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h5 className="font-medium text-sm">{badge.badge_name}</h5>
-                    <p className="text-xs text-muted-foreground">{badge.badge_description}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(badge.earned_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Estadísticas de Badges */}
           <div className="mt-4 pt-4 border-t">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Total de insignias:</span>
-              <span className="font-semibold">{sortedBadges.length}</span>
+              <span className="font-semibold">{sortedBadges.length + (verification?.is_verified ? 1 : 0)}</span>
             </div>
             <div className="flex items-center justify-between text-sm mt-1">
               <span className="text-muted-foreground">Logros desbloqueados:</span>
