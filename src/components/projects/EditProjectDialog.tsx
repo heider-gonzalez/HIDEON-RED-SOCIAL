@@ -34,28 +34,41 @@ export function EditProjectDialog({ projectId, isOpen, onOpenChange, onSave }: E
       const loadProject = async () => {
         try {
           setIsLoading(true);
-          const { data } = await supabase
+          const { data } = await (supabase as any)
             .from("posts")
             .select(`
               content,
               post_metadata,
               project_status,
               demo_url,
-              github_url
+              github_url,
+              author_id,
+              profiles!posts_author_id_fkey (
+                username,
+                full_name,
+                avatar_url
+              )
             `)
             .eq("id", projectId)
             .single();
           
           if (data) {
             // Extraer datos del post_metadata si existe
-            const metadata = data.post_metadata as any;
-            const proyecto = metadata?.proyecto || metadata?.project || {};
+            const metadata = data.post_metadata as any || {};
+            const proyecto = metadata.proyecto || metadata.project || {};
+            
+            console.log('Datos del proyecto cargados:', {
+              metadata,
+              proyecto,
+              data
+            });
             
             setProjectData({
               title: proyecto.title || data.content?.split('\n')[0] || "",
               description: proyecto.description || data.content || "",
               objectives: proyecto.objectives || "",
-              technologies: proyecto.technologies || proyecto.required_skills || [],
+              technologies: Array.isArray(proyecto.technologies) ? proyecto.technologies : 
+                         Array.isArray(proyecto.required_skills) ? proyecto.required_skills : [],
               demo_url: data.demo_url || proyecto.demo_url || "",
               github_url: data.github_url || proyecto.github_url || "",
               project_status: data.project_status || proyecto.status || "idea",

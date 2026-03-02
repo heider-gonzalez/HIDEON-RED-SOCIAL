@@ -378,6 +378,7 @@ export function PostHeader({
       return (
         <AuthorPostOptionsMenu 
           postId={post.id} 
+          postType={post.post_type}
           canDelete={canDelete}
           onDelete={onDelete}
         />
