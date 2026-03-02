@@ -47,6 +47,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const [isVideoHovered, setIsVideoHovered] = useState(false);
   const [isVideoInView, setIsVideoInView] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isVerticalVideo, setIsVerticalVideo] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [volumeLocal, setVolumeLocal] = useState(1);
