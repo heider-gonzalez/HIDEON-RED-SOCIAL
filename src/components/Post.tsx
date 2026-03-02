@@ -450,7 +450,36 @@ function IdeaPostView({ post }: { post: PostType }) {
 
 // Componente para las publicaciones de tipo Proyecto
 function ProjectPostView({ post }: { post: PostType }) {
-  if (!post.idea) return null;
+  // Si no hay idea, mostrar contenido estándar como fallback
+  if (!post.idea) {
+    console.warn('Post de proyecto sin datos de idea, mostrando fallback', post.id);
+    return (
+      <div className="px-0 md:px-4 pb-2">
+        <PostContent post={post} postId={post.id} />
+        <div className="px-0 md:px-4 pb-2">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Briefcase className="h-5 w-5 text-blue-500" />
+              <Badge variant="secondary" className="text-xs font-medium">Proyecto</Badge>
+              {post.project_status && (
+                <Badge variant="outline" className={
+                  post.project_status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                  post.project_status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                }>
+                  {post.project_status === 'completed' ? 'Terminado' : 
+                   post.project_status === 'in_progress' ? 'En desarrollo' : 'Idea'}
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Este proyecto necesita ser actualizado con información completa.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const normalizedProjectStatus =
     post.project_status === 'paused' || post.project_status === 'cancelled'
