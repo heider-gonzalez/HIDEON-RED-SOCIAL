@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Comments } from "@/components/post/Comments";
 import { ActionsButtons } from "@/components/post/actions/ActionsButtons";
 import { PostContent } from "@/components/post/PostContent";
