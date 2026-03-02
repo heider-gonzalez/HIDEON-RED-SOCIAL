@@ -69,9 +69,9 @@ export function ReactionButtons({ post, onReaction }: ReactionButtonsProps) {
   return (
     <div className="flex items-center justify-start">
       {hasReactions && (
-        <Button variant="ghost" size="sm" className="h-auto p-0 hover:underline">
+        <div className="hover:underline transition-all">
           <ReactionSummary reactions={reactionsByType} postId={post.id} />
-        </Button>
+        </div>
       )}
       <HoverReactionButton
         postId={post.id}

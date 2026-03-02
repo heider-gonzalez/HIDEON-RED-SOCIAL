@@ -41,7 +41,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const statusConfig = PROJECT_STATUS_CONFIG[project.status];
+  const statusConfig = PROJECT_STATUS_CONFIG[project.status || 'idea'];
   const videoRef = useRef<HTMLVideoElement>(null);
   const fullscreenVideo = useFullscreenVideo();
   const [isVideoHovered, setIsVideoHovered] = useState(false);
@@ -49,14 +49,8 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [isMutedLocal, setIsMutedLocal] = useState(true);
   const [volumeLocal, setVolumeLocal] = useState(1);
-  const [isVerticalVideo, setIsVerticalVideo] = useState(true);
-  const instanceIdRef = useRef<string>(
-    typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function'
-      ? (crypto as any).randomUUID()
-      : `pc_${Math.random().toString(16).slice(2)}_${Date.now()}`
-  );
+  const [isMutedLocal, setIsMutedLocal] = useState(true);
 
   const [soundEnabled, setSoundEnabledState] = useState(() => getSoundEnabled());
   
@@ -247,8 +241,8 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
     });
   }, []);
 
-  const displayTechs = project.technologies.slice(0, 4);
-  const remainingTechsCount = project.technologies.length - 4;
+  const displayTechs = (project.technologies || []).slice(0, 4);
+  const remainingTechsCount = (project.technologies || []).length - 4;
 
   // Auto-play video: in viewport (mobile/desktop) + hover (desktop)
   useEffect(() => {
@@ -563,7 +557,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
           <div className="absolute bottom-3 right-3 z-30">
             <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md rounded-full px-3 py-1.5 text-white text-xs font-medium">
               <Eye size={12} className="opacity-80" />
-              <span>{project.views_count.toLocaleString()}</span>
+              <span>{(project.views_count || 0).toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -572,12 +566,15 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
         <div className="flex-1 p-6 space-y-4">
           {/* Title */}
           <h3 className="font-bold text-2xl text-foreground line-clamp-2 group-hover:text-primary transition-colors duration-300 leading-tight">
-            {project.title}
+            {project.title || 'Proyecto sin título'}
           </h3>
 
           {/* Description */}
           <p className="text-muted-foreground text-sm leading-relaxed">
-            {expanded ? project.description : (project.short_description || project.description)}
+            {expanded 
+              ? (project.description || 'Sin descripción disponible') 
+              : (project.short_description || project.description || 'Sin descripción disponible')
+            }
           </p>
 
           {/* Expanded Information */}
@@ -595,7 +592,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
               <div>
                 <h4 className="font-semibold mb-2 text-sm">Tecnologías</h4>
                 <div className="flex flex-wrap gap-2">
-                  {project.technologies.map((tech, index) => (
+                  {(project.technologies || []).map((tech, index) => (
                     <Badge 
                       key={index} 
                       variant="secondary"
@@ -612,7 +609,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
                 <div>
                   <h4 className="font-semibold mb-2 text-sm">Miembros del Equipo</h4>
                   <div className="flex flex-wrap gap-2">
-                    {project.team_members.map((member, index) => (
+                    {(project.team_members || []).map((member, index) => (
                       <Badge key={index} variant="outline" className="px-3 py-1 text-xs">
                         {member}
                       </Badge>
@@ -695,7 +692,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Calendar size={11} className="opacity-60" />
                   <span>
-                    {formatDistanceToNow(new Date(project.created_at), { 
+                    {formatDistanceToNow(new Date(project.created_at || Date.now()), { 
                       addSuffix: true,
                       locale: es
                     })}
