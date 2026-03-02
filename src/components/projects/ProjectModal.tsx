@@ -221,21 +221,34 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="p-0 fixed inset-0 w-screen h-[100vh] max-w-none border-none rounded-none bg-black/90 overflow-hidden">
+        <DialogContent 
+          className="p-0 fixed inset-0 w-screen h-screen max-w-none border-none rounded-none bg-black overflow-hidden"
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            transform: 'none',
+            maxWidth: 'none'
+          }}
+        >
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="absolute top-5 left-5 z-[10002] rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors p-2"
+            className="absolute top-4 left-4 z-[10002] rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors p-2"
             aria-label="Cerrar"
           >
             <X size={20} />
           </button>
 
-          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_420px] h-full min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] h-screen min-h-0">
             {/* Left: Media */}
-            <div className="relative flex items-center justify-center h-full min-h-0 w-full">
+            <div className="relative flex items-center justify-center bg-black min-h-0 w-full">
               {primaryMediaUrl && (
-                <div className={"relative w-full h-full flex items-center justify-center " + (isVideo ? "bg-black" : "bg-transparent")}>
+                <div className="relative w-full h-full flex items-center justify-center">
                   <MediaRenderer
                     url={primaryMediaUrl}
                     alt={project.title}

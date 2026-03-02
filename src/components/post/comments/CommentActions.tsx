@@ -8,11 +8,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { forwardRef } from "react";
 
 interface CommentActionsProps {
   onEdit: () => void;
   onDelete: () => void;
 }
+
+const DropdownMenuTriggerWithRef = forwardRef<HTMLButtonElement, React.ComponentProps<typeof Button>>(
+  ({ children, ...props }, ref) => (
+    <Button 
+      ref={ref}
+      variant="ghost" 
+      size="sm" 
+      className="h-5 w-5 p-0 hover:bg-accent rounded-full ml-1"
+      {...props}
+    >
+      {children}
+    </Button>
+  )
+);
+
+DropdownMenuTriggerWithRef.displayName = "DropdownMenuTriggerWithRef";
 
 export function CommentActions({ onEdit, onDelete }: CommentActionsProps) {
   return (
@@ -21,13 +38,9 @@ export function CommentActions({ onEdit, onDelete }: CommentActionsProps) {
         <TooltipTrigger asChild>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-5 w-5 p-0 hover:bg-accent rounded-full ml-1"
-              >
+              <DropdownMenuTriggerWithRef>
                 <MoreVertical className="h-3 w-3" />
-              </Button>
+              </DropdownMenuTriggerWithRef>
             </DropdownMenuTrigger>
             <DropdownMenuContent 
               align="end" 
