@@ -4,18 +4,20 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EditPostDialog } from "@/components/post/dialogs/EditPostDialog";
+import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthorPostOptionsMenuProps {
   postId: string;
+  postType?: string;
   onEdit?: () => void;
   onDelete?: () => void;
   canDelete?: boolean;
 }
 
-export function AuthorPostOptionsMenu({ postId, onEdit, onDelete, canDelete = true }: AuthorPostOptionsMenuProps) {
+export function AuthorPostOptionsMenu({ postId, postType, onEdit, onDelete, canDelete = true }: AuthorPostOptionsMenuProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -49,19 +51,27 @@ export function AuthorPostOptionsMenu({ postId, onEdit, onDelete, canDelete = tr
     }
   };
 
-  const handleEditPost = async (content: string) => {
+  const handleEditPost = async (content?: string, projectData?: any) => {
     try {
       const { updatePost } = await import("@/lib/api/posts");
-      const result = await updatePost({ postId, content });
+      
+      const params: any = { postId };
+      if (content) params.content = content;
+      if (projectData) params.projectData = projectData;
+      
+      const result = await updatePost(params);
       
       if (result.success) {
         toast({
-          title: "Publicación actualizada",
-          description: "Tu publicación ha sido actualizada exitosamente.",
+          title: postType === 'project' || postType === 'proyecto' ? "Proyecto actualizado" : "Publicación actualizada",
+          description: postType === 'project' || postType === 'proyecto' 
+            ? "Tu proyecto ha sido actualizado exitosamente."
+            : "Tu publicación ha sido actualizada exitosamente.",
         });
         setEditDialogOpen(false);
         queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
         queryClient.invalidateQueries({ queryKey: ["ideas"] });
+        queryClient.invalidateQueries({ queryKey: ["project-posts"] });
         if (onEdit) {
           onEdit();
         }
@@ -103,12 +113,22 @@ export function AuthorPostOptionsMenu({ postId, onEdit, onDelete, canDelete = tr
         </DropdownMenuContent>
       </DropdownMenu>
       
-      <EditPostDialog
-        postId={postId}
-        isOpen={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        onSave={handleEditPost}
-      />
+      {/* Show appropriate dialog based on post type */}
+      {postType === 'project' || postType === 'proyecto' ? (
+        <EditProjectDialog
+          projectId={postId}
+          isOpen={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onSave={(projectData) => handleEditPost(undefined, projectData)}
+        />
+      ) : (
+        <EditPostDialog
+          postId={postId}
+          isOpen={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onSave={(content) => handleEditPost(content)}
+        />
+      )}
     </>
   );
 }

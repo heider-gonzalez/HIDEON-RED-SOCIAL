@@ -133,16 +133,16 @@ export async function setPostInterest(postId: string, interestLevel: 'interested
   }
 }
 
-export async function updatePost(params: { postId: string; content?: string; visibility?: 'public' | 'friends' | 'private' }) {
+export async function updatePost(params: { postId: string; content?: string; visibility?: 'public' | 'friends' | 'private', projectData?: any }) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
     // First, get the current post to preserve important fields
-    const { data: currentPost, error: fetchError } = await supabase
-      .from('posts')
-      .select('post_type, project_status, technologies, demo_url, github_url, image_url, media_urls')
-      .eq('id', params.postId)
+    const { data: currentPost, error: fetchError } = await (supabase as any)
+      .from("posts")
+      .select('post_type, project_status, technologies, demo_url, github_url, image_url, media_urls, post_metadata')
+      .eq("id", params.postId)
       .single();
 
     if (fetchError) {
@@ -154,18 +154,57 @@ export async function updatePost(params: { postId: string; content?: string; vis
     if (params.content !== undefined) updateData.content = params.content;
     if (params.visibility !== undefined) updateData.visibility = params.visibility;
     
-    // Preserve project-specific fields if it's a project post
-    if (currentPost.post_type === 'project' || currentPost.post_type === 'proyecto') {
+    // Handle project-specific updates
+    if (params.projectData && currentPost && (currentPost.post_type === 'project' || currentPost.post_type === 'proyecto')) {
+      // Preserve post_type
       updateData.post_type = currentPost.post_type;
-      if (currentPost.project_status) updateData.project_status = currentPost.project_status;
-      if (currentPost.technologies) updateData.technologies = currentPost.technologies;
-      if (currentPost.demo_url) updateData.demo_url = currentPost.demo_url;
-      if (currentPost.github_url) updateData.github_url = currentPost.github_url;
-      if (currentPost.image_url) updateData.image_url = currentPost.image_url;
-      if (currentPost.media_urls) updateData.media_urls = currentPost.media_urls;
+      
+      // Update project metadata
+      const currentMetadata = currentPost.post_metadata as any || {};
+      const proyectoData = currentMetadata.proyecto || currentMetadata.project || {};
+      
+      const updatedMetadata = {
+        ...currentMetadata,
+        proyecto: {
+          ...proyectoData,
+          title: params.projectData.title || proyectoData.title,
+          description: params.projectData.description || proyectoData.description,
+          objectives: params.projectData.objectives || proyectoData.objectives,
+          technologies: params.projectData.technologies || proyectoData.technologies,
+          demo_url: params.projectData.demo_url || proyectoData.demo_url,
+          github_url: params.projectData.github_url || proyectoData.github_url,
+          status: params.projectData.project_status || proyectoData.status,
+          seeking_collaborators: params.projectData.seeking_collaborators || proyectoData.seeking_collaborators
+        }
+      };
+      
+      updateData.post_metadata = updatedMetadata;
+      
+      // Also update direct fields for compatibility
+      updateData.project_status = params.projectData.project_status || currentPost.project_status;
+      updateData.technologies = params.projectData.technologies || currentPost.technologies;
+      updateData.demo_url = params.projectData.demo_url || currentPost.demo_url;
+      updateData.github_url = params.projectData.github_url || currentPost.github_url;
+      
+      // Update content with title if provided
+      if (params.projectData.title) {
+        updateData.content = params.projectData.title + '\n\n' + (params.projectData.description || '');
+      }
+    } else {
+      // Preserve project-specific fields if it's a project post but no projectData provided
+      if (currentPost && (currentPost.post_type === 'project' || currentPost.post_type === 'proyecto')) {
+        updateData.post_type = currentPost.post_type;
+        if (currentPost.project_status) updateData.project_status = currentPost.project_status;
+        if (currentPost.technologies) updateData.technologies = currentPost.technologies;
+        if (currentPost.demo_url) updateData.demo_url = currentPost.demo_url;
+        if (currentPost.github_url) updateData.github_url = currentPost.github_url;
+        if (currentPost.image_url) updateData.image_url = currentPost.image_url;
+        if (currentPost.media_urls) updateData.media_urls = currentPost.media_urls;
+        if (currentPost.post_metadata) updateData.post_metadata = currentPost.post_metadata;
+      }
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('posts')
       .update(updateData)
       .eq('id', params.postId)
