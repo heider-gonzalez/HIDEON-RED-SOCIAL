@@ -138,9 +138,32 @@ export async function updatePost(params: { postId: string; content?: string; vis
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
+    // First, get the current post to preserve important fields
+    const { data: currentPost, error: fetchError } = await supabase
+      .from('posts')
+      .select('post_type, project_status, technologies, demo_url, github_url, image_url, media_urls')
+      .eq('id', params.postId)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching current post:", fetchError);
+      throw fetchError;
+    }
+
     const updateData: any = {};
     if (params.content !== undefined) updateData.content = params.content;
     if (params.visibility !== undefined) updateData.visibility = params.visibility;
+    
+    // Preserve project-specific fields if it's a project post
+    if (currentPost.post_type === 'project' || currentPost.post_type === 'proyecto') {
+      updateData.post_type = currentPost.post_type;
+      if (currentPost.project_status) updateData.project_status = currentPost.project_status;
+      if (currentPost.technologies) updateData.technologies = currentPost.technologies;
+      if (currentPost.demo_url) updateData.demo_url = currentPost.demo_url;
+      if (currentPost.github_url) updateData.github_url = currentPost.github_url;
+      if (currentPost.image_url) updateData.image_url = currentPost.image_url;
+      if (currentPost.media_urls) updateData.media_urls = currentPost.media_urls;
+    }
 
     const { error } = await supabase
       .from('posts')
