@@ -155,6 +155,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   // Autosave state
   const [showRestoreDraft, setShowRestoreDraft] = useState(false);
   const [autosaveData, setAutosaveData] = useState<AutosaveData | null>(null);
+  const [hasCheckedForDraft, setHasCheckedForDraft] = useState(false);
 
   const [ideaTitle, setIdeaTitle] = useState('');
   const [ideaDescription, setIdeaDescription] = useState('');
@@ -460,16 +461,24 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     (data) => setAutosaveData(data)
   );
 
-  // Check for saved data when modal opens
+  // Check for saved data when modal opens (only once per modal session)
   useEffect(() => {
-    if (isVisible && !showRestoreDraft) {
+    if (isVisible && !hasCheckedForDraft) {
       const saved = loadSavedData();
       if (saved && hasSavedData()) {
         setAutosaveData(saved);
         setShowRestoreDraft(true);
       }
+      setHasCheckedForDraft(true);
     }
-  }, [isVisible, selectedPostType, hasSavedData, loadSavedData]);
+  }, [isVisible, selectedPostType, hasCheckedForDraft]);
+
+  // Reset draft check when modal closes
+  useEffect(() => {
+    if (!isVisible) {
+      setHasCheckedForDraft(false);
+    }
+  }, [isVisible]);
 
   // Clear autosave when modal closes and content is published
   useEffect(() => {
