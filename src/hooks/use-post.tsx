@@ -63,11 +63,16 @@ export function usePost(post: Post, hideComments = false, initialShowComments = 
   );
   
   // Delete comment functionality
-  const { deleteComment } = useCommentMutations(post.id);
+  const { deleteComment, editComment } = useCommentMutations(post.id);
   
   // Wrapper function to provide the necessary parameters to submitComment
   const handleSubmitComment = () => {
     submitComment(newComment, commentImage, replyTo);
+  };
+  
+  // Wrapper function for updating comments
+  const handleUpdateComment = (commentId: string, newContent: string) => {
+    editComment({ commentId, content: newContent });
   };
   
   return {
@@ -90,6 +95,7 @@ export function usePost(post: Post, hideComments = false, initialShowComments = 
     handleSubmitComment,
     handleCancelReply,
     handleDeleteComment: deleteComment,
+    handleUpdateComment,
     setNewComment,
     isSubmitting
   };

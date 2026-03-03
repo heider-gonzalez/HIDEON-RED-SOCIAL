@@ -160,3 +160,22 @@ export async function getComments(postId: string) {
 
   return rootComments;
 }
+
+export async function updateComment(commentId: string, content: string) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session?.user) throw new Error("Usuario no autenticado");
+
+  const { data: comment, error } = await supabase
+    .from('comments')
+    .update({
+      content,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', commentId)
+    .eq('user_id', sessionData.session.user.id) // Solo el autor puede editar
+    .select('*, profiles(username, avatar_url)')
+    .single();
+
+  if (error) throw error;
+  return comment;
+}

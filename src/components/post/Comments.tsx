@@ -14,6 +14,7 @@ interface CommentsProps {
   onReply: (id: string, username: string) => void;
   onSubmitComment: () => void;
   onDeleteComment: (commentId: string) => void;
+  onUpdateComment?: (commentId: string, newContent: string) => void;
   newComment: string;
   onNewCommentChange: (value: string) => void;
   replyTo: { id: string; username: string } | null;
@@ -36,6 +37,7 @@ export function Comments({
   onReply,
   onSubmitComment,
   onDeleteComment,
+  onUpdateComment,
   newComment,
   onNewCommentChange,
   replyTo,
@@ -70,6 +72,7 @@ export function Comments({
               onReaction={onReaction}
               onReply={onReply}
               onDeleteComment={onDeleteComment}
+              onUpdateComment={onUpdateComment}
               postAuthorId={postAuthorId}
               readOnly={true}
               hideReplies={true}
@@ -120,6 +123,7 @@ export function Comments({
           onReaction={onReaction}
           onReply={onReply}
           onDeleteComment={onDeleteComment}
+          onUpdateComment={onUpdateComment}
           postAuthorId={postAuthorId}
         />
 

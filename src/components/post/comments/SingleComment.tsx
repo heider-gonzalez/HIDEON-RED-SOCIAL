@@ -1,20 +1,24 @@
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { CommentHeader } from "./CommentHeader";
 import { CommentContent } from "./CommentContent";
 import { CommentFooter } from "./CommentFooter";
 import { CommentReactionSummary } from "./CommentReactionSummary";
 import { ReportCommentDialog } from "./ReportCommentDialog";
 import { CommentActions } from "./CommentActions";
+import { EditCommentDialog } from "./EditCommentDialog";
 import type { Comment } from "@/types/post";
 import type { ReactionType } from "@/types/database/social.types";
 import { Link } from "react-router-dom";
+import { updateComment } from "@/lib/api/comments";
+import { useToast } from "@/hooks/use-toast";
 
 interface SingleCommentProps {
   comment: Comment;
   onReaction: (commentId: string, type: ReactionType) => void;
   onReply: (id: string, username: string) => void;
   onDeleteComment: (commentId: string) => void;
+  onUpdateComment?: (commentId: string, newContent: string) => void;
   isReply?: boolean;
   postAuthorId?: string;
   readOnly?: boolean;
@@ -26,11 +30,14 @@ export function SingleComment({
   onReaction,
   onReply,
   onDeleteComment,
+  onUpdateComment,
   isReply = false,
   postAuthorId,
   readOnly = false,
   hideReplies = false
 }: SingleCommentProps) {
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const { toast } = useToast();
   const handleReply = useCallback(() => {
     const username = comment.profiles?.username || "usuario";
     onReply(comment.id, username);
@@ -41,9 +48,26 @@ export function SingleComment({
   }, [comment.id, onDeleteComment]);
 
   const handleEdit = useCallback(() => {
-    // This is a placeholder for future edit functionality
-    console.log("Edit comment:", comment.id);
-  }, [comment.id]);
+    setEditDialogOpen(true);
+  }, []);
+
+  const handleSaveEdit = useCallback(async (newContent: string) => {
+    try {
+      await updateComment(comment.id, newContent);
+      onUpdateComment?.(comment.id, newContent);
+      toast({
+        title: "Comentario actualizado",
+        description: "Tu comentario ha sido actualizado exitosamente."
+      });
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el comentario. Intenta nuevamente.",
+        variant: "destructive"
+      });
+    }
+  }, [comment.id, onUpdateComment, toast]);
 
   const reactionSummary = comment.reactions_by_type && Object.keys(comment.reactions_by_type).length > 0 ? (
     <div className="rounded-full border border-border bg-background/90 px-2 py-0.5 shadow-sm">
@@ -109,6 +133,7 @@ export function SingleComment({
                 onReaction={onReaction}
                 onReply={onReply}
                 onDeleteComment={onDeleteComment}
+                onUpdateComment={onUpdateComment}
                 isReply={true}
                 postAuthorId={postAuthorId}
                 readOnly={readOnly}
@@ -129,6 +154,14 @@ export function SingleComment({
           </div>
         )}
       </div>
+      
+      {/* Edit Comment Dialog */}
+      <EditCommentDialog
+        commentId={comment.id}
+        isOpen={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }
