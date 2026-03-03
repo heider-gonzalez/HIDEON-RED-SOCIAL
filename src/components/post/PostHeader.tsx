@@ -390,6 +390,8 @@ export function PostHeader({
           postId={post.id} 
           postUserId={post.user_id || ''} 
           isHidden={isHidden}
+          canDelete={canDelete}
+          onDelete={onDelete}
         />
       );
     }

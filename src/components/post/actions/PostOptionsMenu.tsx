@@ -25,6 +25,7 @@ interface PostOptionsMenuProps {
   isHidden?: boolean;
   onHideToggle?: () => void;
   isAuthor?: boolean;
+  canDelete?: boolean;
   onDelete?: () => void;
 }
 
@@ -34,6 +35,7 @@ export function PostOptionsMenu({
   isHidden = false,
   onHideToggle,
   isAuthor = false,
+  canDelete = false,
   onDelete
 }: PostOptionsMenuProps) {
   const [reportOpen, setReportOpen] = useState(false);
@@ -110,7 +112,7 @@ export function PostOptionsMenu({
           onHideUser={handleHideUser}
         />
         
-        {isAuthor && onDelete && (
+        {canDelete && onDelete && (
           <DeleteMenuItem onDelete={onDelete} />
         )}
         
