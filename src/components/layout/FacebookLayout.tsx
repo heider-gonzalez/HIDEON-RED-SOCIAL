@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { TopNavigation } from '@/components/navigation/TopNavigation';
 import { LeftSidebar } from './LeftSidebar';
 import { RightSidebar } from './RightSidebar';
@@ -10,6 +10,7 @@ import { ChatSystemProvider } from '@/hooks/use-chat-system';
 import { NotificationPermissionBanner } from '@/components/notifications/NotificationPermissionBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
+import { forceUnlockBodyScroll } from '@/utils/scroll-lock';
 
 interface FacebookLayoutProps {
   children: ReactNode;
@@ -37,10 +38,16 @@ export function FacebookLayout({
   hideNavigation = false 
 }: FacebookLayoutProps) {
   const isMobile = useIsMobile();
+  const location = useLocation();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [pendingRequestsCount, setPendingRequestsCount] = useState<number>(0);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
   const [newPosts, setNewPosts] = useState<number>(0);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    forceUnlockBodyScroll();
+  }, [isMobile, location.pathname]);
 
   // Get current user and pending requests count
   useEffect(() => {
