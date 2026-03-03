@@ -18,6 +18,8 @@ interface CommentActionsProps {
   reactionsCount: number;
   reactionsByType?: Record<string, number> | null;
   onReaction: (commentId: string, type: ReactionType) => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 function getTopReactions(reactionsByType?: Record<string, number> | null) {
@@ -39,6 +41,8 @@ export function CommentActions({
   reactionsCount,
   reactionsByType,
   onReaction,
+  canEdit = true,
+  canDelete = true,
 }: CommentActionsProps) {
   const topReactions = getTopReactions(reactionsByType);
 
@@ -109,20 +113,24 @@ export function CommentActions({
                 </div>
               </div>
 
-              <DropdownMenuItem 
-                className="cursor-pointer text-xs py-1"
-                onClick={onEdit}
-              >
-                <Pencil className="h-3 w-3 mr-2" />
-                <span>Editar</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="cursor-pointer text-destructive focus:text-destructive text-xs py-1"
-                onClick={onDelete}
-              >
-                <Trash2 className="h-3 w-3 mr-2" />
-                <span>Eliminar</span>
-              </DropdownMenuItem>
+              {canEdit && (
+                <DropdownMenuItem 
+                  className="cursor-pointer text-xs py-1"
+                  onClick={onEdit}
+                >
+                  <Pencil className="h-3 w-3 mr-2" />
+                  <span>Editar</span>
+                </DropdownMenuItem>
+              )}
+              {canDelete && (
+                <DropdownMenuItem 
+                  className="cursor-pointer text-destructive focus:text-destructive text-xs py-1"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="h-3 w-3 mr-2" />
+                  <span>Eliminar</span>
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </TooltipTrigger>

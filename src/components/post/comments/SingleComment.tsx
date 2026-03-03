@@ -13,6 +13,8 @@ import type { ReactionType } from "@/types/database/social.types";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { normalizeReactionType, type ReactionType as UiReactionType } from "@/components/post/reactions/ReactionIcons";
+import { useAuth } from "@/providers/AuthProvider";
+import { useUserRoles } from "@/hooks/use-user-roles";
 
 interface SingleCommentProps {
   comment: Comment;
@@ -43,6 +45,12 @@ export function SingleComment({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [repliesCollapsed, setRepliesCollapsed] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { data: roles } = useUserRoles();
+
+  const isCommentAuthor = Boolean(user?.id) && comment.user_id === user!.id;
+  const canDeleteComment = isCommentAuthor || Boolean(roles?.isModeratorOrAdmin);
+  const canEditComment = isCommentAuthor;
 
   const menuUserReaction: UiReactionType | null = comment.user_reaction
     ? normalizeReactionType(comment.user_reaction)
@@ -149,6 +157,8 @@ export function SingleComment({
               reactionsCount={comment.likes_count || 0}
               reactionsByType={comment.reactions_by_type || null}
               onReaction={(id, type) => onReaction(id, type as unknown as ReactionType)}
+              canDelete={canDeleteComment}
+              canEdit={canEditComment}
             />
           )}
         </div>

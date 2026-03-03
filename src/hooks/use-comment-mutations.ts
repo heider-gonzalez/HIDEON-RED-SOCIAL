@@ -100,7 +100,14 @@ export function useCommentMutations(postId: string) {
       }
       
       if (comment.user_id !== user.id) {
-        throw new Error("No tienes permiso para eliminar este comentario");
+        const [{ data: isMod }, { data: isAdmin }] = await Promise.all([
+          (supabase.rpc as any)("has_role", { _role: "moderator", _user_id: user.id }),
+          (supabase.rpc as any)("has_role", { _role: "admin", _user_id: user.id }),
+        ]);
+
+        if (!Boolean(isMod) && !Boolean(isAdmin)) {
+          throw new Error("No tienes permiso para eliminar este comentario");
+        }
       }
       
       // Eliminar el comentario
