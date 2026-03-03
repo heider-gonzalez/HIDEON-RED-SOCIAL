@@ -3,7 +3,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Feed } from "@/components/feed/Feed";
 import { Grid, Lightbulb, FolderKanban, Award, FileText } from "lucide-react";
-import { PinnedProjectsSection } from "./PinnedProjectsSection";
 import { ProfilePortfolio } from "./ProfilePortfolio";
 import { ProfileBadges } from "./ProfileBadges";
 import { ProfileStats } from "./ProfileStats";
@@ -86,15 +85,15 @@ export function ProfileContent({
       </TabsList>
       
       <TabsContent value="posts" className="mt-0">
-        <Feed userId={profileId} />
+        <Feed userId={profileId} contentType="regular" />
       </TabsContent>
       
       <TabsContent value="ideas" className="mt-0">
-        <Feed userId={profileId} />
+        <Feed userId={profileId} contentType="idea" />
       </TabsContent>
       
       <TabsContent value="projects" className="mt-0">
-        <PinnedProjectsSection profileId={profileId} isOwner={isOwner} />
+        <Feed userId={profileId} contentType="project" />
       </TabsContent>
 
       <TabsContent value="portfolio" className="mt-0">

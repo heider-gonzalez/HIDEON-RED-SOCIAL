@@ -31,9 +31,10 @@ interface FeedProps {
   userId?: string;
   groupId?: string;
   companyId?: string;
+  contentType?: 'regular' | 'idea' | 'project';
 }
 
-export function Feed({ userId, groupId, companyId }: FeedProps) {
+export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
   const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuth();
   const [pullDistance, setPullDistance] = useState(0);
@@ -62,7 +63,7 @@ export function Feed({ userId, groupId, companyId }: FeedProps) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
-  } = usePersonalizedFeed(userId, groupId, companyId);
+  } = usePersonalizedFeed(userId, groupId, companyId, contentType);
   const loaderRef = useRef<HTMLDivElement>(null);
 
   const isAtTop = useCallback(() => {

@@ -311,10 +311,11 @@ export async function getPostsPage(params: {
   userId?: string;
   groupId?: string;
   companyId?: string;
+  contentType?: 'regular' | 'idea' | 'project';
   limit?: number;
   cursor?: string | null;
 }) {
-  const { userId, groupId, companyId, limit = 20, cursor } = params;
+  const { userId, groupId, companyId, contentType, limit = 20, cursor } = params;
 
   const hasSharedFields = await getHasSharedFields();
 
@@ -341,6 +342,18 @@ export async function getPostsPage(params: {
   if (groupId) query = query.eq('group_id', groupId);
   if (companyId) query = query.eq('company_id', companyId);
   if (cursor) query = query.lt('created_at', cursor);
+
+  if (contentType === 'regular') {
+    query = query.or('post_type.eq.regular,post_type.is.null');
+  }
+
+  if (contentType === 'idea') {
+    query = query.eq('post_type', 'idea').not('idea', 'is', null);
+  }
+
+  if (contentType === 'project') {
+    query = query.in('post_type', ['project', 'proyecto']);
+  }
 
   const { data, error } = await query
     .order('created_at', { ascending: false })

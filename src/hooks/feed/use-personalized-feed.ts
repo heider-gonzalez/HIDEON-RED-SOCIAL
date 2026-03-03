@@ -31,7 +31,12 @@ function mergePreservingAllPosts(raw: Post[], prioritized: Post[]) {
   return ordered;
 }
 
-export function usePersonalizedFeed(userId?: string, groupId?: string, companyId?: string) {
+export function usePersonalizedFeed(
+  userId?: string,
+  groupId?: string,
+  companyId?: string,
+  contentType?: 'regular' | 'idea' | 'project'
+) {
   const [isPersonalized, setIsPersonalized] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -53,12 +58,13 @@ export function usePersonalizedFeed(userId?: string, groupId?: string, companyId
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["posts", userId, groupId, companyId, "infinite"],
+    queryKey: ["posts", userId, groupId, companyId, contentType, "infinite"],
     queryFn: ({ pageParam }) =>
       getPostsPage({
         userId,
         groupId,
         companyId,
+        contentType,
         limit: PAGE_SIZE,
         cursor: (pageParam as string | undefined) ?? null,
       }),
