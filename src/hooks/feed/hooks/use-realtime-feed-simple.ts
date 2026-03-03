@@ -9,9 +9,12 @@ let subscriptionCount = 0;
 export function useRealtimeFeedSimple(userId?: string) {
   const queryClient = useQueryClient();
   const isSubscribedRef = useRef(false);
-  const retryTimeoutRef = useRef<NodeJS.Timeout>();
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fallbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+
     // Prevent multiple subscriptions from running simultaneously
     if (!userId || globalSubscriptionsActive || isSubscribedRef.current) {
       return;
@@ -21,25 +24,41 @@ export function useRealtimeFeedSimple(userId?: string) {
     isSubscribedRef.current = true;
     subscriptionCount++;
 
-    let postsChannel: any;
-    let reactionsChannel: any;
-    let commentsChannel: any;
+    let postsChannel: any = null;
+    let reactionsChannel: any = null;
+    let commentsChannel: any = null;
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 2; // Reduced from 3 to 2
+    let cancelled = false;
+
+    const safeRemoveChannel = (channel: any) => {
+      if (!channel) return;
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {
+        console.warn('Error removing realtime channel:', e);
+      }
+    };
 
     const subscribeChannels = async () => {
       try {
+        if (cancelled) return;
         // Clean up existing channels first
-        if (postsChannel) supabase.removeChannel(postsChannel);
-        if (reactionsChannel) supabase.removeChannel(reactionsChannel);
-        if (commentsChannel) supabase.removeChannel(commentsChannel);
+        safeRemoveChannel(postsChannel);
+        safeRemoveChannel(reactionsChannel);
+        safeRemoveChannel(commentsChannel);
 
-        // Create channels with unique names to avoid conflicts
-        const channelSuffix = `_${userId?.slice(-8)}_${Date.now()}`;
-        
+        postsChannel = null;
+        reactionsChannel = null;
+        commentsChannel = null;
+
+        // Stable names per user to avoid multiple instances and enable idempotent cleanup
+        const channelSuffix = `_${userId.slice(-8)}`;
+
         // Posts channel - only listen to INSERT events to reduce load
         postsChannel = supabase
           .channel(`posts_feed${channelSuffix}`)
+
           .on(
             'postgres_changes',
             {
@@ -49,12 +68,14 @@ export function useRealtimeFeedSimple(userId?: string) {
             },
             (payload) => {
               // Debounced invalidation
-              clearTimeout(retryTimeoutRef.current);
-              retryTimeoutRef.current = setTimeout(() => {
+              if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+              debounceTimeoutRef.current = setTimeout(() => {
+                if (cancelled) return;
                 queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
               }, 1000);
             }
           )
+
           .on(
             'postgres_changes',
             {
@@ -63,8 +84,9 @@ export function useRealtimeFeedSimple(userId?: string) {
               table: 'posts'
             },
             (payload) => {
-              clearTimeout(retryTimeoutRef.current);
-              retryTimeoutRef.current = setTimeout(() => {
+              if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+              debounceTimeoutRef.current = setTimeout(() => {
+                if (cancelled) return;
                 queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
               }, 500);
             }
@@ -83,8 +105,9 @@ export function useRealtimeFeedSimple(userId?: string) {
             (payload) => {
               const postId = (payload.new as any)?.post_id;
               // Throttled invalidation - only update every 2 seconds max
-              clearTimeout(retryTimeoutRef.current);
-              retryTimeoutRef.current = setTimeout(() => {
+              if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+              debounceTimeoutRef.current = setTimeout(() => {
+                if (cancelled) return;
                 if (postId) {
                   queryClient.invalidateQueries({ queryKey: ["posts", postId] });
                 } else {
@@ -107,8 +130,9 @@ export function useRealtimeFeedSimple(userId?: string) {
             (payload) => {
               const postId = (payload.new as any)?.post_id;
               // Throttled invalidation - only update every 2 seconds max
-              clearTimeout(retryTimeoutRef.current);
-              retryTimeoutRef.current = setTimeout(() => {
+              if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+              debounceTimeoutRef.current = setTimeout(() => {
+                if (cancelled) return;
                 if (postId) {
                   queryClient.invalidateQueries({ queryKey: ["comments", postId] });
                   queryClient.invalidateQueries({ queryKey: ["posts", postId] });
@@ -123,7 +147,7 @@ export function useRealtimeFeedSimple(userId?: string) {
         const subscribeWithRetry = (channel: any, name: string): Promise<string> => {
           return new Promise((resolve) => {
             let resolved = false;
-            
+
             channel.subscribe((status: string) => {
               if (resolved) return;
 
@@ -139,7 +163,7 @@ export function useRealtimeFeedSimple(userId?: string) {
                 resolve('FAILED');
               }
             });
-            
+
             // Longer timeout - 15 seconds
             setTimeout(() => {
               if (!resolved) {
@@ -153,40 +177,45 @@ export function useRealtimeFeedSimple(userId?: string) {
         // Subscribe to channels with staggered timing to reduce load
         const postsStatus = await subscribeWithRetry(postsChannel, 'Posts');
         await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
-        
+
         const reactionsStatus = await subscribeWithRetry(reactionsChannel, 'Reactions');
         await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
-        
+
         const commentsStatus = await subscribeWithRetry(commentsChannel, 'Comments');
 
         const successfulSubscriptions = [postsStatus, reactionsStatus, commentsStatus]
           .filter(status => status === 'SUBSCRIBED').length;
-        
+
         if (successfulSubscriptions >= 1) { // Accept if at least 1 subscription works
           reconnectAttempts = 0; // Reset on successful connection
         } else if (reconnectAttempts < maxReconnectAttempts) {
           reconnectAttempts++;
-          setTimeout(() => subscribeChannels(), 3000 * reconnectAttempts);
+          if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (cancelled) return;
+            subscribeChannels();
+          }, 3000 * reconnectAttempts);
         } else {
           console.error(' Max reconnection attempts reached - using fallback polling');
           // Fallback to periodic cache invalidation
-          const fallbackInterval = setInterval(() => {
-            queryClient.invalidateQueries({ queryKey: ["posts"] });
-          }, 60000); // Every minute as fallback
-          
-          // Store interval for cleanup
-          retryTimeoutRef.current = fallbackInterval as any;
+          if (!fallbackIntervalRef.current) {
+            fallbackIntervalRef.current = setInterval(() => {
+              if (cancelled) return;
+              queryClient.invalidateQueries({ queryKey: ["posts"] });
+            }, 60000); // Every minute as fallback
+          }
         }
 
       } catch (error) {
         console.error(' Critical error setting up realtime subscriptions:', error);
-        
+
         // Fallback polling on critical error
-        const errorFallbackInterval = setInterval(() => {
-          queryClient.invalidateQueries({ queryKey: ["posts"] });
-        }, 120000); // Every 2 minutes on error
-        
-        retryTimeoutRef.current = errorFallbackInterval as any;
+        if (!fallbackIntervalRef.current) {
+          fallbackIntervalRef.current = setInterval(() => {
+            if (cancelled) return;
+            queryClient.invalidateQueries({ queryKey: ["posts"] });
+          }, 120000); // Every 2 minutes on error
+        }
       }
     };
 
@@ -194,15 +223,29 @@ export function useRealtimeFeedSimple(userId?: string) {
 
     // Cleanup function
     return () => {
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-        clearInterval(retryTimeoutRef.current as any);
+      cancelled = true;
+
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = null;
       }
-      
-      if (postsChannel) supabase.removeChannel(postsChannel);
-      if (reactionsChannel) supabase.removeChannel(reactionsChannel);
-      if (commentsChannel) supabase.removeChannel(commentsChannel);
-      
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      if (fallbackIntervalRef.current) {
+        clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = null;
+      }
+
+      safeRemoveChannel(postsChannel);
+      safeRemoveChannel(reactionsChannel);
+      safeRemoveChannel(commentsChannel);
+
+      postsChannel = null;
+      reactionsChannel = null;
+      commentsChannel = null;
+
       globalSubscriptionsActive = false;
       isSubscribedRef.current = false;
       subscriptionCount--;

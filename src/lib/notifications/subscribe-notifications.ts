@@ -19,14 +19,32 @@ let subscriptionManager: any = null;
 let removeChannelCallback: (() => void) | null = null;
 let retryAttempt = 0;
 let retryTimeoutId: NodeJS.Timeout | null = null;
+let subscriptionGeneration = 0;
+const MAX_RETRY_ATTEMPTS = 5;
 
 // Create a simple subscription manager for notifications
 function createNotificationSubscriptionManager() {
   let currentChannel: any = null;
   let pendingSubscription: Promise<string> | null = null;
+  let isActive = true;
+
+  const safeRemove = () => {
+    if (!currentChannel) return;
+    const ch = currentChannel;
+    currentChannel = null;
+    pendingSubscription = null;
+    try {
+      supabase.removeChannel(ch);
+    } catch (e) {
+      console.warn('Error removing notifications channel:', e);
+    }
+  };
   
   return {
     getOrCreateChannel: (channelName: string, setupCallback: (channel: any) => void) => {
+      if (!isActive) {
+        return Promise.reject(new Error('Notifications subscription manager is inactive'));
+      }
       if (currentChannel) {
         return Promise.resolve("SUBSCRIBED");
       }
@@ -40,13 +58,7 @@ function createNotificationSubscriptionManager() {
       
       pendingSubscription = new Promise<string>((resolve, reject) => {
         const timeout = setTimeout(() => {
-          try {
-            supabase.removeChannel(currentChannel);
-          } catch {
-            // ignore
-          }
-          currentChannel = null;
-          pendingSubscription = null;
+          safeRemove();
           reject(new Error("Subscription timeout"));
         }, 60000);
 
@@ -58,13 +70,7 @@ function createNotificationSubscriptionManager() {
             resolve(status);
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
             clearTimeout(timeout);
-            try {
-              supabase.removeChannel(currentChannel);
-            } catch {
-              // ignore
-            }
-            currentChannel = null;
-            pendingSubscription = null;
+            safeRemove();
             reject(new Error(`Subscription failed with status: ${status}`));
           }
         });
@@ -74,11 +80,7 @@ function createNotificationSubscriptionManager() {
     },
     
     removeChannel: () => {
-      if (currentChannel) {
-        supabase.removeChannel(currentChannel);
-        currentChannel = null;
-      }
-      pendingSubscription = null;
+      safeRemove();
     }
   };
 }
@@ -87,6 +89,8 @@ export function subscribeToNotifications(
   callback: (notification: NotificationWithSender) => void,
   toastCallback: (title: string, description: string) => void
 ) {
+  const myGeneration = ++subscriptionGeneration;
+
   // Reset retry attempt on fresh subscribe
   retryAttempt = 0;
   if (retryTimeoutId) {
@@ -275,9 +279,15 @@ export function subscribeToNotifications(
   });
 
   const retry = (attempt: number) => {
+    if (myGeneration !== subscriptionGeneration) return;
+    if (attempt > MAX_RETRY_ATTEMPTS) {
+      console.error('Notifications realtime disabled: max retry attempts reached');
+      return;
+    }
     const waitMs = Math.min(30000, 2000 * Math.pow(2, attempt - 1)); // exponential backoff starting at 2s
     console.log(`Retrying notifications subscription in ${waitMs}ms (attempt ${attempt})`);
     retryTimeoutId = setTimeout(() => {
+      if (myGeneration !== subscriptionGeneration) return;
       subscriptionManager?.removeChannel();
       subscribeToNotifications(callback, toastCallback);
     }, waitMs);
@@ -292,6 +302,8 @@ export function subscribeToNotifications(
 
   // Return cleanup function
   removeChannelCallback = () => {
+    // Invalidate any pending retries/subscriptions
+    subscriptionGeneration += 1;
     if (retryTimeoutId) {
       clearTimeout(retryTimeoutId);
       retryTimeoutId = null;
