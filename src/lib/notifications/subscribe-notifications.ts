@@ -2,6 +2,19 @@ import { supabase } from "@/integrations/supabase/client";
 import type { NotificationWithSender, NotificationType } from "@/types/notifications";
 import { formatNotificationMessage } from "./format-message";
 
+function safePlayNotificationSound() {
+  try {
+    const notificationSound = new Audio("/notification.mp3");
+    notificationSound.play().catch((err: any) => {
+      const name = String(err?.name || "");
+      // AbortError/NotAllowedError son comunes por políticas del browser o interrupciones.
+      if (name === "AbortError" || name === "NotAllowedError") return;
+    });
+  } catch {
+    // ignore
+  }
+}
+
 let subscriptionManager: any = null;
 let removeChannelCallback: (() => void) | null = null;
 let retryAttempt = 0;
@@ -134,8 +147,7 @@ export function subscribeToNotifications(
             callback(systemNotification);
             
             // Play notification sound
-            const notificationSound = new Audio("/notification.mp3");
-            notificationSound.play().catch(console.error);
+            safePlayNotificationSound();
             
             toastCallback(
               "Nueva notificación",
@@ -146,7 +158,7 @@ export function subscribeToNotifications(
           }
           
           // Fetch sender info for the new notification
-          const { data: senderData, error: senderError } = await supabase
+          const { data: senderData, error: senderError } = await (supabase as any)
             .from('profiles')
             .select('id, username, avatar_url')
             .eq('id', payload.new.sender_id)
@@ -183,8 +195,7 @@ export function subscribeToNotifications(
             callback(newNotification);
             
             // Play notification sound
-            const notificationSound = new Audio("/notification.mp3");
-            notificationSound.play().catch(console.error);
+            safePlayNotificationSound();
             
             toastCallback(
               "Nueva notificación",
@@ -198,7 +209,7 @@ export function subscribeToNotifications(
           
           // Fetch post data if this notification is related to a post
           if (payload.new.post_id) {
-            const { data: postData } = await supabase
+            const { data: postData } = await (supabase as any)
               .from('posts')
               .select('content, media_url')
               .eq('id', payload.new.post_id)
@@ -212,7 +223,7 @@ export function subscribeToNotifications(
           
           // Fetch comment data if this notification is related to a comment
           if (payload.new.comment_id) {
-            const { data: commentData } = await supabase
+            const { data: commentData } = await (supabase as any)
               .from('comments')
               .select('content')
               .eq('id', payload.new.comment_id)
@@ -248,8 +259,7 @@ export function subscribeToNotifications(
             callback(newNotification);
             
             // Play notification sound
-            const notificationSound = new Audio("/notification.mp3");
-            notificationSound.play().catch(console.error);
+            safePlayNotificationSound();
             
             toastCallback(
               "Nueva notificación",

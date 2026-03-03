@@ -19,7 +19,8 @@ export function useReelComments(postId: string) {
   const { 
     comments, 
     handleCommentReaction, 
-    handleReply 
+    handleReply,
+    loadReplies,
   } = usePostComments(postId, showComments, setReplyTo, setNewComment);
   
   // Get mutations for comments
@@ -75,6 +76,7 @@ export function useReelComments(postId: string) {
     handleSubmitComment,
     handleCommentLike,
     handleReply,
+    loadReplies,
     handleDeleteComment,
     handleCancelReply
   };

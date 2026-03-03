@@ -45,7 +45,8 @@ export function usePost(post: Post, hideComments = false, initialShowComments = 
     handleReply,
     loadMoreRef,
     hasNextPage,
-    isFetchingNextPage
+    isFetchingNextPage,
+    loadReplies,
   } = usePostComments(post.id, showComments, setReplyTo, setNewComment);
   
   // Post reactions
@@ -63,7 +64,7 @@ export function usePost(post: Post, hideComments = false, initialShowComments = 
   );
   
   // Delete comment functionality
-  const { deleteComment, editComment } = useCommentMutations(post.id);
+  const { deleteComment, editCommentAsync } = useCommentMutations(post.id);
   
   // Wrapper function to provide the necessary parameters to submitComment
   const handleSubmitComment = () => {
@@ -71,8 +72,8 @@ export function usePost(post: Post, hideComments = false, initialShowComments = 
   };
   
   // Wrapper function for updating comments
-  const handleUpdateComment = (commentId: string, newContent: string) => {
-    editComment({ commentId, content: newContent });
+  const handleUpdateComment = async (commentId: string, newContent: string) => {
+    await editCommentAsync({ commentId, content: newContent });
   };
   
   return {
@@ -92,6 +93,7 @@ export function usePost(post: Post, hideComments = false, initialShowComments = 
     toggleComments,
     handleCommentReaction,
     handleReply,
+    loadReplies,
     handleSubmitComment,
     handleCancelReply,
     handleDeleteComment: deleteComment,

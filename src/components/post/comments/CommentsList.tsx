@@ -8,7 +8,8 @@ interface CommentsListProps {
   onReaction: (commentId: string, type: ReactionType) => void;
   onReply: (id: string, username: string) => void;
   onDeleteComment: (commentId: string) => void;
-  onUpdateComment?: (commentId: string, newContent: string) => void;
+  onUpdateComment?: (commentId: string, newContent: string) => Promise<void>;
+  onLoadReplies?: (parentCommentId: string) => Promise<void>;
   postAuthorId?: string;
   readOnly?: boolean;
   hideReplies?: boolean;
@@ -20,6 +21,7 @@ export function CommentsList({
   onReply,
   onDeleteComment,
   onUpdateComment,
+  onLoadReplies,
   postAuthorId,
   readOnly = false,
   hideReplies = false
@@ -42,6 +44,7 @@ export function CommentsList({
           onReply={onReply}
           onDeleteComment={onDeleteComment}
           onUpdateComment={onUpdateComment}
+          onLoadReplies={onLoadReplies}
           postAuthorId={postAuthorId}
           readOnly={readOnly}
           hideReplies={hideReplies}

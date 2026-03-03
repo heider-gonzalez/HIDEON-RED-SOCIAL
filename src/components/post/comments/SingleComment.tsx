@@ -1,5 +1,6 @@
 
 import { useCallback, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { CommentHeader } from "./CommentHeader";
 import { CommentContent } from "./CommentContent";
 import { CommentFooter } from "./CommentFooter";
@@ -10,15 +11,16 @@ import { EditCommentDialog } from "./EditCommentDialog";
 import type { Comment } from "@/types/post";
 import type { ReactionType } from "@/types/database/social.types";
 import { Link } from "react-router-dom";
-import { updateComment } from "@/lib/api/comments";
 import { useToast } from "@/hooks/use-toast";
+import { normalizeReactionType, type ReactionType as UiReactionType } from "@/components/post/reactions/ReactionIcons";
 
 interface SingleCommentProps {
   comment: Comment;
   onReaction: (commentId: string, type: ReactionType) => void;
   onReply: (id: string, username: string) => void;
   onDeleteComment: (commentId: string) => void;
-  onUpdateComment?: (commentId: string, newContent: string) => void;
+  onUpdateComment?: (commentId: string, newContent: string) => Promise<void>;
+  onLoadReplies?: (parentCommentId: string) => Promise<void>;
   isReply?: boolean;
   postAuthorId?: string;
   readOnly?: boolean;
@@ -31,6 +33,7 @@ export function SingleComment({
   onReply,
   onDeleteComment,
   onUpdateComment,
+  onLoadReplies,
   isReply = false,
   postAuthorId,
   readOnly = false,
@@ -38,6 +41,10 @@ export function SingleComment({
 }: SingleCommentProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  const menuUserReaction: UiReactionType | null = comment.user_reaction
+    ? normalizeReactionType(comment.user_reaction)
+    : null;
   const handleReply = useCallback(() => {
     const username = comment.profiles?.username || "usuario";
     onReply(comment.id, username);
@@ -53,8 +60,11 @@ export function SingleComment({
 
   const handleSaveEdit = useCallback(async (newContent: string) => {
     try {
-      await updateComment(comment.id, newContent);
-      onUpdateComment?.(comment.id, newContent);
+      if (!onUpdateComment) {
+        throw new Error("Missing onUpdateComment handler");
+      }
+
+      await onUpdateComment(comment.id, newContent);
       toast({
         title: "Comentario actualizado",
         description: "Tu comentario ha sido actualizado exitosamente."
@@ -79,12 +89,25 @@ export function SingleComment({
     </div>
   ) : null;
 
+  const hasLoadedReplies = Array.isArray(comment.replies) && comment.replies.length > 0;
+  const canLoadReplies = !readOnly && !hideReplies && (comment.replies_count || 0) > 0 && !hasLoadedReplies;
+
+  const handleLoadReplies = useCallback(async () => {
+    if (!onLoadReplies) return;
+    await onLoadReplies(comment.id);
+  }, [comment.id, onLoadReplies]);
+
   return (
     <div
       id={`comment-${comment.id}`}
       className={`relative flex flex-col gap-1 ${isReply ? "ml-8" : ""}`}
     >
-      {isReply && <div className="absolute -left-3 top-4 h-px w-3 bg-border" />}
+      {isReply && (
+        <>
+          <div className="absolute -left-3 top-4 h-px w-3 bg-border" />
+          <div className="absolute -left-3 top-4 bottom-0 w-px bg-border" />
+        </>
+      )}
       {/* Header with avatar and author */}
       <CommentHeader
         userId={comment.user_id}
@@ -119,9 +142,28 @@ export function SingleComment({
             <CommentActions 
               onDelete={handleDelete}
               onEdit={handleEdit}
+              commentId={comment.id}
+              userReaction={menuUserReaction}
+              reactionsCount={comment.likes_count || 0}
+              reactionsByType={comment.reactions_by_type || null}
+              onReaction={(id, type) => onReaction(id, type as unknown as ReactionType)}
             />
           )}
         </div>
+
+        {canLoadReplies && (
+          <div className="mt-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-auto p-0 text-xs text-muted-foreground hover:bg-transparent"
+              onClick={handleLoadReplies}
+            >
+              Ver respuestas ({comment.replies_count})
+            </Button>
+          </div>
+        )}
 
         {comment.replies && comment.replies.length > 0 && !hideReplies && (
           <div className="relative mt-2 space-y-2">
@@ -134,6 +176,7 @@ export function SingleComment({
                 onReply={onReply}
                 onDeleteComment={onDeleteComment}
                 onUpdateComment={onUpdateComment}
+                onLoadReplies={onLoadReplies}
                 isReply={true}
                 postAuthorId={postAuthorId}
                 readOnly={readOnly}
@@ -161,6 +204,8 @@ export function SingleComment({
         isOpen={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         onSave={handleSaveEdit}
+        initialContent={comment.content}
+        authorProfile={comment.profiles}
       />
     </div>
   );

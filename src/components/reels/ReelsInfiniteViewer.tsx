@@ -46,6 +46,7 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
     handleSubmitComment,
     handleCommentLike,
     handleReply,
+    loadReplies,
     handleDeleteComment,
     handleCancelReply
   } = useReelComments(post.id);
@@ -384,6 +385,7 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
               onReply={handleReply}
               onSubmitComment={handleSubmitComment}
               onDeleteComment={handleDeleteComment}
+              onLoadReplies={loadReplies}
               newComment={newComment}
               onNewCommentChange={setNewComment}
               replyTo={replyTo}

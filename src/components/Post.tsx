@@ -152,6 +152,7 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
     handleCancelReply,
     handleDeleteComment,
     handleUpdateComment,
+    loadReplies,
     setNewComment,
     isSubmitting
   } = usePost(post, hideComments, initialShowComments);
@@ -272,6 +273,7 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
           onSubmitComment={handleSubmitComment}
           onDeleteComment={handleDeleteComment}
           onUpdateComment={handleUpdateComment}
+          onLoadReplies={loadReplies}
           newComment={newComment}
           onNewCommentChange={setNewComment}
           replyTo={replyTo}

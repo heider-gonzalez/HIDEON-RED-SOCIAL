@@ -66,6 +66,8 @@ function DesktopPostPanel({ post }: { post: Post }) {
           onReply={postState.handleReply}
           onSubmitComment={postState.handleSubmitComment}
           onDeleteComment={postState.handleDeleteComment}
+          onUpdateComment={postState.handleUpdateComment}
+          onLoadReplies={postState.loadReplies}
           newComment={postState.newComment}
           onNewCommentChange={postState.setNewComment}
           replyTo={postState.replyTo}

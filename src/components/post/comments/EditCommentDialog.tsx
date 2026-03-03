@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface EditCommentDialogProps {
@@ -10,42 +9,28 @@ interface EditCommentDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (content: string) => void;
+  initialContent: string;
+  authorProfile?: {
+    username?: string;
+    avatar_url?: string;
+  } | null;
 }
 
-export function EditCommentDialog({ commentId, isOpen, onOpenChange, onSave }: EditCommentDialogProps) {
-  const [content, setContent] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [authorProfile, setAuthorProfile] = useState<any>(null);
+export function EditCommentDialog({
+  commentId: _commentId,
+  isOpen,
+  onOpenChange,
+  onSave,
+  initialContent,
+  authorProfile,
+}: EditCommentDialogProps) {
+  const [content, setContent] = useState(initialContent);
 
   useEffect(() => {
-    if (isOpen && commentId) {
-      const loadComment = async () => {
-        try {
-          setIsLoading(true);
-          const { data } = await (supabase as any)
-            .from("comments")
-            .select(`
-              content,
-              profiles:profiles(id, username, avatar_url)
-            `)
-            .eq("id", commentId)
-            .single();
-          
-          if (data) {
-            setContent(data.content || "");
-            setAuthorProfile(data.profiles);
-            console.log('Comentario cargado para edición:', data);
-          }
-        } catch (error) {
-          console.error("Error loading comment:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      
-      loadComment();
+    if (isOpen) {
+      setContent(initialContent);
     }
-  }, [isOpen, commentId]);
+  }, [isOpen, initialContent]);
 
   const handleSave = () => {
     if (content.trim()) {
@@ -85,14 +70,13 @@ export function EditCommentDialog({ commentId, isOpen, onOpenChange, onSave }: E
             onChange={(e) => setContent(e.target.value)}
             placeholder="Escribe tu comentario..."
             className="min-h-[100px]"
-            disabled={isLoading}
           />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={isLoading || !content.trim()}>
-              {isLoading ? "Guardando..." : "Guardar cambios"}
+            <Button onClick={handleSave} disabled={!content.trim()}>
+              Guardar cambios
             </Button>
           </div>
         </div>

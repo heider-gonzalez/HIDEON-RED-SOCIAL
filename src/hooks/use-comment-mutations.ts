@@ -9,6 +9,34 @@ export function useCommentMutations(postId: string) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const updateCommentInCache = (
+    data: any,
+    commentId: string,
+    patch: (c: any) => any
+  ) => {
+    if (!data?.pages) return data;
+
+    const patchInReplies = (arr: any[]): any[] => {
+      return arr.map((c) => {
+        if (String(c?.id) === String(commentId)) {
+          return patch(c);
+        }
+        if (Array.isArray(c?.replies) && c.replies.length > 0) {
+          return { ...c, replies: patchInReplies(c.replies) };
+        }
+        return c;
+      });
+    };
+
+    return {
+      ...data,
+      pages: data.pages.map((page: any) => ({
+        ...page,
+        comments: patchInReplies(page?.comments || []),
+      })),
+    };
+  };
+
   const { mutate: submitComment } = useMutation({
     mutationFn: async ({ 
       content, 
@@ -61,7 +89,7 @@ export function useCommentMutations(postId: string) {
       }
       
       // Obtener el comentario para verificar la propiedad
-      const { data: comment } = await supabase
+      const { data: comment } = await (supabase as any)
         .from('comments')
         .select('user_id')
         .eq('id', commentId)
@@ -76,7 +104,7 @@ export function useCommentMutations(postId: string) {
       }
       
       // Eliminar el comentario
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('comments')
         .delete()
         .eq('id', commentId);
@@ -102,7 +130,7 @@ export function useCommentMutations(postId: string) {
     },
   });
 
-  const { mutate: editComment } = useMutation({
+  const { mutateAsync: editCommentAsync } = useMutation({
     mutationFn: async ({ commentId, content }: { commentId: string; content: string }) => {
       // Verificar que el usuario está autenticado
       const { data: { user } } = await supabase.auth.getUser();
@@ -112,7 +140,7 @@ export function useCommentMutations(postId: string) {
       }
       
       // Obtener el comentario para verificar la propiedad
-      const { data: comment } = await supabase
+      const { data: comment } = await (supabase as any)
         .from('comments')
         .select('user_id')
         .eq('id', commentId)
@@ -126,14 +154,31 @@ export function useCommentMutations(postId: string) {
         throw new Error("No tienes permiso para editar este comentario");
       }
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('comments')
-        .update({ content })
+        .update({
+          content,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', commentId);
         
       if (error) throw error;
       
       return { success: true };
+    },
+    onMutate: async ({ commentId, content }) => {
+      await queryClient.cancelQueries({ queryKey: ["comments", postId] });
+      const previous = queryClient.getQueryData(["comments", postId]);
+
+      queryClient.setQueryData(["comments", postId], (old: any) =>
+        updateCommentInCache(old, commentId, (c) => ({
+          ...c,
+          content,
+          updated_at: new Date().toISOString(),
+        }))
+      );
+
+      return { previous };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", postId] });
@@ -142,7 +187,10 @@ export function useCommentMutations(postId: string) {
         description: "El comentario se ha actualizado correctamente",
       });
     },
-    onError: (error) => {
+    onError: (error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["comments", postId], context.previous);
+      }
       toast({
         variant: "destructive",
         title: "Error",
@@ -154,6 +202,6 @@ export function useCommentMutations(postId: string) {
   return {
     submitComment,
     deleteComment,
-    editComment
+    editCommentAsync
   };
 }

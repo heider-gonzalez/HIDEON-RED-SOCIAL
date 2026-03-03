@@ -184,6 +184,7 @@ export interface Comment {
   user_reaction?: string | null;
   likes_count?: number; // Add missing property
   replies?: Comment[]; // Add missing property for nested comments
+  replies_count?: number; // Lazy-load replies: count of child comments
   reactions_by_type?: Record<string, number>; // Add reactions summary for comments
 }
 
