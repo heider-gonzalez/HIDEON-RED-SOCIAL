@@ -7,6 +7,8 @@ export const useSessionCleanup = () => {
   const { user } = useAuth();
   const { cleanup: cleanupRealtime } = useRealtimeManager();
   const isCleaningUp = useRef(false);
+  const initializedRef = useRef(false);
+  const hadUserRef = useRef(false);
 
   // Comprehensive cleanup function with debounce
   const cleanupSession = useCallback(() => {
@@ -104,23 +106,32 @@ export const useSessionCleanup = () => {
 
   // Auto-cleanup on user logout
   useEffect(() => {
-    if (!user) {
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      hadUserRef.current = Boolean(user);
+      return;
+    }
+
+    // Only cleanup on real transition: user -> null
+    if (!user && hadUserRef.current) {
       console.log('👤 User logged out, triggering cleanup');
       cleanupSession();
     }
+
+    hadUserRef.current = Boolean(user);
   }, [user, cleanupSession]);
 
   // Cleanup on page unload
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (!user) {
+      if (!user && hadUserRef.current) {
         console.log('📄 Page unloading without user, triggering cleanup');
         cleanupSession();
       }
     };
 
     const handleVisibilityChange = () => {
-      if (document.hidden && !user) {
+      if (document.hidden && !user && hadUserRef.current) {
         console.log('👁️ Page hidden without user, triggering cleanup');
         cleanupSession();
       }

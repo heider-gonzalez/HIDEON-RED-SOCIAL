@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/providers/AuthProvider";
 import { getPublicFeedPreview } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 function getScrollParent(el: HTMLElement | null): HTMLElement | null {
   if (!el) return null;
@@ -37,6 +38,7 @@ interface FeedProps {
 export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
   const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuth();
+  const isMobile = useIsMobile();
   const [pullDistance, setPullDistance] = useState(0);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
@@ -255,9 +257,9 @@ export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
     return (
       <div
         className="feed-container mx-auto w-full max-w-[760px] px-3 sm:px-5 py-2"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        onTouchStart={isMobile ? undefined : handleTouchStart}
+        onTouchMove={isMobile ? undefined : handleTouchMove}
+        onTouchEnd={isMobile ? undefined : handleTouchEnd}
       >
         {(pullDistance > 0 || isPullRefreshing) && (
           <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
@@ -282,9 +284,9 @@ export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
   return (
     <div
       className="feed-container mx-auto w-full max-w-[760px] px-3 sm:px-5 py-2"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={isMobile ? undefined : handleTouchStart}
+      onTouchMove={isMobile ? undefined : handleTouchMove}
+      onTouchEnd={isMobile ? undefined : handleTouchEnd}
     >
       {(pullDistance > 0 || isPullRefreshing) && (
         <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">

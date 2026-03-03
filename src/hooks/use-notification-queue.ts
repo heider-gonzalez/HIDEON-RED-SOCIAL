@@ -20,6 +20,7 @@ export function useNotificationQueue(options: QueueProcessingOptions = {}) {
   const isProcessingRef = useRef(false);
   const retryCountRef = useRef(0);
   const currentIntervalRef = useRef(interval);
+  const startedRef = useRef(false);
 
   // Process notification queue
   const processQueue = useCallback(async () => {
@@ -105,6 +106,9 @@ export function useNotificationQueue(options: QueueProcessingOptions = {}) {
 
   // Start automatic processing when component mounts
   useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+
     console.log('🔔 Starting notification queue processor...');
 
     // Process immediately on mount
@@ -120,6 +124,7 @@ export function useNotificationQueue(options: QueueProcessingOptions = {}) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      startedRef.current = false;
     };
   }, [processQueue]);
 

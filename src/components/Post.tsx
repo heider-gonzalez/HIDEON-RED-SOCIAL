@@ -459,7 +459,14 @@ function IdeaPostView({ post }: { post: PostType }) {
 function ProjectPostView({ post }: { post: PostType }) {
   // Si no hay idea, mostrar contenido estándar como fallback
   if (!post.idea) {
-    console.warn('Post de proyecto sin datos de idea, mostrando fallback', post.id);
+    if (import.meta.env.DEV) {
+      (window as any).__hideon_project_fallback_warned ??= new Set<string>();
+      const warned: Set<string> = (window as any).__hideon_project_fallback_warned;
+      if (!warned.has(post.id)) {
+        warned.add(post.id);
+        console.warn('Post de proyecto sin datos de idea, mostrando fallback', post.id);
+      }
+    }
     return (
       <div className="px-0 md:px-4 pb-2">
         <PostContent post={post} postId={post.id} />
