@@ -1,20 +1,47 @@
-export function getTimeAgo(lastSeen: string | null): string {
-  if (!lastSeen) return 'hace mucho tiempo';
-  
-  const now = new Date();
+function getMinutesDiff(lastSeen: string | null): number | null {
+  if (!lastSeen) return null;
   const lastSeenDate = new Date(lastSeen);
-  const diffInMinutes = Math.floor((now.getTime() - lastSeenDate.getTime()) / (1000 * 60));
-  
+  const t = lastSeenDate.getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.floor((Date.now() - t) / (1000 * 60));
+}
+
+export function isRecentlyOnline(lastSeen: string | null): boolean {
+  const diffInMinutes = getMinutesDiff(lastSeen);
+  if (diffInMinutes == null) return false;
+  return diffInMinutes < 5;
+}
+
+// Label for contacts sidebar:
+// - <5 min: "En línea"
+// - <24h: "Activo hace X min" / "Activo hace X horas"
+// - >=24h: "" (hide)
+export function getRecentActivityLabel(lastSeen: string | null): string {
+  const diffInMinutes = getMinutesDiff(lastSeen);
+  if (diffInMinutes == null) return '';
+
+  if (diffInMinutes < 5) return 'En línea';
+  if (diffInMinutes < 60) return `Activo hace ${diffInMinutes} min`;
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `Activo hace ${diffInHours} horas`;
+
+  return '';
+}
+
+// Backwards-compatible short formatter used in some places.
+// Now hides stale activity (>24h) by returning empty string.
+export function getTimeAgo(lastSeen: string | null): string {
+  const diffInMinutes = getMinutesDiff(lastSeen);
+  if (diffInMinutes == null) return '';
+
   if (diffInMinutes < 1) return 'ahora';
   if (diffInMinutes < 60) return `${diffInMinutes} min`;
-  
+
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) return `${diffInHours}h`;
-  
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) return `${diffInDays}d`;
-  
-  return 'hace mucho tiempo';
+
+  return '';
 }
 
 export function isUserOnline(status: string | null, lastSeen: string | null): boolean {

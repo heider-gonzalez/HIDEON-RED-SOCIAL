@@ -1,12 +1,12 @@
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, MessageCircle, Users2 } from "lucide-react";
 // Removed online status for performance
-import { getTimeAgo, isUserOnline } from "@/utils/time-utils";
+import { getRecentActivityLabel, isRecentlyOnline, isUserOnline } from "@/utils/time-utils";
 // Removed ChatDialog - using global chat only
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -17,10 +17,27 @@ export function FriendsSidebar() {
   const [loading, setLoading] = useState(true);
   const [showChatDialog, setShowChatDialog] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState(null);
+  const [nowTick, setNowTick] = useState(0);
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const { isOnline } = useGlobalPresence();
   // Online status tracking removed for performance
+
+  useEffect(() => {
+    const t = window.setInterval(() => setNowTick((n) => n + 1), 60_000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const friendMeta = useMemo(() => {
+    void nowTick;
+    const map = new Map<string, { showOnline: boolean; label: string }>();
+    (friends || []).forEach((f: any) => {
+      const label = getRecentActivityLabel(f.last_seen ?? null);
+      const showOnline = isRecentlyOnline(f.last_seen ?? null);
+      map.set(f.id, { showOnline, label });
+    });
+    return map;
+  }, [friends, nowTick]);
 
   useEffect(() => {
     const loadFriends = async () => {
@@ -199,17 +216,17 @@ export function FriendsSidebar() {
                         <AvatarImage src={friend.avatar_url || undefined} />
                         <AvatarFallback>{friend.username[0]?.toUpperCase()}</AvatarFallback>
                       </Avatar>
-                      {isOnline(friend.id) && (
+                      {friendMeta.get(friend.id)?.showOnline && isOnline(friend.id) && (
                         <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{friend.username}</div>
-                      {!isOnline(friend.id) && (
-                        <div className="text-xs text-muted-foreground">
-                          {getTimeAgo(friend.last_seen)}
-                        </div>
-                      )}
+                      {(() => {
+                        const meta = friendMeta.get(friend.id);
+                        if (!meta?.label) return null;
+                        return <div className="text-xs text-muted-foreground">{meta.label}</div>;
+                      })()}
                     </div>
                     {!isMobile && (
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity">

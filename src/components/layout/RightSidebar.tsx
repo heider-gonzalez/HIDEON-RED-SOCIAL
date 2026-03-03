@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useChatSystem } from "@/hooks/use-chat-system";
 import { useBatchFollowingStatus } from "@/hooks/use-batch-following-status";
 import { useFollowUser } from "@/hooks/use-follow-user";
-import { isUserOnline, getTimeAgo } from "@/utils/time-utils";
+import { getRecentActivityLabel, isRecentlyOnline, isUserOnline } from "@/utils/time-utils";
+
 import { useGlobalPresence } from "@/hooks/use-global-presence";
 
 interface RightSidebarProps {
@@ -41,8 +43,14 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
   const [onlineFriends, setOnlineFriends] = useState<Friend[]>([]);
   const [friendSuggestions, setFriendSuggestions] = useState<FriendSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [nowTick, setNowTick] = useState(0);
 
   const { isOnline } = useGlobalPresence();
+
+  useEffect(() => {
+    const t = window.setInterval(() => setNowTick((n) => n + 1), 60_000);
+    return () => window.clearInterval(t);
+  }, []);
 
   const { followUser, isLoading: isFollowLoading } = useFollowUser();
 
@@ -50,6 +58,17 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
   const { getFollowingStatus, updateFollowingStatus } = useBatchFollowingStatus(suggestionIds);
 
   const visibleSuggestions = friendSuggestions.filter(s => !getFollowingStatus(s.id));
+
+  const contactMeta = useMemo(() => {
+    void nowTick;
+    const map = new Map<string, { showOnline: boolean; label: string }>();
+    onlineFriends.forEach((f) => {
+      const label = getRecentActivityLabel(f.last_seen ?? null);
+      const showOnline = isRecentlyOnline(f.last_seen ?? null);
+      map.set(f.id, { showOnline, label });
+    });
+    return map;
+  }, [onlineFriends, nowTick]);
 
   // Load online friends and suggestions
   useEffect(() => {
@@ -169,7 +188,7 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
                       {friend.username?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
                     </AvatarFallback>
                   </Avatar>
-                  {isOnline(friend.id) && (
+                  {contactMeta.get(friend.id)?.showOnline && isOnline(friend.id) && (
                     <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-background"></div>
                   )}
                 </div>
@@ -186,9 +205,11 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
                   }}
                 >
                   <p className="text-sm font-bold truncate text-[#050505] dark:text-white [.tech_&]:text-white">{friend.username}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {isOnline(friend.id) ? 'Activo ahora' : getTimeAgo(friend.last_seen ?? null)}
-                  </p>
+                  {(() => {
+                    const meta = contactMeta.get(friend.id);
+                    if (!meta?.label) return null;
+                    return <p className="text-xs text-muted-foreground">{meta.label}</p>;
+                  })()}
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                   <Link
