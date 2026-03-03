@@ -16,6 +16,11 @@ export function MentionsText({ content, className }: MentionsTextProps) {
       return;
     }
 
+    const normalizedContent = content
+      .replace(/\\r\\n/g, "\n")
+      .replace(/\\n/g, "\n")
+      .replace(/\r\n/g, "\n");
+
     // Regex to detect mentions in the format @[username](userId)
     const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
     
@@ -25,10 +30,10 @@ export function MentionsText({ content, className }: MentionsTextProps) {
       let lastIndex = 0;
       let match;
       
-      while ((match = mentionRegex.exec(content)) !== null) {
+      while ((match = mentionRegex.exec(normalizedContent)) !== null) {
         // Add text before mention
         if (match.index > lastIndex) {
-          parts.push(content.substring(lastIndex, match.index));
+          parts.push(normalizedContent.substring(lastIndex, match.index));
         }
         
         // Extract username and userId
@@ -51,13 +56,13 @@ export function MentionsText({ content, className }: MentionsTextProps) {
       }
       
       // Add remaining text
-      if (lastIndex < content.length) {
-        parts.push(content.substring(lastIndex));
+      if (lastIndex < normalizedContent.length) {
+        parts.push(normalizedContent.substring(lastIndex));
       }
       
       // If no parts were created (no mentions found), just return the original content
       if (parts.length === 0) {
-        return [content];
+        return [normalizedContent];
       }
       
       return parts;

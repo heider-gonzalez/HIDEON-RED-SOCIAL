@@ -90,6 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (debug) console.log('🔐 AuthProvider: Setting up auth listener...');
+
+    const slowAuthTimer = window.setTimeout(() => {
+      setLoading((prev) => (prev ? false : prev));
+    }, 1200);
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -145,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
+      window.clearTimeout(slowAuthTimer);
       if (error) {
         if (debug) console.error('🔐 AuthProvider: Error getting session:', error);
 
@@ -182,6 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       if (debug) console.log('🔐 AuthProvider: Cleaning up auth listener');
+      window.clearTimeout(slowAuthTimer);
       subscription.unsubscribe();
     };
   }, []);

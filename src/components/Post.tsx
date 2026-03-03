@@ -20,6 +20,7 @@ import { SendPostModal } from "./post/actions/SendPostModal";
 import { usePostReactions } from "@/hooks/posts/use-post-reactions";
 import { PostActivitySummary } from "./post/PostActivitySummary";
 import { supabase } from "@/integrations/supabase/client";
+import { MentionsText } from "./post/MentionsText";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useNavigate } from "react-router-dom";
@@ -316,7 +317,7 @@ function SharedPostView({ post, resolvedSharedPost }: { post: PostType; resolved
   return (
     <div className="px-0 md:px-4 pb-4">
       {post.content && (
-        <p className="text-sm whitespace-pre-wrap break-words mb-4 px-4 md:px-0">{post.content}</p>
+        <MentionsText content={post.content} className="text-sm whitespace-pre-wrap break-words mb-4 px-4 md:px-0" />
       )}
       <div className="border border-border rounded-none md:rounded-lg overflow-hidden">
         {(resolvedSharedPost || post.shared_post) && (
