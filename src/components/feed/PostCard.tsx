@@ -10,6 +10,7 @@ import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 import { MediaLightbox, type LightboxMediaItem } from '@/components/post/MediaLightbox';
 import { useFullscreenVideo } from '@/components/video/FullscreenVideoContext';
+import { normalizePostContent } from '@/utils/post-content';
 
 export interface PostCardProps {
   post: Post;
@@ -55,6 +56,8 @@ export function PostCard({ post }: PostCardProps) {
       return { url, type: isVid ? 'video' : 'image' };
     });
   }, [post]);
+
+  const cleanContent = useMemo(() => normalizePostContent(post.content), [post.content]);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxStart, setLightboxStart] = useState(0);
@@ -265,8 +268,8 @@ export function PostCard({ post }: PostCardProps) {
 
       {/* Content */}
       <div className="px-4 pb-3">
-        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line">
-          {post.content}
+        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+          {cleanContent}
         </p>
       </div>
 

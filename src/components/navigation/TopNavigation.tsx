@@ -235,7 +235,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
               </Link>
             ))}
           </div>
-        </div>\r\n
+        </div>
         {/* Full Screen Search for Mobile */}
         <FullScreenSearch 
           isOpen={showFullScreenSearch} 
@@ -391,6 +391,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
       <FullScreenSearch 
         isOpen={showFullScreenSearch} 
         onClose={() => setShowFullScreenSearch(false)} 
-      />\r\n    </nav>
+      />
+    </nav>
   );
 }

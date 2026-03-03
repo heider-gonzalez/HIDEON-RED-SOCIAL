@@ -13,6 +13,7 @@ import { VolumeSlider } from "./VolumeSlider";
 import { useReelComments } from "@/hooks/reels/use-reel-comments";
 import { Comments } from "@/components/post/Comments";
 import { useToast } from "@/hooks/use-toast";
+import { normalizePostContent } from "@/utils/post-content";
 
 interface ReelItemProps {
   post: Post;
@@ -33,6 +34,8 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
 
   const { userReaction, onReaction: handleReaction } = usePostReactions(post.id);
   const { toast } = useToast();
+
+  const cleanContent = React.useMemo(() => normalizePostContent(post.content), [post.content]);
 
   const {
     comments,
@@ -351,9 +354,9 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
               </Button>
             </div>
 
-            {post.content && (
-              <p className="text-sm text-white line-clamp-2">
-                {post.content}
+            {cleanContent && (
+              <p className="text-sm text-white whitespace-pre-wrap break-words line-clamp-2">
+                {cleanContent}
               </p>
             )}
           </div>

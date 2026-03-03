@@ -13,6 +13,7 @@ import { FriendSuggestion } from "@/lib/api/friends/types";
 import { useToast } from "@/hooks/use-toast";
 import { IdeaGrid } from "@/components/explore/IdeaGrid";
 import { ProjectGrid } from "@/components/explore/ProjectGrid";
+import { lockBodyScroll } from "@/utils/scroll-lock";
 
 interface FullScreenSearchProps {
   isOpen: boolean;
@@ -81,8 +82,7 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
       setSearchQuery(saved);
     }
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const releaseScrollLock = lockBodyScroll();
 
     const t = window.setTimeout(() => {
       inputRef.current?.focus();
@@ -90,7 +90,7 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
 
     return () => {
       window.clearTimeout(t);
-      document.body.style.overflow = previousOverflow;
+      releaseScrollLock();
     };
   }, [isOpen]);
 

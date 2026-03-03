@@ -6,6 +6,7 @@ import { Post } from "@/types/post";
 import { ReactionButtons } from "@/components/post/ReactionButtons";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import { normalizePostContent } from "@/utils/post-content";
 
 interface ReelsViewerProps {
   posts: Post[];
@@ -155,8 +156,8 @@ export const ReelsViewer = memo(function ReelsViewer({ posts, onReaction }: Reel
             </div>
             
             {currentPost.content && (
-              <p className="text-sm text-gray-100 mb-2 line-clamp-3">
-                {currentPost.content}
+              <p className="text-sm text-gray-100 mb-2 whitespace-pre-wrap break-words line-clamp-3">
+                {normalizePostContent(currentPost.content)}
               </p>
             )}
           </div>

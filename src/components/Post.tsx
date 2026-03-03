@@ -380,7 +380,7 @@ function EventPostView({ post }: { post: PostType }) {
   return (
     <div className="px-0 md:px-4 pb-2">
       {post.content && (
-        <p className="text-sm whitespace-pre-wrap break-words mb-4 px-4 md:px-0">{post.content}</p>
+        <MentionsText content={post.content} className="text-sm whitespace-pre-wrap break-words mb-4 px-4 md:px-0" />
       )}
 
       {event ? (

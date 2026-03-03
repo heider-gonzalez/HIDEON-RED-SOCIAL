@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { normalizePostContent } from "@/utils/post-content";
 
 export function GlobalSearchBar() {
   const { 
@@ -131,7 +132,7 @@ export function GlobalSearchBar() {
                           className="px-3 py-2 text-sm rounded-md hover:bg-accent cursor-pointer transition-colors"
                           onClick={() => handleResultClick('post', post.id)}
                         >
-                          <p className="line-clamp-2">{post.content}</p>
+                          <p className="line-clamp-2 whitespace-pre-wrap break-words">{normalizePostContent(post.content)}</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {formatDistanceToNow(new Date(post.created_at), { 
                               addSuffix: true, 

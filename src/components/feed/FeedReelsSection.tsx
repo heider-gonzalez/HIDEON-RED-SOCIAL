@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Post } from "@/types/post";
 import { useFullscreenVideo } from "@/components/video/FullscreenVideoContext";
+import { normalizePostContent } from "@/utils/post-content";
 
 interface FeedReelsSectionProps {
   posts: Post[];
@@ -78,7 +79,7 @@ export function FeedReelsSection({ posts }: FeedReelsSectionProps) {
                   />
                   <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
                     <div className="text-[11px] text-white/90 line-clamp-2 text-left">
-                      {post.content || ""}
+                      {normalizePostContent(post.content || "")}
                     </div>
                   </div>
                 </button>

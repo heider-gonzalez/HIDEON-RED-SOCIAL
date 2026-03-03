@@ -12,6 +12,7 @@ import { useBatchFollowingStatus } from "@/hooks/use-batch-following-status";
 import { useDoubleClick } from "@/hooks/use-double-click";
 import { useVolumeControl } from "@/hooks/reels/use-volume-control";
 import { VolumeSlider } from "./VolumeSlider";
+import { normalizePostContent } from "@/utils/post-content";
 
 interface OptimizedReelItemProps {
   post: Post;
@@ -164,6 +165,8 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
     handleReaction(post.id, 'love');
     onReaction(post.id, 'love');
   };
+
+  const cleanContent = React.useMemo(() => normalizePostContent(post.content), [post.content]);
 
   return (
     <div 
@@ -334,9 +337,9 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
               )}
             </div>
 
-            {post.content && (
-              <p className="text-sm text-gray-100 line-clamp-3">
-                {post.content}
+            {cleanContent && (
+              <p className="text-sm text-gray-100 whitespace-pre-wrap break-words line-clamp-3">
+                {cleanContent}
               </p>
             )}
           </div>
