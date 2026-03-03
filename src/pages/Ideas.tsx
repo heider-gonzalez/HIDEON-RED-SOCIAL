@@ -6,43 +6,13 @@ import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { IdeaGrid } from "@/components/explore/IdeaGrid";
-import ModalPublicacionWeb from "@/components/ModalPublicacionWeb";
-import { useUser } from "@/hooks/use-user";
-import { supabase } from "@/integrations/supabase/client";
 import { InstitutionCombobox } from "@/components/filters/InstitutionCombobox";
+import { usePostComposer } from "@/providers/PostComposerProvider";
 
 export default function Ideas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [institutionName, setInstitutionName] = useState("");
-  const [showPublishModal, setShowPublishModal] = useState(false);
-  const { user } = useUser();
-  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadAvatar = async () => {
-      if (!showPublishModal || !user?.id) return;
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("avatar_url")
-        .eq("id", user.id)
-        .single();
-
-      if (!isMounted) return;
-      if (error) {
-        setProfileAvatarUrl(null);
-        return;
-      }
-      setProfileAvatarUrl(data?.avatar_url ?? null);
-    };
-
-    void loadAvatar();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [showPublishModal, user?.id]);
+  const { open: openComposer } = usePostComposer();
 
   return (
     <Layout>
@@ -58,7 +28,7 @@ export default function Ideas() {
               Descubre ideas que buscan colaboradores
             </p>
           </div>
-          <Button className="gap-2" onClick={() => setShowPublishModal(true)}>
+          <Button className="gap-2" onClick={() => openComposer({ initialPostType: "idea" })}>
             <Plus className="h-5 w-5" />
             Publicar Idea
           </Button>
@@ -108,12 +78,6 @@ export default function Ideas() {
         </Card>
       </div>
 
-      <ModalPublicacionWeb
-        isVisible={showPublishModal}
-        onClose={() => setShowPublishModal(false)}
-        initialPostType={"idea"}
-        userAvatar={profileAvatarUrl || (user?.user_metadata as any)?.avatar_url}
-      />
     </Layout>
   );
 }

@@ -15,8 +15,9 @@ import { FullScreenSearch } from "@/components/search/FullScreenSearch";
 import { UserMenu } from "@/components/user-menu/UserMenu";
 import { HSocialLogo } from "./HSocialLogo";
 import { useUser } from "@/hooks/use-user";
-import ModalPublicacionWeb from "@/components/ModalPublicacionWeb";
+
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
+import { usePostComposer } from "@/providers/PostComposerProvider";
 
 interface TopNavigationProps {
   pendingRequestsCount: number;
@@ -37,8 +38,9 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showFullScreenSearch, setShowFullScreenSearch] = useState(false);
   const isMobile = useIsMobile();
-  const [showPostModal, setShowPostModal] = useState(false);
   const { user } = useUser();
+
+  const { open: openComposer } = usePostComposer();
 
   const { unreadMessages } = useUnreadMessages(currentUserId || undefined);
   const unreadMessagesCount = unreadMessages.reduce((total, msg) => total + msg.unread_count, 0);
@@ -171,7 +173,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                 variant="ghost"
                 size="icon"
                 className="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
-                onClick={() => setShowPostModal(true)}
+                onClick={() => openComposer({ userAvatar: userProfile?.avatar_url || user?.user_metadata?.avatar_url })}
                 aria-label="Crear"
               >
                 <Plus className="h-5 w-5" strokeWidth={1.5} />
@@ -233,15 +235,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
               </Link>
             ))}
           </div>
-        </div>
-
-        <ModalPublicacionWeb
-          isVisible={showPostModal}
-          onClose={() => setShowPostModal(false)}
-          initialPostType={null}
-          userAvatar={userProfile?.avatar_url || user?.user_metadata?.avatar_url}
-        />
-
+        </div>\r\n
         {/* Full Screen Search for Mobile */}
         <FullScreenSearch 
           isOpen={showFullScreenSearch} 
@@ -355,7 +349,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                 size="icon"
                 className="h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors text-muted-foreground"
                 title="Crear"
-                onClick={() => setShowPostModal(true)}
+                onClick={() => openComposer({ userAvatar: userProfile?.avatar_url || user?.user_metadata?.avatar_url })}
               >
                 <Plus className="h-5 w-5" strokeWidth={1.5} />
               </Button>
@@ -397,13 +391,6 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
       <FullScreenSearch 
         isOpen={showFullScreenSearch} 
         onClose={() => setShowFullScreenSearch(false)} 
-      />
-      <ModalPublicacionWeb
-        isVisible={showPostModal}
-        onClose={() => setShowPostModal(false)}
-        initialPostType={null}
-        userAvatar={userProfile?.avatar_url || user?.user_metadata?.avatar_url}
-      />
-    </nav>
+      />\r\n    </nav>
   );
 }

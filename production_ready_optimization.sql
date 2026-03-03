@@ -265,6 +265,95 @@ ANALYZE analytics_events;
 -- VERIFICACIÓN FINAL
 -- ========================================
 
+-- ========================================
+-- BLINDAJE DE SEGURIDAD (RBAC / PERFIL)
+-- ========================================
+
+-- 1) Columna para cooldown de cambio de username (30 días)
+ALTER TABLE IF EXISTS public.profiles
+ADD COLUMN IF NOT EXISTS last_name_change timestamptz;
+
+-- 2) Función de blacklist (centralizada) para evitar nombres ofensivos desde cualquier fuente
+CREATE OR REPLACE FUNCTION public.is_blacklisted_username(p_username text)
+RETURNS boolean
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  v text;
+  blocked text[] := ARRAY[
+    'puta',
+    'puto',
+    'mierda',
+    'marica',
+    'gonorrea',
+    'hijueputa'
+  ];
+BEGIN
+  IF p_username IS NULL THEN
+    RETURN false;
+  END IF;
+
+  v := lower(trim(p_username));
+  IF v = '' THEN
+    RETURN false;
+  END IF;
+
+  RETURN EXISTS (
+    SELECT 1
+    FROM unnest(blocked) AS w
+    WHERE v LIKE '%' || w || '%'
+  );
+END;
+$$;
+
+-- 3) Trigger function: valida blacklist + aplica cooldown de 30 días al cambiar username
+CREATE OR REPLACE FUNCTION public.profiles_enforce_username_policies()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_diff interval;
+BEGIN
+  -- Normalizar
+  IF NEW.username IS NOT NULL THEN
+    NEW.username := trim(NEW.username);
+  END IF;
+
+  -- Blacklist en INSERT y UPDATE
+  IF NEW.username IS NOT NULL AND public.is_blacklisted_username(NEW.username) THEN
+    RAISE EXCEPTION 'username contains forbidden language'
+      USING ERRCODE = '22023';
+  END IF;
+
+  -- Cooldown solo si realmente cambió el username
+  IF TG_OP = 'UPDATE' THEN
+    IF COALESCE(NEW.username, '') <> COALESCE(OLD.username, '') THEN
+      IF OLD.last_name_change IS NOT NULL THEN
+        v_diff := now() - OLD.last_name_change;
+        IF v_diff < interval '30 days' THEN
+          RAISE EXCEPTION 'username can only be changed every 30 days'
+            USING ERRCODE = 'P0001';
+        END IF;
+      END IF;
+
+      -- Marcar momento del cambio
+      NEW.last_name_change := now();
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_profiles_username_policies ON public.profiles;
+CREATE TRIGGER trg_profiles_username_policies
+BEFORE INSERT OR UPDATE OF username ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.profiles_enforce_username_policies();
+
 -- Verificar todos los índices creados
 SELECT 
     tablename,

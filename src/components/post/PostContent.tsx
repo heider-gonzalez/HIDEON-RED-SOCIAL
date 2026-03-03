@@ -1,7 +1,5 @@
 
 import { useState, memo } from "react";
-import { useNavigate } from "react-router-dom";
-import { FilePreview } from "../FilePreview";
 import { ImageModal } from "./ImageModal";
 import { VideoModal } from "./VideoModal";
 // PostPoll removed for performance
@@ -10,7 +8,6 @@ import { EventCard } from "./EventCard";
 import { EventModal } from "./EventModal";
 import { usePollVoteMutation } from "@/hooks/post-mutations/use-poll-vote-mutation";
 // Removed marketplace display
-import { PostImage } from "@/components/ui/optimized-image";
 import { backgroundPresets } from "./TextBackgroundPalette";
 import { MentionsText } from "./MentionsText";
 import { MediaCarousel } from "./MediaCarousel";
@@ -21,7 +18,6 @@ interface PostContentProps {
 }
 
 function PostContentComponent({ post, postId }: PostContentProps) {
-  const navigate = useNavigate();
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -105,9 +101,9 @@ function PostContentComponent({ post, postId }: PostContentProps) {
 
   // Truncar texto si es muy largo
   const contentLength = post.content?.length || 0;
-  const shouldTruncate = contentLength > 100 && !isStyledTextPost;
+  const shouldTruncate = contentLength > 400 && !isStyledTextPost;
   const displayContent = shouldTruncate && !showFullText 
-    ? post.content?.substring(0, 100) + '...' 
+    ? post.content?.substring(0, 400) + '...' 
     : post.content;
 
   return (

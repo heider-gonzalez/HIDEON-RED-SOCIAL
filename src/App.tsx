@@ -20,6 +20,7 @@ import { useSessionCleanup } from "@/hooks/use-session-cleanup";
 import { FullscreenVideoProvider } from "@/components/video/FullscreenVideoContext";
 import { FullscreenVideoRoot } from "@/components/video/FullscreenVideoRoot";
 import { PerformanceOptimizer } from "@/components/performance/PerformanceOptimizer";
+import { PostComposerProvider } from "@/providers/PostComposerProvider";
 
 // Critical pages loaded immediately
 import Index from "./pages/Index";
@@ -197,12 +198,13 @@ const App = () => {
               <Toaster />
               <BrowserRouter>
                 <AuthProvider>
-                  <FullscreenVideoProvider>
-                    <RecoveryTokenHandler />
-                    <RealtimeNotificationsRoot />
-                    <ServiceWorkerRegistration />
-                    <FullscreenVideoRoot />
-                  <Routes>
+                  <PostComposerProvider>
+                    <FullscreenVideoProvider>
+                      <RecoveryTokenHandler />
+                      <RealtimeNotificationsRoot />
+                      <ServiceWorkerRegistration />
+                      <FullscreenVideoRoot />
+                      <Routes>
                     {/* Critical pages - no lazy loading */}
                     <Route path="/auth" element={<Auth />} />
                     
@@ -490,6 +492,7 @@ const App = () => {
                     } />
                   </Routes>
                 </FullscreenVideoProvider>
+                </PostComposerProvider>
               </AuthProvider>
             </BrowserRouter>
           </PerformanceOptimizer>

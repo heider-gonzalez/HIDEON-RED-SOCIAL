@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
-import ModalPublicacionWeb from "../ModalPublicacionWeb";
 import { useUser } from "@/hooks/use-user";
 import { supabase } from "@/integrations/supabase/client";
 import { CreatePostSheet } from "./CreatePostSheet";
+import { usePostComposer } from "@/providers/PostComposerProvider";
 
 interface CreateContentMenuProps {
   open: boolean;
@@ -27,11 +27,11 @@ interface CreateContentMenuProps {
 
 export function CreateContentMenu({ open, onOpenChange }: CreateContentMenuProps) {
   const navigate = useNavigate();
-  const [showModalPublicacion, setShowModalPublicacion] = useState(false);
   const [selectedPostType, setSelectedPostType] = useState<string | null>(null);
   const { user } = useUser();
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
   const [showPostSheet, setShowPostSheet] = useState(false);
+  const { open: openComposer } = usePostComposer();
 
   useEffect(() => {
     let isMounted = true;
@@ -71,23 +71,37 @@ export function CreateContentMenu({ open, onOpenChange }: CreateContentMenuProps
     switch (option) {
       case 'media':
         setSelectedPostType(null);
-        setShowModalPublicacion(true);
+        openComposer({
+          userAvatar: profileAvatarUrl || (user?.user_metadata as any)?.avatar_url,
+        });
         break;
       case 'idea':
         setSelectedPostType('idea');
-        setShowModalPublicacion(true);
+        openComposer({
+          initialPostType: 'idea' as any,
+          userAvatar: profileAvatarUrl || (user?.user_metadata as any)?.avatar_url,
+        });
         break;
       case 'project':
         setSelectedPostType('proyecto');
-        setShowModalPublicacion(true);
+        openComposer({
+          initialPostType: 'proyecto' as any,
+          userAvatar: profileAvatarUrl || (user?.user_metadata as any)?.avatar_url,
+        });
         break;
       case 'employment':
         setSelectedPostType('empleo');
-        setShowModalPublicacion(true);
+        openComposer({
+          initialPostType: 'empleo' as any,
+          userAvatar: profileAvatarUrl || (user?.user_metadata as any)?.avatar_url,
+        });
         break;
       case 'services':
         setSelectedPostType('servicios');
-        setShowModalPublicacion(true);
+        openComposer({
+          initialPostType: 'servicios' as any,
+          userAvatar: profileAvatarUrl || (user?.user_metadata as any)?.avatar_url,
+        });
         break;
       case 'group':
         toast({
@@ -195,13 +209,6 @@ export function CreateContentMenu({ open, onOpenChange }: CreateContentMenuProps
           </div>
         </DialogContent>
       </Dialog>
-
-      <ModalPublicacionWeb
-        isVisible={showModalPublicacion}
-        onClose={() => setShowModalPublicacion(false)}
-        initialPostType={(selectedPostType as any) || null}
-        userAvatar={profileAvatarUrl || (user?.user_metadata as any)?.avatar_url}
-      />
 
       <CreatePostSheet
         open={showPostSheet}

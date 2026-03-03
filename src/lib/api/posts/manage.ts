@@ -1,18 +1,51 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export async function deletePost(postId: string) {
-  const { error } = await supabase
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuario no autenticado');
+
+  const { data: post, error: fetchError } = await supabase
+    .from('posts')
+    .select('user_id, media_url')
+    .eq('id', postId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const postRow = post as unknown as { user_id: string | null; media_url: string | null } | null;
+
+  if (postRow && postRow.user_id !== user.id) {
+    const [{ data: isMod }, { data: isAdmin }] = await Promise.all([
+      (supabase.rpc as any)("has_role", { _role: "moderator", _user_id: user.id }),
+      (supabase.rpc as any)("has_role", { _role: "admin", _user_id: user.id }),
+    ]);
+
+    if (!Boolean(isMod) && !Boolean(isAdmin)) {
+      throw new Error('No tienes permiso para eliminar esta publicación');
+    }
+  }
+
+  const { error: deleteError } = await supabase
     .from('posts')
     .delete()
     .eq('id', postId);
 
-  if (error) throw error;
+  if (deleteError) throw deleteError;
+
+  if (postRow && postRow.media_url) {
+    const url = new URL(postRow.media_url);
+    const pathParts = url.pathname.split('/');
+    const filePath = pathParts.slice(pathParts.indexOf('media') + 1).join('/');
+    if (filePath) {
+      await supabase.storage.from('media').remove([filePath]);
+    }
+  }
 }
 
 export async function updatePostVisibility(postId: string, visibility: 'public' | 'friends' | 'private') {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('posts')
-    .update({ visibility })
+    .update({ visibility } as any)
     .eq('id', postId);
 
   if (error) throw error;
@@ -24,7 +57,7 @@ export async function hidePost(postId: string) {
     
     if (!user) throw new Error('Usuario no autenticado');
     
-    const { data: existingHiddenPost, error: checkError } = await supabase
+    const { data: existingHiddenPost, error: checkError } = await (supabase as any)
       .from('hidden_posts')
       .select('id')
       .eq('post_id', postId)
@@ -40,12 +73,12 @@ export async function hidePost(postId: string) {
       return;
     }
     
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('hidden_posts')
       .insert({ 
         post_id: postId,
         user_id: user.id
-      });
+      } as any);
     
     if (error) {
       console.error("Error al ocultar publicación:", error);
@@ -63,7 +96,7 @@ export async function unhidePost(postId: string) {
     
     if (!user) throw new Error('Usuario no autenticado');
     
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('hidden_posts')
       .delete()
       .eq('post_id', postId)
@@ -85,7 +118,7 @@ export async function getHiddenPosts() {
     
     if (!user) return [];
     
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('hidden_posts')
       .select('post_id')
       .eq('user_id', user.id);
@@ -95,7 +128,7 @@ export async function getHiddenPosts() {
       throw error;
     }
     
-    return data.map(item => item.post_id);
+    return (data as Array<{ post_id: string }>).map((item) => item.post_id);
   } catch (error) {
     console.error("Error completo al obtener publicaciones ocultas:", error);
     return [];
@@ -106,7 +139,7 @@ export async function setPostInterest(postId: string, interestLevel: 'interested
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Usuario no autenticado');
   
-  const { data: existingInterest } = await supabase
+  const { data: existingInterest } = await (supabase as any)
     .from('post_interests')
     .select('id')
     .eq('post_id', postId)
@@ -114,20 +147,20 @@ export async function setPostInterest(postId: string, interestLevel: 'interested
     .single();
   
   if (existingInterest) {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('post_interests')
-      .update({ interest_level: interestLevel })
-      .eq('id', existingInterest.id);
+      .update({ interest_level: interestLevel } as any)
+      .eq('id', (existingInterest as any).id);
     
     if (error) throw error;
   } else {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('post_interests')
       .insert({
         post_id: postId,
         user_id: user.id,
         interest_level: interestLevel
-      });
+      } as any);
     
     if (error) throw error;
   }

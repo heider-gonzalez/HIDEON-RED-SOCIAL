@@ -17,6 +17,15 @@ export function AccountProfileSettings() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  const blockedWords = [
+    'puta',
+    'puto',
+    'mierda',
+    'marica',
+    'gonorrea',
+    'hijueputa',
+  ];
+
   useEffect(() => {
     loadProfileData();
   }, []);
@@ -62,13 +71,53 @@ export function AccountProfileSettings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user found");
 
+      const { data: existingRow, error: existingError } = await (supabase as any)
+        .from('profiles')
+        .select('username, last_name_change')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      const prevUsername = (existingRow as any)?.username as string | null | undefined;
+      const nextUsername = username.trim();
+      const nameChanged = Boolean(nextUsername) && nextUsername !== (prevUsername || "");
+
+      if (nameChanged) {
+        const lower = nextUsername.toLowerCase();
+        if (blockedWords.some((w) => lower.includes(w))) {
+          toast({
+            variant: "destructive",
+            title: "Nombre no permitido",
+            description: "Tu nombre de usuario contiene lenguaje no permitido.",
+          });
+          return;
+        }
+
+        const lastChange = (existingRow as any)?.last_name_change as string | null | undefined;
+        if (lastChange) {
+          const last = new Date(lastChange);
+          const now = new Date();
+          const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays < 30) {
+            toast({
+              variant: "destructive",
+              title: "Cambio de nombre limitado",
+              description: `Puedes cambiar tu nombre nuevamente en ${30 - diffDays} día(s).`,
+            });
+            return;
+          }
+        }
+      }
+
       const { error } = await (supabase as any)
         .from('profiles')
         .update({
-          username: username.trim(),
+          username: nextUsername,
           bio: bio.trim(),
           location: location.trim(),
           career: career.trim(),
+          ...(nameChanged ? { last_name_change: new Date().toISOString() } : {}),
         })
         .eq('id', user.id);
 

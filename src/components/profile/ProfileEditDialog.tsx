@@ -64,6 +64,31 @@ export function ProfileEditDialog({
     try {
       // Verificar si el nombre de usuario cambió
       const nameChanged = values.username !== profile.username;
+
+      if (nameChanged) {
+        const { data: cooldownRow, error: cooldownError } = await (supabase as any)
+          .from("profiles")
+          .select("last_name_change")
+          .eq("id", profile.id)
+          .maybeSingle();
+
+        if (cooldownError) throw cooldownError;
+
+        const lastChange = (cooldownRow as any)?.last_name_change as string | null | undefined;
+        if (lastChange) {
+          const last = new Date(lastChange);
+          const now = new Date();
+          const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays < 30) {
+            toast({
+              variant: "destructive",
+              title: "Cambio de nombre limitado",
+              description: `Puedes cambiar tu nombre nuevamente en ${30 - diffDays} día(s).`,
+            });
+            return;
+          }
+        }
+      }
       
       if (nameChanged && values.username.trim()) {
         // Usar la función especial para marcar el nombre como editado manualmente
@@ -83,6 +108,10 @@ export function ProfileEditDialog({
         relationship_status: values.relationship_status || null,
         updated_at: new Date().toISOString(),
       };
+
+      if (nameChanged) {
+        updateData.last_name_change = new Date().toISOString();
+      }
 
       // Solo actualizar username si no cambió (para no duplicar la operación)
       if (!nameChanged) {

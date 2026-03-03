@@ -4,16 +4,15 @@ import { Lightbulb, Rocket, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import ModalPublicacionWeb from "@/components/ModalPublicacionWeb";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { usePostComposer } from "@/providers/PostComposerProvider";
 
 export function QuickPostBox({ initialContent = '', initialMedia = null, initialMediaType = null }: { initialContent?: string; initialMedia?: File | null; initialMediaType?: string | null } = {}) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<{ avatar_url: string | null; username: string } | null>(null);
-  const [showPostModal, setShowPostModal] = useState(false);
-  const [postType, setPostType] = useState<'idea' | 'proyecto' | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
+  const { open } = usePostComposer();
 
   useEffect(() => {
     if (!user?.id) return;
@@ -70,7 +69,12 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
           <Tooltip open={isNewUser ? undefined : false}>
             <TooltipTrigger asChild>
               <button
-                onClick={() => setShowPostModal(true)}
+                onClick={() => open({
+                  userAvatar: profile.avatar_url || undefined,
+                  initialContent,
+                  initialMedia,
+                  initialMediaType,
+                })}
                 className="flex-1 px-4 py-2.5 text-left rounded-full border border-border hover:bg-muted/50 transition-colors text-muted-foreground text-sm"
               >
                 ¿Qué idea tienes en mente?
@@ -86,7 +90,13 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
 
           <div className="flex items-center gap-1">
             <Button
-              onClick={() => { setPostType('idea'); setShowPostModal(true); }}
+              onClick={() => open({
+                userAvatar: profile.avatar_url || undefined,
+                initialPostType: 'idea',
+                initialContent,
+                initialMedia,
+                initialMediaType,
+              })}
               size="sm"
               variant="ghost"
               className="h-8 px-3 rounded-full text-xs"
@@ -95,7 +105,13 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
               Idea
             </Button>
             <Button
-              onClick={() => { setPostType('proyecto'); setShowPostModal(true); }}
+              onClick={() => open({
+                userAvatar: profile.avatar_url || undefined,
+                initialPostType: 'proyecto',
+                initialContent,
+                initialMedia,
+                initialMediaType,
+              })}
               size="sm"
               variant="ghost"
               className="h-8 px-3 rounded-full text-xs"
@@ -107,18 +123,6 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
           </div>
         </Card>
         
-        {showPostModal && (
-          <ModalPublicacionWeb
-            isVisible={showPostModal}
-            isOpen={showPostModal}
-            onClose={() => setShowPostModal(false)}
-            userAvatar={profile.avatar_url}
-            initialContent={initialContent}
-            initialMedia={initialMedia}
-            initialMediaType={initialMediaType}
-            initialPostType={postType || undefined}
-          />
-        )}
       </div>
     </TooltipProvider>
   );

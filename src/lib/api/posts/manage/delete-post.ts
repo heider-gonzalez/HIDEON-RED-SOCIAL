@@ -13,11 +13,20 @@ export async function deletePost(postId: string) {
       .eq("id", postId)
       .single();
 
+    const postRow = post as unknown as { user_id: string | null; media_url: string | null } | null;
+
     if (fetchError) throw fetchError;
 
     // Verify ownership
-    if (post && post.user_id !== user.id) {
-      throw new Error("You don't have permission to delete this post");
+    if (postRow && postRow.user_id !== user.id) {
+      const [{ data: isMod }, { data: isAdmin }] = await Promise.all([
+        (supabase.rpc as any)("has_role", { _role: "moderator", _user_id: user.id }),
+        (supabase.rpc as any)("has_role", { _role: "admin", _user_id: user.id }),
+      ]);
+
+      if (!Boolean(isMod) && !Boolean(isAdmin)) {
+        throw new Error("You don't have permission to delete this post");
+      }
     }
 
     // Delete post
@@ -29,9 +38,9 @@ export async function deletePost(postId: string) {
     if (deleteError) throw deleteError;
 
     // Delete associated media if exists
-    if (post && post.media_url) {
+    if (postRow && postRow.media_url) {
       // Extract file path from URL
-      const url = new URL(post.media_url);
+      const url = new URL(postRow.media_url);
       const pathParts = url.pathname.split('/');
       const filePath = pathParts.slice(pathParts.indexOf('media') + 1).join('/');
       

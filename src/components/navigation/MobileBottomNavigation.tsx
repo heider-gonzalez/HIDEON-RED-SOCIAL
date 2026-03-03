@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
-import ModalPublicacionWeb from "@/components/ModalPublicacionWeb";
 import { supabase } from "@/integrations/supabase/client";
+import { usePostComposer } from "@/providers/PostComposerProvider";
 
 interface MobileBottomNavigationProps {
   currentUserId: string | null;
@@ -22,9 +22,10 @@ export function MobileBottomNavigation({
 }: MobileBottomNavigationProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showPostModal, setShowPostModal] = useState(false);
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
   const isVisible = useScrollDirection();
+
+  const { open: openComposer } = usePostComposer();
 
   const iconStyles: Record<string, { bg: string; fg: string; activeBg: string; activeFg: string }> = {
     "/": { bg: "bg-muted", fg: "text-muted-foreground", activeBg: "bg-primary/10", activeFg: "text-primary" },
@@ -110,8 +111,7 @@ export function MobileBottomNavigation({
 
   return (
     <>
-      {!showPostModal && (
-        <nav className={cn(
+      <nav className={cn(
           "fixed bottom-0 left-0 right-0 bg-background border-t border-border z-[60] md:hidden transition-transform duration-300 pb-2",
           isVisible ? "translate-y-0" : "translate-y-full"
         )}>
@@ -131,7 +131,9 @@ export function MobileBottomNavigation({
                 onClick={() => {
                   if (item.isAction) {
                     // Show the publication modal directly
-                    setShowPostModal(true);
+                    openComposer({
+                      userAvatar: profileAvatarUrl || undefined,
+                    });
                   } else {
                     if (item.path === "/") {
                       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -177,13 +179,6 @@ export function MobileBottomNavigation({
           })}
         </div>
         </nav>
-      )}
-      
-      <ModalPublicacionWeb 
-        isVisible={showPostModal} 
-        onClose={() => setShowPostModal(false)}
-        userAvatar={profileAvatarUrl || undefined}
-      />
     </>
   );
 }

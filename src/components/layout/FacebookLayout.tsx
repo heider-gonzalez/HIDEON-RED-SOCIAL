@@ -107,7 +107,10 @@ export function FacebookLayout({
             </div>
           )}
           
-          <main className={`w-full min-h-screen ${!hideNavigation ? 'pt-[96px] pb-4' : 'py-4 pb-4'}`}>
+          <main
+            className={`w-full ${!hideNavigation ? 'pt-[96px] pb-4' : 'py-4 pb-4'} overflow-y-auto overscroll-contain`}
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="w-full px-0 mx-auto max-w-full">
               {currentUserId && <NotificationPermissionBanner />}
               {children}

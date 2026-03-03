@@ -14,6 +14,7 @@ import { useChatSystem } from "@/hooks/use-chat-system";
 import { useBatchFollowingStatus } from "@/hooks/use-batch-following-status";
 import { useFollowUser } from "@/hooks/use-follow-user";
 import { isUserOnline, getTimeAgo } from "@/utils/time-utils";
+import { useGlobalPresence } from "@/hooks/use-global-presence";
 
 interface RightSidebarProps {
   currentUserId: string | null;
@@ -40,6 +41,8 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
   const [onlineFriends, setOnlineFriends] = useState<Friend[]>([]);
   const [friendSuggestions, setFriendSuggestions] = useState<FriendSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const { isOnline } = useGlobalPresence();
 
   const { followUser, isLoading: isFollowLoading } = useFollowUser();
 
@@ -88,7 +91,7 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
             } as Friend;
           });
 
-        setOnlineFriends(followingProfiles.filter(f => f.is_online));
+        setOnlineFriends(followingProfiles);
 
         // Load friend suggestions (users not yet friends with)
         const { data: suggestionsData, error: suggestionsError } = await supabase
@@ -166,17 +169,25 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
                       {friend.username?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
                     </AvatarFallback>
                   </Avatar>
-                  {friend.is_online && (
+                  {isOnline(friend.id) && (
                     <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-background"></div>
                   )}
                 </div>
-                <div 
+                <div
                   className="flex-1 min-w-0 cursor-pointer"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => openChat(friend.id, friend.username, friend.avatar_url)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openChat(friend.id, friend.username, friend.avatar_url);
+                    }
+                  }}
                 >
                   <p className="text-sm font-bold truncate text-[#050505] dark:text-white [.tech_&]:text-white">{friend.username}</p>
                   <p className="text-xs text-muted-foreground">
-                    {friend.is_online ? 'Activo ahora' : getTimeAgo(friend.last_seen ?? null)}
+                    {isOnline(friend.id) ? 'Activo ahora' : getTimeAgo(friend.last_seen ?? null)}
                   </p>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">

@@ -26,6 +26,8 @@ import { institutionsBarranquilla } from '@/data/institutions-barranquilla';
 import { ideaTemplates, projectTemplates, getTemplatesByCategory, type Template } from '@/data/templates';
 import { useAutosave, type AutosaveData } from '@/hooks/use-autosave';
 import { useFormValidation, type ValidationResult } from '@/hooks/use-form-validation';
+import { PostContentInput } from '@/components/post/PostContentInput';
+import { sendMentionNotifications } from '@/lib/notifications/mention-notifications';
 
 export type PostType = 'idea' | 'proyecto' | 'encuesta' | 'evento' | 'empleo' | 'servicios' | null;
 
@@ -109,6 +111,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
 
   const [content, setContent] = useState(initialContent);
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>(initialMedia ? [initialMedia] : []);
   const [filePreviews, setFilePreviews] = useState<string[]>(initialMedia ? [URL.createObjectURL(initialMedia)] : []);
   
@@ -219,6 +222,20 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       setShowAudioEditor(false);
     }
   }, [initialContent, initialMedia, isVisible]);
+
+  useEffect(() => {
+    if (!isVisible && !isOpen) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isVisible, isOpen, onClose]);
 
   useEffect(() => {
     const loadInstitution = async () => {
@@ -631,6 +648,55 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
   const effectivePublishing = isPublishing || isPublishingInternal;
 
+  const blockedWords = useMemo(
+    () => [
+      'puta',
+      'puto',
+      'mierda',
+      'marica',
+      'gonorrea',
+      'hijueputa',
+    ],
+    []
+  );
+
+  const validateQuality = (text: string) => {
+    const normalized = String(text || '').trim();
+    if (!normalized) return { ok: true as const };
+
+    if (normalized.length > 5000) {
+      return { ok: false as const, message: 'Tu publicación supera el límite de 5,000 caracteres.' };
+    }
+
+    const lower = normalized.toLowerCase();
+    if (blockedWords.some((w) => lower.includes(w))) {
+      return { ok: false as const, message: 'Tu publicación contiene lenguaje no permitido.' };
+    }
+
+    // repetitive tokens (e.g. uwu uwu uwu ...)
+    const tokens = lower.split(/\s+/).filter(Boolean);
+    if (tokens.length >= 8) {
+      const freq = new Map<string, number>();
+      for (const t of tokens) freq.set(t, (freq.get(t) || 0) + 1);
+      const top = Math.max(...Array.from(freq.values()));
+      if (top >= Math.max(6, Math.ceil(tokens.length * 0.7))) {
+        return { ok: false as const, message: 'Tu publicación parece demasiado repetitiva.' };
+      }
+    }
+
+    // repeated character sequences
+    if (/(.)\1{14,}/.test(lower)) {
+      return { ok: false as const, message: 'Tu publicación contiene repetición excesiva de caracteres.' };
+    }
+
+    // repeated short pattern sequences (e.g. uwuuwuuwu)
+    if (/([a-z0-9]{2,6})\1{5,}/i.test(lower)) {
+      return { ok: false as const, message: 'Tu publicación contiene repetición excesiva.' };
+    }
+
+    return { ok: true as const };
+  };
+
   const visibilityValue = useMemo(() => {
     if (privacy === 'Amigos') return 'friends' as const;
     if (privacy === 'Solo yo') return 'private' as const;
@@ -858,6 +924,25 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       }
 
       let result;
+      const effectiveText = [
+        content,
+        selectedPostType === 'idea' ? ideaDescription : '',
+        selectedPostType === 'proyecto' ? projectDescription : '',
+        selectedPostType === 'evento' ? eventDescription : '',
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      const quality = validateQuality(effectiveText);
+      if (!quality.ok) {
+        toast({
+          title: 'Contenido no permitido',
+          description: quality.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
       if (editingProject) {
         // Update existing project
         const { data: updatedPost, error: updateError } = await (supabase as any)
@@ -938,6 +1023,10 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
       if (selectedPostType === 'idea') {
         sendIdeaPublishedAutoMessage(user.id);
+      }
+
+      if (insertedPostId) {
+        await sendMentionNotifications(content, user.id, 'post', insertedPostId);
       }
 
       // Track analytics events for idea/project creation
@@ -1651,12 +1740,10 @@ Qué buscas ahora:
           )}
 
           {selectedPostType === null && (
-            <textarea
-              className="w-full resize-none border-none bg-transparent p-0 text-gray-900 placeholder-gray-500 focus:ring-0 dark:text-gray-100 dark:placeholder-gray-400 [.tech_&]:text-gray-100 [.tech_&]:placeholder-gray-400 sm:text-sm"
-              rows={10}
-              placeholder="Comparte tus ideas..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
+            <PostContentInput
+              content={content}
+              setContent={setContent}
+              textareaRef={contentTextareaRef}
             />
           )}
 

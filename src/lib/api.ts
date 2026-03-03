@@ -4,8 +4,6 @@ import type { Database } from "@/integrations/supabase/types";
 import { getMultiplePostSharesCounts } from "@/lib/api/posts/queries/shares";
 import { checkColumnExists } from "@/lib/api/posts/retrieve/utils/column-check";
 
-const debug = import.meta.env.DEV;
-
 let cachedHasSharedFields: boolean | null = null;
 async function getHasSharedFields(): Promise<boolean> {
   if (cachedHasSharedFields != null) return cachedHasSharedFields;
@@ -500,8 +498,6 @@ export async function createPost({
 
     // Upload file if present
     if (file) {
-      if (debug) console.log('Uploading file:', { name: file.name, size: file.size, type: file.type });
-      
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
@@ -537,8 +533,6 @@ export async function createPost({
         // Default to 'image' if type cannot be determined
         mediaType = 'image';
       }
-
-      if (debug) console.log('File uploaded successfully:', { mediaUrl, mediaType });
     }
 
     // Create poll object if poll data is present
@@ -577,8 +571,6 @@ export async function createPost({
       postData.idea = ideaObject;
     }
 
-    if (debug) console.log("Creating post with data:", postData);
-    
     // Insert post
     const { data: newPost, error: postError } = await supabase
       .from("posts")
@@ -591,7 +583,6 @@ export async function createPost({
       throw postError;
     }
 
-    if (debug) console.log('Post created successfully:', newPost);
     return newPost;
   } catch (error) {
     console.error("Error creating post:", error);
@@ -669,7 +660,14 @@ export async function deletePost(postId: string) {
 
     // Verify ownership
     if (post && (post as any).user_id !== user.id) {
-      throw new Error("You don't have permission to delete this post");
+      const [{ data: isMod }, { data: isAdmin }] = await Promise.all([
+        (supabase.rpc as any)("has_role", { _role: "moderator", _user_id: user.id }),
+        (supabase.rpc as any)("has_role", { _role: "admin", _user_id: user.id }),
+      ]);
+
+      if (!Boolean(isMod) && !Boolean(isAdmin)) {
+        throw new Error("You don't have permission to delete this post");
+      }
     }
 
     // Delete post

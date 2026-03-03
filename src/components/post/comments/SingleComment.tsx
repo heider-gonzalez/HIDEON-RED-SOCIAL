@@ -35,11 +35,13 @@ export function SingleComment({
   onUpdateComment,
   onLoadReplies,
   isReply = false,
+  
   postAuthorId,
   readOnly = false,
   hideReplies = false
 }: SingleCommentProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [repliesCollapsed, setRepliesCollapsed] = useState(false);
   const { toast } = useToast();
 
   const menuUserReaction: UiReactionType | null = comment.user_reaction
@@ -91,6 +93,7 @@ export function SingleComment({
 
   const hasLoadedReplies = Array.isArray(comment.replies) && comment.replies.length > 0;
   const canLoadReplies = !readOnly && !hideReplies && (comment.replies_count || 0) > 0 && !hasLoadedReplies;
+  const canToggleReplies = !readOnly && !hideReplies && hasLoadedReplies;
 
   const handleLoadReplies = useCallback(async () => {
     if (!onLoadReplies) return;
@@ -105,7 +108,6 @@ export function SingleComment({
       {isReply && (
         <>
           <div className="absolute -left-3 top-4 h-px w-3 bg-border" />
-          <div className="absolute -left-3 top-4 bottom-0 w-px bg-border" />
         </>
       )}
       {/* Header with avatar and author */}
@@ -165,24 +167,47 @@ export function SingleComment({
           </div>
         )}
 
-        {comment.replies && comment.replies.length > 0 && !hideReplies && (
-          <div className="relative mt-2 space-y-2">
+        {canToggleReplies && (
+          <div className="mt-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-auto p-0 text-xs text-muted-foreground hover:bg-transparent"
+              onClick={() => setRepliesCollapsed((v) => !v)}
+            >
+              {repliesCollapsed ? `Ver respuestas (${comment.replies?.length ?? comment.replies_count ?? 0})` : 'Ver menos'}
+            </Button>
+          </div>
+        )}
+
+        {comment.replies && comment.replies.length > 0 && !hideReplies && !repliesCollapsed && (
+          <div className="relative mt-2">
             <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
-            {comment.replies.map((reply) => (
-              <SingleComment
-                key={reply.id}
-                comment={reply}
-                onReaction={onReaction}
-                onReply={onReply}
-                onDeleteComment={onDeleteComment}
-                onUpdateComment={onUpdateComment}
-                onLoadReplies={onLoadReplies}
-                isReply={true}
-                postAuthorId={postAuthorId}
-                readOnly={readOnly}
-                hideReplies={hideReplies}
-              />
-            ))}
+            <div className="space-y-2">
+              {comment.replies.map((reply, index) => {
+                const isLast = index === comment.replies!.length - 1;
+                return (
+                  <div key={reply.id} className="relative">
+                    {isLast && (
+                      <div className="absolute left-5 top-4 bottom-0 w-px bg-background" />
+                    )}
+                    <SingleComment
+                      comment={reply}
+                      onReaction={onReaction}
+                      onReply={onReply}
+                      onDeleteComment={onDeleteComment}
+                      onUpdateComment={onUpdateComment}
+                      onLoadReplies={onLoadReplies}
+                      isReply={true}
+                      postAuthorId={postAuthorId}
+                      readOnly={readOnly}
+                      hideReplies={hideReplies}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

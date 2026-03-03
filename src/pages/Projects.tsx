@@ -10,15 +10,14 @@ import { Layout } from '@/components/layout';
 import { PROJECT_CATEGORIES, type Project } from '@/types/project';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import ModalPublicacionWeb from '@/components/ModalPublicacionWeb';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
 import { InstitutionCombobox } from '@/components/filters/InstitutionCombobox';
+import { usePostComposer } from '@/providers/PostComposerProvider';
 
 export default function Projects() {
-  const [showPostModal, setShowPostModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -31,6 +30,8 @@ export default function Projects() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const { open: openComposer } = usePostComposer();
 
   // Delete project mutation
   const deleteProjectMutation = useMutation({
@@ -61,7 +62,7 @@ export default function Projects() {
 
   const handleEditProject = (project: Project) => {
     setEditingProject(project);
-    setShowPostModal(true);
+    openComposer({ initialPostType: 'proyecto', editingProject: project });
   };
 
   const handleDeleteProject = (projectId: string) => {
@@ -334,7 +335,7 @@ export default function Projects() {
                 </p>
               </div>
               <Button
-                onClick={() => setShowPostModal(true)}
+                onClick={() => openComposer({ initialPostType: 'proyecto' })}
                 className="bg-white text-primary hover:bg-gray-100 font-semibold px-6 py-3 rounded-lg flex items-center gap-2 self-center lg:self-auto"
               >
                 <Plus size={20} />
@@ -437,18 +438,7 @@ export default function Projects() {
             </div>
           )}
         </div>
-
         {/* Modals */}
-        <ModalPublicacionWeb
-          isVisible={showPostModal}
-          onClose={() => {
-            setShowPostModal(false);
-            setEditingProject(null);
-          }}
-          initialPostType={'proyecto'}
-          editingProject={editingProject}
-        />
-        
         {selectedProject && (
           <ProjectModal
             project={selectedProject}

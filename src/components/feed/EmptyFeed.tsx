@@ -3,13 +3,11 @@ import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { Sparkles, Users, Lightbulb, Rocket, MessageCircle, Search } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
-import { useState } from "react";
-import ModalPublicacionWeb from "@/components/ModalPublicacionWeb";
+import { usePostComposer } from "@/providers/PostComposerProvider";
 
 export function EmptyFeed() {
   const { user } = useAuth();
-  const [showPostModal, setShowPostModal] = useState(false);
-  const [postType, setPostType] = useState<'idea' | 'proyecto'>('idea');
+  const { open: openComposer } = usePostComposer();
 
   const examplePosts = [
     {
@@ -47,11 +45,11 @@ export function EmptyFeed() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={() => { setPostType('idea'); setShowPostModal(true); }} className="gap-2">
+            <Button onClick={() => openComposer({ initialPostType: 'idea' })} className="gap-2">
               <Lightbulb className="h-4 w-4" />
               Publicar Idea
             </Button>
-            <Button onClick={() => { setPostType('proyecto'); setShowPostModal(true); }} variant="outline" className="gap-2">
+            <Button onClick={() => openComposer({ initialPostType: 'proyecto' })} variant="outline" className="gap-2">
               <Rocket className="h-4 w-4" />
               Compartir Proyecto
             </Button>
@@ -70,12 +68,12 @@ export function EmptyFeed() {
           Primeros pasos
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Button variant="outline" size="sm" onClick={() => { setPostType('idea'); setShowPostModal(true); }} className="h-auto p-3 flex flex-col items-start gap-1">
+          <Button variant="outline" size="sm" onClick={() => openComposer({ initialPostType: 'idea' })} className="h-auto p-3 flex flex-col items-start gap-1">
             <Lightbulb className="h-4 w-4 text-primary" />
             <span className="font-medium">Publicar Idea</span>
             <span className="text-xs text-muted-foreground">Comparte un problema o solución</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => { setPostType('proyecto'); setShowPostModal(true); }} className="h-auto p-3 flex flex-col items-start gap-1">
+          <Button variant="outline" size="sm" onClick={() => openComposer({ initialPostType: 'proyecto' })} className="h-auto p-3 flex flex-col items-start gap-1">
             <Rocket className="h-4 w-4 text-primary" />
             <span className="font-medium">Compartir Proyecto</span>
             <span className="text-xs text-muted-foreground">Muestra lo que estás construyendo</span>
@@ -117,18 +115,6 @@ export function EmptyFeed() {
         </div>
       </Card>
 
-      {/* Post Modal */}
-      {showPostModal && (
-        <ModalPublicacionWeb
-          isVisible={showPostModal}
-          isOpen={showPostModal}
-          onClose={() => setShowPostModal(false)}
-          initialContent=""
-          initialMedia={null}
-          initialMediaType={null}
-          initialPostType={postType}
-        />
-      )}
     </div>
   );
 }

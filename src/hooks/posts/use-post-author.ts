@@ -21,6 +21,21 @@ export function usePostAuthor(
         return;
       }
 
+      try {
+        const [{ data: isMod }, { data: isAdmin }] = await Promise.all([
+          (supabase.rpc as any)("has_role", { _role: "moderator", _user_id: uid }),
+          (supabase.rpc as any)("has_role", { _role: "admin", _user_id: uid }),
+        ]);
+
+        if (Boolean(isMod) || Boolean(isAdmin)) {
+          setIsCurrentUserAuthor(false);
+          setCanDeletePost(true);
+          return;
+        }
+      } catch {
+        // ignore role errors and fallback to owner/company logic
+      }
+
       const isOwner = uid === postUserId;
       if (!companyId) {
         setIsCurrentUserAuthor(isOwner);

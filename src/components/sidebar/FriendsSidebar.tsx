@@ -10,6 +10,7 @@ import { getTimeAgo, isUserOnline } from "@/utils/time-utils";
 // Removed ChatDialog - using global chat only
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useGlobalPresence } from "@/hooks/use-global-presence";
 
 export function FriendsSidebar() {
   const [friends, setFriends] = useState([]);
@@ -18,6 +19,7 @@ export function FriendsSidebar() {
   const [selectedFriend, setSelectedFriend] = useState(null);
   const { user } = useAuth();
   const isMobile = useIsMobile();
+  const { isOnline } = useGlobalPresence();
   // Online status tracking removed for performance
 
   useEffect(() => {
@@ -197,13 +199,13 @@ export function FriendsSidebar() {
                         <AvatarImage src={friend.avatar_url || undefined} />
                         <AvatarFallback>{friend.username[0]?.toUpperCase()}</AvatarFallback>
                       </Avatar>
-                      {isUserOnline(friend.status, friend.last_seen) && (
+                      {isOnline(friend.id) && (
                         <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{friend.username}</div>
-                      {!isUserOnline(friend.status, friend.last_seen) && (
+                      {!isOnline(friend.id) && (
                         <div className="text-xs text-muted-foreground">
                           {getTimeAgo(friend.last_seen)}
                         </div>
