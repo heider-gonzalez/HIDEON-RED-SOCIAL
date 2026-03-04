@@ -207,7 +207,7 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
   // Determinar si esta es una publicación compartida
   const isSharedPost = !!post.shared_post;
   // Determinar si esta es una publicación de idea
-  const isIdeaPost = !!post.idea && post.post_type !== 'project';
+  const isIdeaPost = post.post_type === 'idea' || (!!post.idea && post.post_type !== 'project');
   // Determinar si es un evento
   const isEventPost = post.post_type === 'academic_event';
   // Determinar si es un proyecto
@@ -487,16 +487,39 @@ function EventPostView({ post }: { post: PostType }) {
 
 // Componente para las publicaciones de tipo Idea
 function IdeaPostView({ post }: { post: PostType }) {
-  if (!post.idea) return null;
+  const excerpt = String(post.content || '').trim();
+  const excerptToShow = excerpt.length > 220 ? `${excerpt.slice(0, 220)}...` : excerpt;
   
   return (
     <div className="px-0 md:px-4 pb-2">
       <PostContent post={post} postId={post.id} />
-      <IdeaContent 
-        idea={post.idea} 
-        postId={post.id}
-        postOwnerId={post.user_id}
-      />
+
+      {post.idea ? (
+        <IdeaContent 
+          idea={post.idea} 
+          postId={post.id}
+          postOwnerId={post.user_id}
+        />
+      ) : (
+        <div className="px-4 md:px-0 pb-3">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Badge variant="secondary" className="text-xs font-medium">Idea</Badge>
+              <Badge variant="outline" className="text-xs text-muted-foreground">Incompleta</Badge>
+            </div>
+
+            {excerptToShow ? (
+              <div className="text-[15px] leading-relaxed whitespace-pre-wrap break-words text-foreground">
+                {excerptToShow}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                Esta idea no tiene información visible.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
