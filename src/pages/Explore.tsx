@@ -23,26 +23,26 @@ export default function Explore() {
   return (
     <Layout hideLeftSidebar hideRightSidebar>
       <div className="min-h-screen bg-background">
-        {/* Sticky search bar */}
-        <div className="sticky top-14 z-40 bg-background border-b border-border px-3 sm:px-4 py-3">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Buscar en Hideon…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 rounded-lg bg-muted border-none text-foreground placeholder:text-muted-foreground"
-              />
+        {/* Sticky header: search + filters + tabs */}
+        <div className="sticky top-0 z-40 bg-background border-b border-border">
+          <div className="px-3 sm:px-4 py-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Busca ideas, proyectos o personas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-11 rounded-lg bg-muted border-none text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+              <InstitutionCombobox value={institutionName} onChange={setInstitutionName} />
             </div>
-            <InstitutionCombobox value={institutionName} onChange={setInstitutionName} />
           </div>
-        </div>
 
-        {/* Content tabs - 4 tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full h-12 rounded-none border-b border-border bg-background sticky top-[calc(3.5rem+4.25rem)] z-30 justify-start gap-1 px-2 overflow-x-auto">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="w-full h-12 rounded-none bg-background justify-start gap-1 px-2 overflow-x-auto">
             <TabsTrigger 
               value="ideas" 
               className="shrink-0 gap-2 text-foreground data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary px-3 text-xs sm:text-sm"
@@ -71,8 +71,12 @@ export default function Explore() {
               <Users className="h-4 w-4" />
               Personas
             </TabsTrigger>
-          </TabsList>
+            </TabsList>
+          </Tabs>
+        </div>
 
+        {/* Content tabs - 4 tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsContent value="ideas" className="px-3 py-4 sm:p-4 mt-0">
             <IdeaGrid searchQuery={searchQuery} institutionName={institutionName} />
           </TabsContent>
