@@ -162,6 +162,8 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
   const [ideaTitle, setIdeaTitle] = useState('');
   const [ideaDescription, setIdeaDescription] = useState('');
+  const [ideaTechnologies, setIdeaTechnologies] = useState<string[]>([]);
+  const [ideaTechInput, setIdeaTechInput] = useState('');
   const [projectTitle, setProjectTitle] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [projectStatus, setProjectStatus] = useState<'idea' | 'in_progress' | 'completed'>('in_progress');
@@ -882,6 +884,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         postData.idea = {
           title: ideaTitle.trim(),
           description: ideaDescription.trim(),
+          resources_needed: ideaTechnologies,
           participants: [],
         };
         postData.project_status = 'idea';
@@ -1526,6 +1529,70 @@ Qué buscas ahora:
               
               <div className="text-xs text-gray-500">
                 {ideaDescription.length}/2000 caracteres
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="idea-technologies" className="text-sm font-medium text-gray-700 dark:text-gray-100">Tecnologías</label>
+                <div className="flex gap-2">
+                  <input
+                    id="idea-technologies"
+                    value={ideaTechInput}
+                    onChange={(e) => setIdeaTechInput(e.target.value)}
+                    placeholder="Ej: React, Node, MongoDB"
+                    className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      const value = ideaTechInput.trim().replace(/^#+/, '');
+                      if (!value) return;
+                      const exists = ideaTechnologies.some((t) => t.toLowerCase() === value.toLowerCase());
+                      if (exists) {
+                        setIdeaTechInput('');
+                        return;
+                      }
+                      setIdeaTechnologies((prev) => [...prev, value].slice(0, 8));
+                      setIdeaTechInput('');
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10"
+                    onClick={() => {
+                      const value = ideaTechInput.trim().replace(/^#+/, '');
+                      if (!value) return;
+                      const exists = ideaTechnologies.some((t) => t.toLowerCase() === value.toLowerCase());
+                      if (exists) {
+                        setIdeaTechInput('');
+                        return;
+                      }
+                      setIdeaTechnologies((prev) => [...prev, value].slice(0, 8));
+                      setIdeaTechInput('');
+                    }}
+                  >
+                    Agregar
+                  </Button>
+                </div>
+
+                {ideaTechnologies.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {ideaTechnologies.map((tech) => (
+                      <div
+                        key={tech}
+                        className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-muted/30 px-3 py-1 text-xs"
+                      >
+                        <span>{tech}</span>
+                        <button
+                          type="button"
+                          onClick={() => setIdeaTechnologies((prev) => prev.filter((t) => t !== tech))}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
