@@ -464,6 +464,12 @@ function IdeaPostView({ post }: { post: PostType }) {
 function ProjectPostView({ post, isMobile }: { post: PostType; isMobile: boolean }) {
   // Si no hay idea, mostrar contenido estándar como fallback
   if (!post.idea) {
+    const fallbackExcerpt = String(
+      post.content || (post as any)?.post_metadata?.proyecto?.description || ''
+    ).trim();
+    const fallbackExcerptToShow =
+      fallbackExcerpt.length > 220 ? `${fallbackExcerpt.slice(0, 220)}...` : fallbackExcerpt;
+
     if (import.meta.env.DEV) {
       (window as any).__hideon_project_fallback_warned ??= new Set<string>();
       const warned: Set<string> = (window as any).__hideon_project_fallback_warned;
@@ -474,7 +480,7 @@ function ProjectPostView({ post, isMobile }: { post: PostType; isMobile: boolean
     }
     return (
       <div className="px-0 md:px-4 pb-2">
-        <PostContent post={post} postId={post.id} />
+        <PostContent post={post} postId={post.id} hideText={isMobile} />
         <div className="px-0 md:px-4 pb-2">
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -491,9 +497,25 @@ function ProjectPostView({ post, isMobile }: { post: PostType; isMobile: boolean
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Este proyecto necesita ser actualizado con información completa.
-            </p>
+
+            {fallbackExcerptToShow ? (
+              <>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
+                  {fallbackExcerptToShow}
+                </p>
+                <div className="mt-3">
+                  <Button asChild variant="outline" className="w-full">
+                    <Link to={`/project/${post.id}`}>
+                      Ver proyecto completo
+                    </Link>
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Este proyecto necesita ser actualizado con información completa.
+              </p>
+            )}
           </div>
         </div>
       </div>
