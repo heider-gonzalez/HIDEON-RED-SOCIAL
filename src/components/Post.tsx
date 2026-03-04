@@ -96,6 +96,60 @@ function getProjectPreviewData(post: PostType) {
   };
 }
 
+function extractHashtags(text: string) {
+  const raw = String(text || '');
+  const matches = raw.match(/#[\p{L}0-9_]+/giu) || [];
+  const seen = new Set<string>();
+  const uniq: string[] = [];
+  for (const m of matches) {
+    const tag = m.trim();
+    const key = tag.toLowerCase();
+    if (!tag) continue;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    uniq.push(tag);
+    if (uniq.length >= 8) break;
+  }
+  return uniq;
+}
+
+function splitIdeaSections(description: string) {
+  const text = String(description || '').trim();
+  const lower = text.toLowerCase();
+  const idxProblem = lower.indexOf('problema:');
+  const idxForWho = lower.indexOf('para quién:');
+
+  if (idxProblem === -1 && idxForWho === -1) {
+    return {
+      intro: text,
+      problem: '',
+      forWho: '',
+    };
+  }
+
+  const introEnd = Math.min(
+    idxProblem === -1 ? Number.POSITIVE_INFINITY : idxProblem,
+    idxForWho === -1 ? Number.POSITIVE_INFINITY : idxForWho
+  );
+  const intro = text.slice(0, introEnd).trim();
+
+  let problem = '';
+  let forWho = '';
+
+  if (idxProblem !== -1) {
+    const start = idxProblem + 'problema:'.length;
+    const end = idxForWho !== -1 && idxForWho > idxProblem ? idxForWho : text.length;
+    problem = text.slice(start, end).trim();
+  }
+
+  if (idxForWho !== -1) {
+    const start = idxForWho + 'para quién:'.length;
+    forWho = text.slice(start).trim();
+  }
+
+  return { intro, problem, forWho };
+}
+
 export function Post({ post, hideComments = false, isHidden = false, initialShowComments = false }: PostProps) {
   // Verificación de seguridad si el post es inválido
   if (!post || !post.id) {
@@ -487,39 +541,107 @@ function EventPostView({ post }: { post: PostType }) {
 
 // Componente para las publicaciones de tipo Idea
 function IdeaPostView({ post }: { post: PostType }) {
-  const excerpt = String(post.content || '').trim();
-  const excerptToShow = excerpt.length > 220 ? `${excerpt.slice(0, 220)}...` : excerpt;
+  const idea = post.idea as any;
+  const title = String(idea?.title || '').trim();
+  const description = String(idea?.description || post.content || '').trim();
+  const { intro, problem, forWho } = splitIdeaSections(description);
+
+  const rawTech = Array.isArray(idea?.resources_needed) ? idea.resources_needed : [];
+  const techToShow = rawTech
+    .map((t: any) => String(t || '').trim())
+    .filter(Boolean)
+    .slice(0, 4);
+
+  const tags = extractHashtags(description);
   
   return (
     <div className="px-0 md:px-4 pb-2">
-      <PostContent post={post} postId={post.id} />
-
-      {post.idea ? (
-        <IdeaContent 
-          idea={post.idea} 
-          postId={post.id}
-          postOwnerId={post.user_id}
-        />
-      ) : (
-        <div className="px-4 md:px-0 pb-3">
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Badge variant="secondary" className="text-xs font-medium">Idea</Badge>
-              <Badge variant="outline" className="text-xs text-muted-foreground">Incompleta</Badge>
+      <div className="px-4 md:px-0 pb-3">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="secondary" className="text-xs font-medium">Idea Colaborativa</Badge>
             </div>
 
-            {excerptToShow ? (
-              <div className="text-[15px] leading-relaxed whitespace-pre-wrap break-words text-foreground">
-                {excerptToShow}
+            {title && (
+              <div className="text-lg md:text-xl font-bold leading-snug text-foreground">
+                {title}
               </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                Esta idea no tiene información visible.
+            )}
+
+            {intro && (
+              <div className="mt-2 text-[15px] leading-relaxed whitespace-pre-wrap break-words text-muted-foreground">
+                {intro}
+              </div>
+            )}
+
+            {(problem || forWho) && (
+              <div className="mt-4 space-y-3">
+                {problem && (
+                  <div className="rounded-xl border border-border bg-muted/30 p-4">
+                    <div className="text-sm font-semibold text-foreground">Problema:</div>
+                    <div className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap break-words">{problem}</div>
+                  </div>
+                )}
+                {forWho && (
+                  <div className="rounded-xl border border-border bg-blue-50/60 dark:bg-blue-950/20 p-4">
+                    <div className="text-sm font-semibold text-foreground">Para quién:</div>
+                    <div className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap break-words">{forWho}</div>
+                  </div>
+                )}
               </div>
             )}
           </div>
+
+          <PostContent post={post} postId={post.id} hideText={true} />
+
+          {(techToShow.length > 0 || tags.length > 0) && (
+            <div className="p-4 pt-3">
+              {techToShow.length > 0 && (
+                <>
+                  <div className="text-xs tracking-wide text-muted-foreground">TECNOLOGÍAS</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {techToShow.map((t: string) => (
+                      <Badge
+                        key={t}
+                        className="text-xs bg-primary text-primary-foreground hover:bg-primary"
+                      >
+                        {t}
+                      </Badge>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {tags.length > 0 && (
+                <div className={techToShow.length > 0 ? 'mt-3 flex flex-wrap gap-2' : 'flex flex-wrap gap-2'}>
+                  {tags.map((t) => (
+                    <Badge key={t} variant="outline" className="text-xs bg-background">
+                      {t}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {post.idea ? (
+            <div className="p-4 pt-0">
+              <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                <Link to={`/idea/${post.id}/chat`}>
+                  Chat de la idea
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="p-4 pt-0">
+              <Button variant="outline" className="w-full" disabled>
+                Idea incompleta
+              </Button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -533,51 +655,73 @@ function ProjectPostView({ post, isMobile }: { post: PostType; isMobile: boolean
       : preview.description;
   const techToShow = preview.technologies.slice(0, 3);
   const remainingTechCount = Math.max(0, preview.technologies.length - techToShow.length);
+  const tags = extractHashtags(preview.description);
   
   return (
     <div className="px-0 md:px-4 pb-2">
-      <PostContent post={post} postId={post.id} hideText={isMobile} />
+      <div className="px-4 md:px-0 pb-3">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="secondary" className="text-xs font-medium">Proyecto</Badge>
+              {preview.statusLabel && (
+                <Badge variant="outline" className={preview.statusClass}>
+                  {preview.statusLabel}
+                </Badge>
+              )}
+            </div>
 
-      <div className={isMobile ? "px-4 md:px-0 pb-3" : "px-4 md:px-0 pb-3"}>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Briefcase className="h-5 w-5 text-blue-500" />
-            <Badge variant="secondary" className="text-xs font-medium">Proyecto</Badge>
-            {preview.statusLabel && (
-              <Badge variant="outline" className={preview.statusClass}>
-                {preview.statusLabel}
-              </Badge>
+            {preview.title && (
+              <div className="text-lg md:text-xl font-bold leading-snug text-foreground">
+                {preview.title}
+              </div>
+            )}
+
+            {excerptToShow && (
+              <div className="mt-2 text-[15px] leading-relaxed whitespace-pre-wrap break-words text-muted-foreground">
+                {excerptToShow}
+              </div>
             )}
           </div>
 
-          {preview.title && (
-            <div className="text-base font-semibold text-foreground">
-              {preview.title}
-            </div>
-          )}
+          <PostContent post={post} postId={post.id} hideText={true} />
 
-          {excerptToShow && (
-            <div className="mt-3 text-[15px] leading-relaxed whitespace-pre-wrap break-words text-foreground">
-              {excerptToShow}
-            </div>
-          )}
+          {(techToShow.length > 0 || tags.length > 0) && (
+            <div className="p-4 pt-3">
+              {techToShow.length > 0 && (
+                <>
+                  <div className="text-xs tracking-wide text-muted-foreground">TECNOLOGÍAS</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {techToShow.map((t) => (
+                      <Badge
+                        key={t}
+                        className="text-xs bg-primary text-primary-foreground hover:bg-primary"
+                      >
+                        {t}
+                      </Badge>
+                    ))}
+                    {remainingTechCount > 0 && (
+                      <Badge className="text-xs bg-primary text-primary-foreground hover:bg-primary">
+                        +{remainingTechCount}
+                      </Badge>
+                    )}
+                  </div>
+                </>
+              )}
 
-          {techToShow.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {techToShow.map((t) => (
-                <Badge key={t} variant="outline" className="text-xs">
-                  {t}
-                </Badge>
-              ))}
-              {remainingTechCount > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  +{remainingTechCount}
-                </Badge>
+              {tags.length > 0 && (
+                <div className={techToShow.length > 0 ? 'mt-3 flex flex-wrap gap-2' : 'flex flex-wrap gap-2'}>
+                  {tags.map((t) => (
+                    <Badge key={t} variant="outline" className="text-xs bg-background">
+                      {t}
+                    </Badge>
+                  ))}
+                </div>
               )}
             </div>
           )}
 
-          <div className="mt-3">
+          <div className="p-4 pt-0">
             <Button asChild variant="outline" className="w-full">
               <Link to={`/project/${post.id}`}>
                 Ver objetivos y tecnologías
