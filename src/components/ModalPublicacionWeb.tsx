@@ -164,6 +164,8 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [ideaDescription, setIdeaDescription] = useState('');
   const [ideaTechnologies, setIdeaTechnologies] = useState<string[]>([]);
   const [ideaTechInput, setIdeaTechInput] = useState('');
+  const [ideaTags, setIdeaTags] = useState<string[]>([]);
+  const [ideaTagInput, setIdeaTagInput] = useState('');
   const [projectTitle, setProjectTitle] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [projectStatus, setProjectStatus] = useState<'idea' | 'in_progress' | 'completed'>('in_progress');
@@ -384,6 +386,10 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     setContent('');
     setIdeaTitle('');
     setIdeaDescription('');
+    setIdeaTechnologies([]);
+    setIdeaTechInput('');
+    setIdeaTags([]);
+    setIdeaTagInput('');
     setProjectTitle('');
     setProjectDescription('');
     setProjectStatus('in_progress');
@@ -886,6 +892,10 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           description: ideaDescription.trim(),
           resources_needed: ideaTechnologies,
           participants: [],
+        };
+        postData.post_metadata = {
+          ...(postData.post_metadata || {}),
+          idea_tags: ideaTags,
         };
         postData.project_status = 'idea';
       } else if (selectedPostType === 'proyecto') {
@@ -1585,6 +1595,74 @@ Qué buscas ahora:
                         <button
                           type="button"
                           onClick={() => setIdeaTechnologies((prev) => prev.filter((t) => t !== tech))}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="idea-tags" className="text-sm font-medium text-gray-700 dark:text-gray-100"># Hashtags (opcional)</label>
+                <div className="flex gap-2">
+                  <input
+                    id="idea-tags"
+                    value={ideaTagInput}
+                    onChange={(e) => setIdeaTagInput(e.target.value)}
+                    placeholder="Ej: #educación #empleo"
+                    className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      const raw = ideaTagInput.trim();
+                      const normalized = raw.startsWith('#') ? raw : `#${raw}`;
+                      const value = normalized.replace(/\s+/g, '');
+                      if (value === '#') return;
+                      const exists = ideaTags.some((t) => t.toLowerCase() === value.toLowerCase());
+                      if (exists) {
+                        setIdeaTagInput('');
+                        return;
+                      }
+                      setIdeaTags((prev) => [...prev, value].slice(0, 8));
+                      setIdeaTagInput('');
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10"
+                    onClick={() => {
+                      const raw = ideaTagInput.trim();
+                      const normalized = raw.startsWith('#') ? raw : `#${raw}`;
+                      const value = normalized.replace(/\s+/g, '');
+                      if (value === '#') return;
+                      const exists = ideaTags.some((t) => t.toLowerCase() === value.toLowerCase());
+                      if (exists) {
+                        setIdeaTagInput('');
+                        return;
+                      }
+                      setIdeaTags((prev) => [...prev, value].slice(0, 8));
+                      setIdeaTagInput('');
+                    }}
+                  >
+                    Agregar
+                  </Button>
+                </div>
+
+                {ideaTags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {ideaTags.map((tag) => (
+                      <div
+                        key={tag}
+                        className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-background px-3 py-1 text-xs"
+                      >
+                        <span>{tag}</span>
+                        <button
+                          type="button"
+                          onClick={() => setIdeaTags((prev) => prev.filter((t) => t !== tag))}
                           className="text-muted-foreground hover:text-foreground"
                         >
                           <X className="h-3 w-3" />

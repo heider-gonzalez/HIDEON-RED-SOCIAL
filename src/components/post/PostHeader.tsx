@@ -253,7 +253,7 @@ export function PostHeader({
   const renderCareerBadge = () => {
     if (!careerToShow) return null;
     return (
-      <div className="text-xs text-muted-foreground/80 font-normal truncate max-w-[18rem]">{careerToShow}</div>
+      <div className="text-xs text-muted-foreground/80 font-normal truncate max-w-[18rem] leading-tight">{careerToShow}</div>
     );
   };
 
@@ -270,33 +270,12 @@ export function PostHeader({
             : '';
     const city = String(professional?.city || '').trim();
     const locationLine = [workModeLabel, city].filter(Boolean).join(' • ');
-    const seeking = Array.isArray(professional?.seeking_tags) ? professional!.seeking_tags.slice(0, 1) : [];
-    const offering = Array.isArray(professional?.offering_tags) ? professional!.offering_tags.slice(0, 2) : [];
-
-    if (!headline && !locationLine && seeking.length === 0 && offering.length === 0) return null;
+    const line = headline || locationLine;
+    if (!line) return null;
 
     return (
-      <div className="mt-1 space-y-1">
-        {headline && (
-          <div className="text-xs text-foreground/80 font-medium truncate max-w-[22rem]">{headline}</div>
-        )}
-        {locationLine && (
-          <div className="text-xs text-muted-foreground truncate max-w-[22rem]">{locationLine}</div>
-        )}
-        {(seeking.length > 0 || offering.length > 0) && (
-          <div className="flex flex-wrap gap-1">
-            {seeking.map((t) => (
-              <Badge key={`seek-${t}`} variant="outline" className="text-[10px] px-2 py-0 h-5">
-                Busco: {t}
-              </Badge>
-            ))}
-            {offering.map((t) => (
-              <Badge key={`off-${t}`} variant="secondary" className="text-[10px] px-2 py-0 h-5">
-                {t}
-              </Badge>
-            ))}
-          </div>
-        )}
+      <div className="text-xs text-muted-foreground truncate max-w-[22rem] leading-tight">
+        {line}
       </div>
     );
   };
@@ -416,11 +395,11 @@ export function PostHeader({
   };
 
   return (
-    <div className={`flex justify-between items-start px-4 py-3 md:px-5 md:py-4 ${isHidden ? 'opacity-50' : ''}`}>
+    <div className={`flex justify-between items-start px-4 py-3 md:px-5 md:py-3 ${isHidden ? 'opacity-50' : ''}`}>
       <div className="flex items-start space-x-3">
         {getAvatarContent()}
-        <div>
-          <div className="flex items-center flex-wrap">
+        <div className="min-w-0">
+          <div className="flex items-center flex-wrap gap-y-1">
             {getUsernameElement()}
             {renderIdeaTag()}
             {renderProjectTag()}
@@ -429,13 +408,10 @@ export function PostHeader({
             {renderGroupTag()}
             {renderCompanyTag()}
           </div>
-          <div className="flex items-center mt-0.5">
-            <div className="flex flex-col">
-              {renderCareerBadge()}
-              {renderProfessionalSubheader()}
-            </div>
+          <div className="mt-0.5 space-y-0.5">
+            {renderCareerBadge() || renderProfessionalSubheader()}
           </div>
-          <div className="text-xs text-muted-foreground/70 mt-1 font-normal">
+          <div className="text-xs text-muted-foreground/70 mt-0.5 font-normal leading-tight">
             {formatDistanceToNow(new Date(post.created_at), { 
               addSuffix: true, 
               locale: es 

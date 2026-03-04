@@ -552,7 +552,24 @@ function IdeaPostView({ post }: { post: PostType }) {
     .filter(Boolean)
     .slice(0, 4);
 
-  const tags = extractHashtags(description);
+  const storedIdeaTagsRaw = (post as any)?.post_metadata?.idea_tags;
+  const storedIdeaTags = Array.isArray(storedIdeaTagsRaw)
+    ? storedIdeaTagsRaw.map((t: any) => String(t || '').trim()).filter(Boolean)
+    : [];
+
+  const extractedTags = extractHashtags(description);
+  const tagSeen = new Set<string>();
+  const tags: string[] = [];
+  for (const t of [...storedIdeaTags, ...extractedTags]) {
+    const v = String(t || '').trim();
+    if (!v) continue;
+    const normalized = v.startsWith('#') ? v : `#${v}`;
+    const key = normalized.toLowerCase();
+    if (tagSeen.has(key)) continue;
+    tagSeen.add(key);
+    tags.push(normalized);
+    if (tags.length >= 8) break;
+  }
   
   return (
     <div className="px-0 md:px-4 pb-2">
@@ -604,7 +621,7 @@ function IdeaPostView({ post }: { post: PostType }) {
                     {techToShow.map((t: string) => (
                       <Badge
                         key={t}
-                        className="text-xs bg-primary text-primary-foreground hover:bg-primary"
+                        className="text-xs rounded-full bg-violet-600 text-white hover:bg-violet-600"
                       >
                         {t}
                       </Badge>
