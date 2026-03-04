@@ -12,7 +12,7 @@ export default function Index() {
 
   return (
     <FacebookLayout>
-      <div className="w-full bg-background min-h-screen">
+      <div className="w-full bg-background">
         {isAuthenticated && <QuickPostBox />}
         <Feed />
       </div>

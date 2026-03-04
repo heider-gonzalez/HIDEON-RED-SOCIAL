@@ -13,6 +13,9 @@ import { useDoubleClick } from "@/hooks/use-double-click";
 import { useVolumeControl } from "@/hooks/reels/use-volume-control";
 import { VolumeSlider } from "./VolumeSlider";
 import { normalizePostContent } from "@/utils/post-content";
+import { useReelComments } from "@/hooks/reels/use-reel-comments";
+import { Comments } from "@/components/post/Comments";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 
 interface OptimizedReelItemProps {
   post: Post;
@@ -43,6 +46,23 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   const startTimeRef = useRef<number | null>(null);
 
   const { userReaction, onReaction: handleReaction } = usePostReactions(post.id);
+
+  const {
+    comments,
+    newComment,
+    setNewComment,
+    replyTo,
+    commentImage,
+    setCommentImage,
+    showComments,
+    setShowComments,
+    handleSubmitComment,
+    handleCommentLike,
+    handleReply,
+    loadReplies,
+    handleDeleteComment,
+    handleCancelReply,
+  } = useReelComments(post.id);
   
   // Control de volumen mejorado
   const { volume, isMuted, showSlider, toggleMute, changeVolume, showSliderTemporarily } = useVolumeControl(videoRef);
@@ -285,7 +305,10 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
               variant="ghost"
               size="icon"
               className="h-12 w-12 rounded-full bg-transparent text-white hover:bg-white/10"
-              onClick={() => onReaction(post.id, 'comment')}
+              onClick={() => {
+                setShowComments(true);
+                onReaction(post.id, 'comment');
+              }}
             >
               <MessageCircle className="h-7 w-7" />
             </Button>
@@ -345,6 +368,41 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
           </div>
         </div>
       </div>
+
+      <Drawer open={showComments} onOpenChange={setShowComments}>
+        <DrawerContent className="max-h-[80svh]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="text-sm font-semibold">Comentarios</div>
+            <button
+              className="text-sm text-muted-foreground"
+              onClick={() => setShowComments(false)}
+              type="button"
+            >
+              Cerrar
+            </button>
+          </div>
+          <div className="overflow-y-auto">
+            <Comments
+              postId={post.id}
+              comments={comments}
+              onReaction={handleCommentLike}
+              onReply={handleReply}
+              onSubmitComment={handleSubmitComment}
+              onDeleteComment={handleDeleteComment}
+              onLoadReplies={loadReplies}
+              newComment={newComment}
+              onNewCommentChange={setNewComment}
+              replyTo={replyTo}
+              onCancelReply={handleCancelReply}
+              showComments={true}
+              commentImage={commentImage}
+              setCommentImage={setCommentImage}
+              postAuthorId={post.user_id}
+              totalCommentsCount={(post as any).comments_count ?? (post as any).comments?.count}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 });

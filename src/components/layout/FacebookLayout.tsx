@@ -115,7 +115,7 @@ export function FacebookLayout({
           )}
           
           <main
-            className={`flex-1 min-h-0 w-full ${!hideNavigation ? 'pt-[96px] pb-4' : 'py-4 pb-4'} overflow-y-auto overscroll-contain`}
+            className={`flex-1 min-h-0 w-full bg-background ${!hideNavigation ? 'pt-[96px] pb-0' : 'py-4 pb-0'} overflow-y-auto overscroll-contain`}
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div className="w-full px-0 mx-auto max-w-full">
