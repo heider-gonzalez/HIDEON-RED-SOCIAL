@@ -17,7 +17,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { PostOptionsMenu } from "./actions/PostOptionsMenu";
 import { AuthorPostOptionsMenu } from "./actions/AuthorPostOptionsMenu";
 import { IncognitoAuthorOptionsMenu } from "./actions/IncognitoAuthorOptionsMenu";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PostHeaderProps {
   post: Post;
@@ -73,7 +72,9 @@ export function PostHeader({
   const careerToShow = !isIncognito ? (careerFromPost || authorCareer) : null;
 
   const renderProjectTag = () => {
-    if (!isProjectPost) return null;
+    const shouldShow =
+      isProjectPost || post.post_type === 'project' || post.post_type === 'proyecto';
+    if (!shouldShow) return null;
 
     return (
       <Badge
@@ -413,8 +414,6 @@ export function PostHeader({
     // Si no es el autor y es incógnito, no mostrar menú
     return null;
   };
-
-  const isMobile = useIsMobile();
 
   return (
     <div className={`flex justify-between items-start px-4 py-3 md:px-5 md:py-4 ${isHidden ? 'opacity-50' : ''}`}>

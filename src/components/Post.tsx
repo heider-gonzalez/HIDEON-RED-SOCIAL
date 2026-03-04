@@ -505,7 +505,12 @@ function ProjectPostView({ post, isMobile }: { post: PostType; isMobile: boolean
       ? 'in_progress'
       : post.project_status;
 
-  const excerpt = String(post.idea?.description || post.content || '').trim();
+  const excerpt = String(
+    post.idea?.description ||
+      post.idea?.expected_impact ||
+      post.content ||
+      ''
+  ).trim();
   const excerptToShow = excerpt.length > 220 ? `${excerpt.slice(0, 220)}...` : excerpt;
   
   return (
@@ -514,6 +519,11 @@ function ProjectPostView({ post, isMobile }: { post: PostType; isMobile: boolean
 
       {isMobile && (
         <div className="px-4 md:px-0 pb-3">
+          {post.idea?.title && (
+            <div className="mt-3 text-base font-semibold text-foreground">
+              {post.idea.title}
+            </div>
+          )}
           {excerptToShow && (
             <div className="mt-3 text-[15px] leading-relaxed whitespace-pre-wrap break-words text-foreground">
               {excerptToShow}
