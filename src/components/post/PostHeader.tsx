@@ -27,6 +27,7 @@ interface PostHeaderProps {
   isHidden?: boolean;
   content?: string;
   isIdeaPost?: boolean;
+  isProjectPost?: boolean;
   isDemoPost?: boolean;
 }
 
@@ -49,6 +50,7 @@ export function PostHeader({
   isHidden = false,
   content = "",
   isIdeaPost = false,
+  isProjectPost = false,
   isDemoPost = false
 }: PostHeaderProps) {
   const [authorCareer, setAuthorCareer] = useState<string | null>(null);
@@ -69,6 +71,19 @@ export function PostHeader({
   // Obtener la carrera del post o del estado local
   const careerFromPost = (post.profiles as any)?.career;
   const careerToShow = !isIncognito ? (careerFromPost || authorCareer) : null;
+
+  const renderProjectTag = () => {
+    if (!isProjectPost) return null;
+
+    return (
+      <Badge
+        variant="secondary"
+        className="ml-2 flex items-center gap-1 text-xs bg-muted text-foreground"
+      >
+        Proyecto
+      </Badge>
+    );
+  };
   
   useEffect(() => {
     // Fetch incognito data if this is an incognito post
@@ -84,7 +99,7 @@ export function PostHeader({
           setIncognitoData(data);
         }
       };
-      
+
       fetchIncognitoData();
     } else if (post.user_id && !careerFromPost) {
       // Solo fetchear la carrera si no está en el post y no es incógnito
@@ -409,6 +424,7 @@ export function PostHeader({
           <div className="flex items-center flex-wrap">
             {getUsernameElement()}
             {renderIdeaTag()}
+            {renderProjectTag()}
             {renderIncognitoTag()}
             {renderDemoTag()}
             {renderGroupTag()}

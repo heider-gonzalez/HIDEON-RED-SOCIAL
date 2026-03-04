@@ -25,6 +25,8 @@ import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useNavigate } from "react-router-dom";
 import { Briefcase } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Link } from "react-router-dom";
 
 interface PostProps {
   post: PostType;
@@ -71,6 +73,7 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
 
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     let isCancelled = false;
@@ -167,6 +170,7 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
   // Determinar si es un proyecto
   const isProjectPost = post.post_type === 'project';
   const isProyectoPost = post.post_type === 'proyecto';
+  const isAnyProjectPost = isProjectPost || isProyectoPost;
   // Determinar si la publicación está fijada
   const isPinned = post.is_pinned;
 
@@ -228,6 +232,7 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
         isHidden={isHidden}
         content={post.content || ""}
         isIdeaPost={isIdeaPost}
+        isProjectPost={isAnyProjectPost}
         isDemoPost={isDemoPost}
       />
       
@@ -238,7 +243,7 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
       ) : isEventPost ? (
         <EventPostView post={post} />
       ) : isProjectPost ? (
-        <ProjectPostView post={post} />
+        <ProjectPostView post={post} isMobile={isMobile} />
       ) : isProyectoPost ? (
         <ProyectoPostView post={post} />
       ) : (
@@ -456,7 +461,7 @@ function IdeaPostView({ post }: { post: PostType }) {
 }
 
 // Componente para las publicaciones de tipo Proyecto
-function ProjectPostView({ post }: { post: PostType }) {
+function ProjectPostView({ post, isMobile }: { post: PostType; isMobile: boolean }) {
   // Si no hay idea, mostrar contenido estándar como fallback
   if (!post.idea) {
     if (import.meta.env.DEV) {
@@ -499,18 +504,41 @@ function ProjectPostView({ post }: { post: PostType }) {
     post.project_status === 'paused' || post.project_status === 'cancelled'
       ? 'in_progress'
       : post.project_status;
+
+  const excerpt = String(post.idea?.description || post.content || '').trim();
+  const excerptToShow = excerpt.length > 220 ? `${excerpt.slice(0, 220)}...` : excerpt;
   
   return (
     <div className="px-0 md:px-4 pb-2">
-      <PostContent post={post} postId={post.id} />
-      <ProjectContent 
-        idea={post.idea} 
-        postId={post.id}
-        postOwnerId={post.user_id}
-        projectStatus={normalizedProjectStatus as any}
-        technologies={post.technologies}
-        demoUrl={post.demo_url}
-      />
+      <PostContent post={post} postId={post.id} hideText={isMobile} />
+
+      {isMobile && (
+        <div className="px-4 md:px-0 pb-3">
+          {excerptToShow && (
+            <div className="mt-3 text-[15px] leading-relaxed whitespace-pre-wrap break-words text-foreground">
+              {excerptToShow}
+            </div>
+          )}
+          <div className="mt-3">
+            <Button asChild variant="outline" className="w-full">
+              <Link to={`/project/${post.id}`}>
+                Ver proyecto completo
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!isMobile && (
+        <ProjectContent 
+          idea={post.idea} 
+          postId={post.id}
+          postOwnerId={post.user_id}
+          projectStatus={normalizedProjectStatus as any}
+          technologies={post.technologies}
+          demoUrl={post.demo_url}
+        />
+      )}
     </div>
   );
 }

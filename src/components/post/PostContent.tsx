@@ -15,9 +15,10 @@ import { MediaCarousel } from "./MediaCarousel";
 interface PostContentProps {
   post: Post;
   postId: string;
+  hideText?: boolean;
 }
 
-function PostContentComponent({ post, postId }: PostContentProps) {
+function PostContentComponent({ post, postId, hideText = false }: PostContentProps) {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -116,7 +117,7 @@ function PostContentComponent({ post, postId }: PostContentProps) {
         </div>
       )}
 
-      {post.content && (
+      {!hideText && post.content && (
         <div className={isStyledTextPost ? "relative rounded-lg overflow-hidden mb-4" : ""}>
           {/* Background layer for styled text posts */}
           {isStyledTextPost && (
