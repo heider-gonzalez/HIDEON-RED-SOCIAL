@@ -26,6 +26,7 @@ import { useNavigate } from "react-router-dom";
 import { Briefcase } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "react-router-dom";
+import { JoinIdeaButton } from "@/components/post/actions/join-idea/JoinIdeaButton";
 
 interface PostProps {
   post: PostType;
@@ -644,11 +645,7 @@ function IdeaPostView({ post }: { post: PostType }) {
 
           {post.idea ? (
             <div className="p-4 pt-0">
-              <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                <Link to={`/idea/${post.id}/chat`}>
-                  Chat de la idea
-                </Link>
-              </Button>
+              <JoinIdeaButton postId={post.id} className="w-full" />
             </div>
           ) : (
             <div className="p-4 pt-0">

@@ -29,7 +29,7 @@ export function useIdeas(params?: UseIdeasParams) {
         .select(
           `
           *,
-          profiles(username, avatar_url, institution_name)
+          profiles!inner(username, avatar_url, institution_name)
         `
         )
         .eq("post_type", "idea")
@@ -43,7 +43,14 @@ export function useIdeas(params?: UseIdeasParams) {
       }
 
       if (searchQuery) {
-        query = query.or(`content.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
+        const q = searchQuery.replace(/,/g, " ").trim();
+        query = query.or(
+          [
+            `content.ilike.%${q}%`,
+            `idea->>title.ilike.%${q}%`,
+            `idea->>description.ilike.%${q}%`,
+          ].join(",")
+        );
       }
 
       const { data, error } = await query;

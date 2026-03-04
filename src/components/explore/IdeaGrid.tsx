@@ -49,6 +49,10 @@ export function IdeaGrid({
         {ideas?.map((idea) => {
         const participantCount = participantCounts?.get(idea.id) || 0;
         const isJoinableIdea = !!(idea as any)?.idea;
+        const ideaAny = (idea as any)?.idea;
+        const ideaTitle = String(ideaAny?.title || '').trim();
+        const fallbackTitle = String(idea.content || '').trim();
+        const titleToShow = ideaTitle || fallbackTitle;
         
         return (
           <Card 
@@ -74,7 +78,7 @@ export function IdeaGrid({
             
             <CardContent className="p-3 space-y-2">
               <h3 className="font-semibold text-sm line-clamp-2">
-                {idea.content?.substring(0, 60) || 'Idea sin título'}...
+                {titleToShow ? `${titleToShow.substring(0, 60)}...` : 'Idea sin título...'}
               </h3>
               
               <div className="flex items-center gap-2">
