@@ -10,8 +10,6 @@ import { usePost } from "@/hooks/use-post";
 import { PostWrapper } from "./post/PostWrapper";
 import { useState, useEffect } from "react";
 import { IdeaContent } from "./post/IdeaContent";
-import { ProjectContent } from "./post/ProjectContent";
-import { ProyectoPostContent } from "./post/ProyectoPostContent";
 import { PostOptionsMenu } from "./post/actions/PostOptionsMenu";
 import { EventCard } from "./events/EventCard";
 import { EventDetailModal } from "./events/EventDetailModal";
@@ -35,22 +33,66 @@ interface PostProps {
   initialShowComments?: boolean;
 }
 
-function ProyectoPostView({ post }: { post: PostType }) {
+function normalizeProjectStatusLabel(status: any) {
+  const raw = String(status || '').toLowerCase();
+  if (raw === 'completed' || raw === 'completado') return 'Terminado';
+  if (raw === 'in_progress' || raw === 'en desarrollo' || raw === 'en_desarrollo') return 'En desarrollo';
+  if (raw === 'paused' || raw === 'pausado') return 'En desarrollo';
+  if (raw === 'cancelled' || raw === 'cancelado') return 'En desarrollo';
+  if (raw === 'idea' || raw === 'ideation') return 'Idea';
+  return '';
+}
+
+function normalizeProjectStatusClass(status: any) {
+  const raw = String(status || '').toLowerCase();
+  if (raw === 'completed' || raw === 'completado') return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+  if (raw === 'in_progress' || raw === 'en desarrollo' || raw === 'en_desarrollo') return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+  if (raw === 'idea' || raw === 'ideation') return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+  return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+}
+
+function getProjectPreviewData(post: PostType) {
+  const ideaAny = (post as any)?.idea;
+  const idea = ideaAny && typeof ideaAny === 'object' && !Array.isArray(ideaAny) ? ideaAny : null;
   const proyecto = (post as any)?.post_metadata?.proyecto;
-  if (!proyecto) {
-    return (
-      <div className="px-0 md:px-4 pb-2">
-        <PostContent post={post} postId={post.id} />
-      </div>
-    );
+
+  const title = String(idea?.title || proyecto?.title || '').trim();
+
+  const description = String(
+    idea?.description ||
+      idea?.expected_impact ||
+      post.content ||
+      proyecto?.description ||
+      ''
+  ).trim();
+
+  const rawTechnologies: unknown[] = [
+    ...((Array.isArray((post as any)?.technologies) ? (post as any).technologies : []) as unknown[]),
+    ...((Array.isArray(proyecto?.stack) ? proyecto.stack : []) as unknown[]),
+    ...((Array.isArray(proyecto?.required_skills) ? proyecto.required_skills : []) as unknown[]),
+  ];
+
+  const techUniq: string[] = [];
+  const seen = new Set<string>();
+  for (const t of rawTechnologies) {
+    const s = String(t || '').trim();
+    if (!s) continue;
+    const k = s.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    techUniq.push(s);
   }
 
-  return (
-    <div className="px-0 md:px-4 pb-2">
-      <PostContent post={post} postId={post.id} />
-      <ProyectoPostContent profileId={post.user_id} proyecto={proyecto} />
-    </div>
-  );
+  const statusLabel = normalizeProjectStatusLabel((post as any)?.project_status || proyecto?.status || idea?.project_phase);
+  const statusClass = normalizeProjectStatusClass((post as any)?.project_status || proyecto?.status || idea?.project_phase);
+
+  return {
+    title,
+    description,
+    technologies: techUniq,
+    statusLabel,
+    statusClass,
+  };
 }
 
 export function Post({ post, hideComments = false, isHidden = false, initialShowComments = false }: PostProps) {
@@ -242,10 +284,8 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
         <IdeaPostView post={post} />
       ) : isEventPost ? (
         <EventPostView post={post} />
-      ) : isProjectPost ? (
+      ) : isAnyProjectPost ? (
         <ProjectPostView post={post} isMobile={isMobile} />
-      ) : isProyectoPost ? (
-        <ProyectoPostView post={post} />
       ) : (
         <StandardPostView post={post} />
       )}
@@ -462,115 +502,66 @@ function IdeaPostView({ post }: { post: PostType }) {
 
 // Componente para las publicaciones de tipo Proyecto
 function ProjectPostView({ post, isMobile }: { post: PostType; isMobile: boolean }) {
-  // Si no hay idea, mostrar contenido estándar como fallback
-  if (!post.idea) {
-    const fallbackExcerpt = String(
-      post.content || (post as any)?.post_metadata?.proyecto?.description || ''
-    ).trim();
-    const fallbackExcerptToShow =
-      fallbackExcerpt.length > 220 ? `${fallbackExcerpt.slice(0, 220)}...` : fallbackExcerpt;
-
-    if (import.meta.env.DEV) {
-      (window as any).__hideon_project_fallback_warned ??= new Set<string>();
-      const warned: Set<string> = (window as any).__hideon_project_fallback_warned;
-      if (!warned.has(post.id)) {
-        warned.add(post.id);
-        console.warn('Post de proyecto sin datos de idea, mostrando fallback', post.id);
-      }
-    }
-    return (
-      <div className="px-0 md:px-4 pb-2">
-        <PostContent post={post} postId={post.id} hideText={isMobile} />
-        <div className="px-0 md:px-4 pb-2">
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Briefcase className="h-5 w-5 text-blue-500" />
-              <Badge variant="secondary" className="text-xs font-medium">Proyecto</Badge>
-              {post.project_status && (
-                <Badge variant="outline" className={
-                  post.project_status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                  post.project_status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                }>
-                  {post.project_status === 'completed' ? 'Terminado' : 
-                   post.project_status === 'in_progress' ? 'En desarrollo' : 'Idea'}
-                </Badge>
-              )}
-            </div>
-
-            {fallbackExcerptToShow ? (
-              <>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
-                  {fallbackExcerptToShow}
-                </p>
-                <div className="mt-3">
-                  <Button asChild variant="outline" className="w-full">
-                    <Link to={`/project/${post.id}`}>
-                      Ver proyecto completo
-                    </Link>
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Este proyecto necesita ser actualizado con información completa.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const normalizedProjectStatus =
-    post.project_status === 'paused' || post.project_status === 'cancelled'
-      ? 'in_progress'
-      : post.project_status;
-
-  const excerpt = String(
-    post.idea?.description ||
-      post.idea?.expected_impact ||
-      post.content ||
-      ''
-  ).trim();
-  const excerptToShow = excerpt.length > 220 ? `${excerpt.slice(0, 220)}...` : excerpt;
+  const preview = getProjectPreviewData(post);
+  const excerptToShow =
+    preview.description.length > 220
+      ? `${preview.description.slice(0, 220)}...`
+      : preview.description;
+  const techToShow = preview.technologies.slice(0, 3);
+  const remainingTechCount = Math.max(0, preview.technologies.length - techToShow.length);
   
   return (
     <div className="px-0 md:px-4 pb-2">
       <PostContent post={post} postId={post.id} hideText={isMobile} />
 
-      {isMobile && (
-        <div className="px-4 md:px-0 pb-3">
-          {post.idea?.title && (
-            <div className="mt-3 text-base font-semibold text-foreground">
-              {post.idea.title}
+      <div className={isMobile ? "px-4 md:px-0 pb-3" : "px-4 md:px-0 pb-3"}>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Briefcase className="h-5 w-5 text-blue-500" />
+            <Badge variant="secondary" className="text-xs font-medium">Proyecto</Badge>
+            {preview.statusLabel && (
+              <Badge variant="outline" className={preview.statusClass}>
+                {preview.statusLabel}
+              </Badge>
+            )}
+          </div>
+
+          {preview.title && (
+            <div className="text-base font-semibold text-foreground">
+              {preview.title}
             </div>
           )}
+
           {excerptToShow && (
             <div className="mt-3 text-[15px] leading-relaxed whitespace-pre-wrap break-words text-foreground">
               {excerptToShow}
             </div>
           )}
+
+          {techToShow.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {techToShow.map((t) => (
+                <Badge key={t} variant="outline" className="text-xs">
+                  {t}
+                </Badge>
+              ))}
+              {remainingTechCount > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  +{remainingTechCount}
+                </Badge>
+              )}
+            </div>
+          )}
+
           <div className="mt-3">
             <Button asChild variant="outline" className="w-full">
               <Link to={`/project/${post.id}`}>
-                Ver proyecto completo
+                Ver objetivos y tecnologías
               </Link>
             </Button>
           </div>
         </div>
-      )}
-
-      {!isMobile && (
-        <ProjectContent 
-          idea={post.idea} 
-          postId={post.id}
-          postOwnerId={post.user_id}
-          projectStatus={normalizedProjectStatus as any}
-          technologies={post.technologies}
-          demoUrl={post.demo_url}
-        />
-      )}
+      </div>
     </div>
   );
 }
