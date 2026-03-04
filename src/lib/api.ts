@@ -319,32 +319,54 @@ export async function getPostsPage(params: {
 
   const hasSharedFields = await getHasSharedFields();
 
-  let query: any = supabase
-    .from('posts')
-    .select(`
-      id,
-      content,
-      created_at,
-      updated_at,
-      user_id,
-      group_id,
-      company_id,
-      media_url,
-      media_urls,
-      media_type,
-      post_type,
-      project_status,
-      technologies,
-      demo_url,
-      idea,
-      post_metadata,
-      visibility,
-      is_pinned,
-      shared_post_id,
-      shared_from,
-      profiles:profiles(id, username, avatar_url, career),
-      comments:comments(count)
-    `);
+  const [
+    hasGroupId,
+    hasCompanyId,
+    hasMediaUrls,
+    hasPostType,
+    hasProjectStatus,
+    hasTechnologies,
+    hasDemoUrl,
+    hasIdea,
+    hasPostMetadata,
+  ] = await Promise.all([
+    checkColumnExists('posts', 'group_id'),
+    checkColumnExists('posts', 'company_id'),
+    checkColumnExists('posts', 'media_urls'),
+    checkColumnExists('posts', 'post_type'),
+    checkColumnExists('posts', 'project_status'),
+    checkColumnExists('posts', 'technologies'),
+    checkColumnExists('posts', 'demo_url'),
+    checkColumnExists('posts', 'idea'),
+    checkColumnExists('posts', 'post_metadata'),
+  ]);
+
+  const selectFields: string[] = [
+    'id',
+    'content',
+    'created_at',
+    'updated_at',
+    'user_id',
+    hasGroupId ? 'group_id' : '',
+    hasCompanyId ? 'company_id' : '',
+    'media_url',
+    hasMediaUrls ? 'media_urls' : '',
+    'media_type',
+    hasPostType ? 'post_type' : '',
+    hasProjectStatus ? 'project_status' : '',
+    hasTechnologies ? 'technologies' : '',
+    hasDemoUrl ? 'demo_url' : '',
+    hasIdea ? 'idea' : '',
+    hasPostMetadata ? 'post_metadata' : '',
+    'visibility',
+    'is_pinned',
+    hasSharedFields ? 'shared_post_id' : '',
+    hasSharedFields ? 'shared_from' : '',
+    'profiles:profiles(id, username, avatar_url, career)',
+    'comments:comments(count)',
+  ].filter(Boolean);
+
+  let query: any = supabase.from('posts').select(selectFields.join(','));
 
   if (userId) query = query.eq('user_id', userId);
   if (groupId) query = query.eq('group_id', groupId);
@@ -352,15 +374,24 @@ export async function getPostsPage(params: {
   if (cursor) query = query.lt('created_at', cursor);
 
   if (contentType === 'regular') {
-    query = query.or('post_type.eq.regular,post_type.is.null');
+    if (hasPostType) {
+      query = query.or('post_type.eq.regular,post_type.is.null');
+    }
   }
 
   if (contentType === 'idea') {
-    query = query.eq('post_type', 'idea').not('idea', 'is', null);
+    if (hasPostType) {
+      query = query.eq('post_type', 'idea');
+    }
+    if (hasIdea) {
+      query = query.not('idea', 'is', null);
+    }
   }
 
   if (contentType === 'project') {
-    query = query.in('post_type', ['project', 'proyecto']);
+    if (hasPostType) {
+      query = query.in('post_type', ['project', 'proyecto']);
+    }
   }
 
   const { data, error } = await query
