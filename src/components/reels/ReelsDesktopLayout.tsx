@@ -20,7 +20,7 @@ export function ReelsDesktopLayout({ children }: ReelsDesktopLayoutProps) {
       <ReelsSidebar />
       
       <main className="flex-1 flex items-center justify-center bg-black">
-        <div className="w-full max-w-[500px] h-screen">
+        <div className="w-full max-w-[1400px] h-screen">
           {children}
         </div>
       </main>
