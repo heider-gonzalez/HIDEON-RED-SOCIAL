@@ -48,7 +48,21 @@ export function FacebookLayout({
     location.pathname.startsWith("/ideas") ||
     location.pathname.startsWith("/projects") ||
     location.pathname.startsWith("/project") ||
-    location.pathname.startsWith("/profile");
+    location.pathname.startsWith("/profile") ||
+    location.pathname.startsWith("/groups") ||
+    location.pathname.startsWith("/saved") ||
+    location.pathname.startsWith("/reels") ||
+    location.pathname.startsWith("/explore") ||
+    location.pathname.startsWith("/notifications") ||
+    location.pathname.startsWith("/messages") ||
+    location.pathname.startsWith("/settings") ||
+    location.pathname.startsWith("/help") ||
+    location.pathname.startsWith("/friends") ||
+    location.pathname.startsWith("/followers") ||
+    location.pathname.startsWith("/discover") ||
+    location.pathname.startsWith("/analytics") ||
+    location.pathname.startsWith("/company") ||
+    location.pathname.startsWith("/leaderboard");
 
   useEffect(() => {
     if (!isMobile) return;
