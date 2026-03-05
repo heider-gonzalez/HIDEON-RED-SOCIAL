@@ -5,6 +5,7 @@ import { useJoinIdeaButton } from "@/hooks/post-mutations/idea-join/use-join-ide
 import { useState, useEffect } from "react";
 import { JoinIdeaDialog } from "@/components/post/idea/JoinIdeaDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface JoinIdeaButtonProps {
   postId: string;
@@ -78,8 +79,8 @@ export function JoinIdeaButton({
   if (isParticipant) {
     return (
       <Button 
-        className={`flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 border-none ${className}`}
-        variant="secondary"
+        className={cn("flex items-center gap-2", className)}
+        variant={variant === "default" ? "secondary" : variant}
         size={size}
         onClick={handleLeaveIdea}
       >
@@ -93,8 +94,8 @@ export function JoinIdeaButton({
   return (
     <>
       <Button 
-        className={`flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white ${className}`}
-        variant="default"
+        className={cn("flex items-center gap-2", className)}
+        variant={variant}
         size={size}
         onClick={() => setDialogOpen(true)}
       >

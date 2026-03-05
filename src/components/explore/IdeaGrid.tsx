@@ -1,6 +1,6 @@
 import { useIdeas } from "@/hooks/ideas/use-ideas";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lightbulb, Users } from "lucide-react";
+import { Lightbulb, Sparkles, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useIdeaParticipantsCount } from "@/hooks/ideas/use-idea-participants-count";
@@ -11,6 +11,7 @@ import { Post } from "@/components/Post";
 import type { Post as PostType } from "@/types/post";
 import { JoinIdeaButton } from "@/components/post/actions/join-idea/JoinIdeaButton";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 export function IdeaGrid({
   searchQuery,
@@ -57,7 +58,7 @@ export function IdeaGrid({
         return (
           <Card 
             key={idea.id} 
-            className="overflow-hidden cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-300 bg-card border border-border"
+            className="overflow-hidden cursor-pointer rounded-2xl border border-border/60 bg-card shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
             onClick={() => {
               setSelectedPost(idea as PostType);
               setShowPostModal(true);
@@ -68,44 +69,47 @@ export function IdeaGrid({
               <img 
                 src={idea.media_url} 
                 alt={idea.content}
-                className="w-full h-40 object-cover"
+                className="w-full h-44 object-cover"
               />
             ) : (
-              <div className="w-full h-40 bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
-                <Lightbulb className="h-12 w-12 text-white" />
+              <div className="w-full h-44 bg-gradient-to-br from-[#ffb300] via-[#ff8a00] to-[#ff6a00] flex items-center justify-center relative">
+                <Lightbulb className="h-14 w-14 text-white" />
+                <span className="absolute top-3 right-3 h-7 w-7 rounded-full bg-white/15 flex items-center justify-center">
+                  <Sparkles className="h-4 w-4 text-white" />
+                </span>
               </div>
             )}
             
-            <CardContent className="p-3 space-y-2">
-              <h3 className="font-semibold text-sm line-clamp-2">
+            <CardContent className="p-4 space-y-3">
+              <h3 className="font-semibold text-sm line-clamp-2 text-foreground">
                 {titleToShow ? `${titleToShow.substring(0, 60)}...` : 'Idea sin título...'}
               </h3>
               
-              <div className="flex items-center gap-2">
-                <Avatar className="h-5 w-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Avatar className="h-6 w-6">
                   <AvatarImage src={idea.profiles?.avatar_url} />
                   <AvatarFallback className="text-xs">
                     {idea.profiles?.username?.[0]?.toUpperCase() || 'U'}
                   </AvatarFallback>
-                </Avatar>
-                <span className="text-xs text-muted-foreground truncate">
-                  @{idea.profiles?.username || 'usuario'}
-                </span>
+                  </Avatar>
+                  <span className="text-xs text-muted-foreground truncate">
+                    @{idea.profiles?.username || 'usuario'}
+                  </span>
+                </div>
+
+                <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", participantCount > 0 ? "opacity-100" : "opacity-0")}>
+                  <Users className="h-3.5 w-3.5" />
+                  <span>{participantCount}</span>
+                </div>
               </div>
 
-              {participantCount > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  <Users className="h-3 w-3 mr-1" />
-                  {participantCount} {participantCount === 1 ? 'participante' : 'participantes'}
-                </Badge>
-              )}
-
-              <div className="pt-1 flex items-center gap-2">
+              <div className="pt-1 grid grid-cols-2 gap-2">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="default"
                   size="sm"
-                  className="h-8 px-3 text-xs"
+                  className="h-9 text-xs rounded-xl bg-[#ff8a00] hover:bg-[#ff7a00] text-white"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedPost(idea as PostType);
@@ -124,14 +128,15 @@ export function IdeaGrid({
                     <JoinIdeaButton
                       postId={idea.id}
                       size="sm"
-                      className="h-8 px-3 text-xs"
+                      variant="outline"
+                      className="h-9 w-full text-xs rounded-xl border-[#ff8a00] text-[#ff8a00] hover:bg-[#ff8a00]/10"
                     />
                   ) : (
                     <Button
                       type="button"
                       variant="secondary"
                       size="sm"
-                      className="h-8 px-3 text-xs"
+                      className="h-9 w-full text-xs rounded-xl"
                       onClick={() => {
                         toast({
                           title: "No disponible",
