@@ -2,26 +2,21 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Filter } from "lucide-react";
+import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { AdvancedSearch } from "./search/AdvancedSearch";
 
 export function FriendSearch() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 300);
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -89,7 +84,7 @@ export function FriendSearch() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-[16px] w-[16px] text-muted-foreground" />
             <Input
-              placeholder="Buscar usuarios..."
+              placeholder="Buscar usuarios, proyectos, ideas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -98,18 +93,9 @@ export function FriendSearch() {
                   searchUsers((e.target as HTMLInputElement).value);
                 }
               }}
-              className="pl-9 pr-4 rounded-full border-gray-200 dark:border-gray-700 h-9 shadow-sm w-full"
+              className="pl-10 pr-4 rounded-full border-gray-200 dark:border-gray-700 h-11 shadow-sm w-full text-sm"
             />
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setShowAdvanced(true)}
-            className="rounded-full h-9 w-9 shrink-0"
-            title="Búsqueda avanzada"
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
         </div>
       {searchResults.length > 0 && (
         <Card className="absolute w-full mt-1 p-2 z-50 shadow-lg">
@@ -148,10 +134,6 @@ export function FriendSearch() {
       )}
       </div>
 
-      <AdvancedSearch 
-        isOpen={showAdvanced} 
-        onClose={() => setShowAdvanced(false)} 
-      />
     </>
   );
 }

@@ -233,7 +233,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
       <div className="w-full flex items-center justify-between h-full px-3 lg:px-6">
 
         {/* Logo and Search - Left */}
-        <div className="flex items-center gap-4 flex-shrink-0 w-[420px]">
+        <div className="flex items-center gap-4 flex-shrink-0 w-[720px]">
           <HSocialLogo
             size="md"
             showText={true}
@@ -256,7 +256,6 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
               <Link
                 key={item.path}
                 to={item.path}
-                onClick={item.onClick}
                 className={cn(
                   "flex items-center justify-center h-12 w-32 rounded-xl transition-colors duration-200 relative group",
                   item.isActive ? "bg-muted/60" : "hover:bg-muted/50"
@@ -274,26 +273,22 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                   );
                   return (
                     <span className={bubbleClassName}>
-                      <span
-                        className={cn(
-                          item.path === "/explore" && !item.isActive && "explore-attention"
-                        )}
-                      >
+                      <span className={cn(item.path === "/explore" && !item.isActive && "explore-attention")}>
                         <item.icon className={iconClassName} strokeWidth={item.isActive ? 1.8 : 1.4} />
                       </span>
                     </span>
                   );
                 })()}
                 {item.badge && item.badge > 0 && (
-                  <Badge 
-                    variant="destructive" 
+                  <Badge
+                    variant="destructive"
                     className="absolute -top-1 -right-1 h-4 w-4 rounded-full p-0 flex items-center justify-center text-[10px]"
                   >
                     {item.badge}
                   </Badge>
                 )}
                 {item.isActive && (
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-primary rounded-t-full"></div>
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-primary rounded-t-full" />
                 )}
               </Link>
             ))}
@@ -317,7 +312,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                   </AvatarFallback>
                 </Avatar>
                 <span className="ml-2 text-sm font-semibold text-foreground/90 max-w-20 truncate">
-                  {userProfile?.username || 'Usuario'}
+                  {userProfile?.username || "Usuario"}
                 </span>
               </Button>
 
@@ -342,8 +337,8 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
               >
                 <MessageCircle className="h-5 w-5" strokeWidth={1.5} />
                 {unreadMessagesCount > 0 && (
-                  <Badge 
-                    variant="destructive" 
+                  <Badge
+                    variant="destructive"
                     className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
                   >
                     {unreadMessagesCount}
@@ -366,9 +361,9 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
       </div>
 
       {/* Full Screen Search for Desktop */}
-      <FullScreenSearch 
-        isOpen={showFullScreenSearch} 
-        onClose={() => setShowFullScreenSearch(false)} 
+      <FullScreenSearch
+        isOpen={showFullScreenSearch}
+        onClose={() => setShowFullScreenSearch(false)}
       />
     </nav>
   );

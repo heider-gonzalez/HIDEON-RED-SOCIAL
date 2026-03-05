@@ -1,4 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
+
 import {
   Bookmark,
   Briefcase,
@@ -22,6 +23,7 @@ import { useNavigation } from "@/components/navigation/use-navigation";
 import { cn } from "@/lib/utils";
 import { Fragment, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { HSocialLogo } from "@/components/navigation/HSocialLogo";
 
 interface LeftSidebarProps {
   currentUserId: string | null;
@@ -135,12 +137,7 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
     <aside className="h-full bg-muted/10 border-r border-border/20 overflow-y-auto custom-scrollbar">
       <div className="px-3 pt-4 pb-2">
         <div className="px-2 pb-2">
-          <Link to={currentUserId ? "/home" : "/"} className="flex items-center gap-2">
-            <span className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-extrabold">
-              H
-            </span>
-            <span className="text-lg font-extrabold tracking-[0.22em] text-primary">HIDEON</span>
-          </Link>
+          <HSocialLogo size="md" showText={true} variant="brand" />
         </div>
         {currentUserId && userProfile && (
           <Link
@@ -250,47 +247,18 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
 
         <NavLink
           to="/groups/create"
-          className={({ isActive }) =>
+          className={() =>
             cn(
-              "group flex items-center gap-3 px-3 py-2.5 rounded-2xl mb-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              isActive ? "bg-muted/50" : "hover:bg-background/50"
+              "group flex items-center gap-3 px-4 py-3 rounded-2xl mb-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background shadow-sm hover:shadow-md",
+              "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/95 hover:to-primary/75"
             )
           }
         >
-          {({ isActive }) => {
-            const style = getIconStyle("/groups/create");
-            const labelClassName = cn(
-              "truncate",
-              isActive
-                ? "text-foreground font-semibold"
-                : "text-foreground/80 font-medium"
-            );
-            return (
-              <>
-                <span
-                  className={cn(
-                    "h-9 w-9 rounded-full flex items-center justify-center transition-colors duration-200 ease-out ring-1 ring-border/20",
-                    isActive ? style.activeBg : style.bg
-                  )}
-                >
-                  <Plus
-                    className={cn(
-                      "h-[18px] w-[18px] transition-colors duration-200",
-                      isActive ? style.activeFg : style.fg
-                    )}
-                  />
-                </span>
-                <span className={labelClassName}>Crear grupo</span>
-              </>
-            );
-          }}
+          <span className="h-9 w-9 rounded-full flex items-center justify-center bg-white/15 text-primary-foreground">
+            <Plus className="h-[18px] w-[18px] text-primary-foreground" />
+          </span>
+          <span className="truncate font-semibold text-primary-foreground">Crear grupo</span>
         </NavLink>
-
-        <div className="h-px bg-border/0 my-2" />
-
-        <div className="px-3 py-2">
-          <p className="text-xs font-medium text-muted-foreground">Mis grupos</p>
-        </div>
 
         {groupsLoading ? (
           <div className="px-4 py-2 text-sm text-muted-foreground">Cargando...</div>
