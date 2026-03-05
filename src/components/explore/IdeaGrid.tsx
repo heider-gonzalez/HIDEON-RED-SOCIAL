@@ -54,6 +54,8 @@ export function IdeaGrid({
         const ideaTitle = String(ideaAny?.title || '').trim();
         const fallbackTitle = String(idea.content || '').trim();
         const titleToShow = ideaTitle || fallbackTitle;
+        const trimmedTitle = titleToShow ? titleToShow.substring(0, 60) : "";
+        const shouldEllipsis = Boolean(titleToShow && titleToShow.length > 60);
         
         return (
           <Card 
@@ -72,7 +74,7 @@ export function IdeaGrid({
                 className="w-full h-44 object-cover"
               />
             ) : (
-              <div className="w-full h-44 bg-gradient-to-br from-[#ffb300] via-[#ff8a00] to-[#ff6a00] flex items-center justify-center relative">
+              <div className="w-full h-44 bg-gradient-to-br from-[#FDBA74] via-[#F97316] to-[#EA580C] flex items-center justify-center relative">
                 <Lightbulb className="h-14 w-14 text-white" />
                 <span className="absolute top-3 right-3 h-7 w-7 rounded-full bg-white/15 flex items-center justify-center">
                   <Sparkles className="h-4 w-4 text-white" />
@@ -82,7 +84,7 @@ export function IdeaGrid({
             
             <CardContent className="p-4 space-y-3">
               <h3 className="font-semibold text-sm line-clamp-2 text-foreground">
-                {titleToShow ? `${titleToShow.substring(0, 60)}...` : 'Idea sin título...'}
+                {titleToShow ? `${trimmedTitle}${shouldEllipsis ? "..." : ""}` : "Idea sin título"}
               </h3>
               
               <div className="flex items-center justify-between gap-3">
@@ -109,7 +111,7 @@ export function IdeaGrid({
                   type="button"
                   variant="default"
                   size="sm"
-                  className="h-9 text-xs rounded-xl bg-[#ff8a00] hover:bg-[#ff7a00] text-white"
+                  className="h-9 text-xs rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedPost(idea as PostType);
@@ -129,7 +131,7 @@ export function IdeaGrid({
                       postId={idea.id}
                       size="sm"
                       variant="outline"
-                      className="h-9 w-full text-xs rounded-xl border-[#ff8a00] text-[#ff8a00] hover:bg-[#ff8a00]/10"
+                      className="h-9 w-full text-xs rounded-xl border-[#F97316] text-[#F97316] hover:bg-[#F97316]/10"
                     />
                   ) : (
                     <Button

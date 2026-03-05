@@ -11,7 +11,6 @@ import {
   PlaySquare,
   TrendingUp,
   User,
-  UserPlus,
   Users,
   Settings,
   HelpCircle,
@@ -33,6 +32,8 @@ type SidebarItem = {
   label: string;
   path: string;
   onClick?: () => void;
+  badge?: string;
+  dot?: boolean;
 };
 
 export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
@@ -42,31 +43,19 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   const [recommendedGroups, setRecommendedGroups] = useState<any[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
 
-  const iconStyles: Record<string, { bg: string; fg: string; activeBg: string; activeFg: string }> = {};
-
-  const defaultIconStyle = {
-    bg: "bg-transparent",
-    fg: "text-muted-foreground",
-    activeBg: "bg-primary",
-    activeFg: "text-primary-foreground",
-  };
-
-  const getIconStyle = (path: string) => iconStyles[path] ?? defaultIconStyle;
-
   const menuItems: SidebarItem[] = [
     { icon: Home, label: "Feed", path: "/home" },
     { icon: Lightbulb, label: "Ideas", path: "/ideas" },
     { icon: Briefcase, label: "Proyectos", path: "/projects" },
-    { icon: UserPlus, label: "Amigos", path: "/friends" },
     { icon: Users, label: "Grupos", path: "/groups" },
     { icon: Bookmark, label: "Guardados", path: "/saved" },
   ];
 
   const quickActions: SidebarItem[] = [
-    { icon: PlaySquare, label: "Reels", path: "/reels" },
+    { icon: PlaySquare, label: "Reels", path: "/reels", badge: "Nuevo" },
     { icon: TrendingUp, label: "Tendencias", path: "/explore" },
-    { icon: Bell, label: "Notificaciones", path: "/notifications" },
-    { icon: MessageCircle, label: "Mensajes", path: "/messages" },
+    { icon: Bell, label: "Notificaciones", path: "/notifications", dot: true },
+    { icon: MessageCircle, label: "Mensajes", path: "/messages", badge: "3" },
   ];
 
   const bottomItems: SidebarItem[] = [
@@ -74,7 +63,6 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
     { icon: HelpCircle, label: "Ayuda", path: "/help" },
   ];
 
-  // Load user profile
   useEffect(() => {
     if (!currentUserId) return;
 
@@ -132,23 +120,24 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   }, [currentUserId]);
 
   return (
-    <aside className="h-full bg-muted/10 border-r border-border/20 overflow-y-auto custom-scrollbar">
+    <aside className="h-full bg-background/70 backdrop-blur overflow-y-auto custom-scrollbar">
       <div className="px-3 pt-4 pb-2">
-        <div className="h-2" />
+        <Link to="/home" className="flex items-center gap-3 px-2 pb-4">
+        </Link>
+        <Separator className="opacity-0" />
         {currentUserId && userProfile && (
           <Link
             to={`/profile/${currentUserId}`}
-            className="flex items-center space-x-3 p-2.5 rounded-2xl hover:bg-muted/40 transition-colors"
+            className="flex flex-col items-center justify-center text-center px-2 py-3 rounded-2xl hover:bg-muted/30 transition-colors duration-200"
           >
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-12 w-12 mb-2">
               <AvatarImage src={userProfile?.avatar_url || undefined} />
               <AvatarFallback>
                 {userProfile?.username?.[0]?.toUpperCase() || <User className="h-5 w-5" />}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-base font-semibold text-foreground/90">{userProfile?.username || "Mi perfil"}</p>
-            </div>
+            <p className="text-sm font-bold text-foreground">{userProfile?.username || "Mi perfil"}</p>
+            <p className="text-xs text-muted-foreground">Ver perfil</p>
           </Link>
         )}
       </div>
@@ -161,39 +150,33 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
               onClick={item.onClick}
               className={({ isActive }) =>
                 cn(
-                  "group flex items-center gap-3 px-3 py-2.5 rounded-2xl mb-1.5 transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  "relative group flex items-center gap-3 px-3 py-2.5 rounded-2xl mb-1.5 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   isActive
-                    ? "bg-background/70 ring-1 ring-border/20"
-                    : "hover:bg-background/50"
+                    ? "bg-blue-50 border border-blue-100"
+                    : "hover:bg-muted/30"
                 )
               }
             >
               {({ isActive }) => {
-                const style = getIconStyle(item.path);
-                const iconWrapperClassName = cn(
-                  "h-9 w-9 rounded-full flex items-center justify-center transition-colors duration-200 ease-out ring-1 ring-border/20",
-                  isActive ? style.activeBg : style.bg
-                );
                 const iconClassName = cn(
                   "h-[18px] w-[18px] transition-colors duration-200",
-                  isActive ? style.activeFg : style.fg
+                  isActive ? "text-blue-600" : "text-muted-foreground"
                 );
                 const labelClassName = cn(
                   "flex-1 truncate",
                   isActive
-                    ? "text-foreground font-semibold"
+                    ? "text-blue-600 font-semibold"
                     : "text-foreground/80 font-medium"
                 );
                 return (
                   <>
-                    <span className={iconWrapperClassName}>
-                      <item.icon className={iconClassName} />
-                    </span>
+                    <item.icon className={iconClassName} />
                     <span className={labelClassName}>{item.label}</span>
                   </>
                 );
               }}
             </NavLink>
+
             {index < menuItems.length - 1 && <Separator className="my-2 opacity-0" />}
           </Fragment>
         ))}
@@ -210,31 +193,41 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
             onClick={item.onClick}
             className={({ isActive }) =>
               cn(
-                "group flex items-center gap-3 px-3 py-2.5 rounded-2xl mb-1.5 transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                isActive ? "bg-background/70 ring-1 ring-border/20" : "hover:bg-background/50"
+                "relative group flex items-center gap-3 px-3 py-2.5 rounded-2xl mb-1.5 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                isActive ? "bg-blue-50 border border-blue-100" : "hover:bg-muted/30"
               )
             }
           >
             {({ isActive }) => {
-              const style = getIconStyle(item.path);
-              const iconWrapperClassName = cn(
-                "h-9 w-9 rounded-full flex items-center justify-center transition-colors duration-200 ease-out ring-1 ring-border/20",
-                isActive ? style.activeBg : style.bg
-              );
               const iconClassName = cn(
                 "h-[18px] w-[18px] transition-colors duration-200",
-                isActive ? style.activeFg : style.fg
+                isActive ? "text-blue-600" : "text-muted-foreground"
               );
               const labelClassName = cn(
                 "flex-1 truncate",
-                isActive ? "text-foreground font-semibold" : "text-foreground/80 font-medium"
+                isActive
+                  ? "text-blue-600 font-semibold"
+                  : "text-foreground/80 font-medium"
               );
               return (
                 <>
-                  <span className={iconWrapperClassName}>
-                    <item.icon className={iconClassName} />
-                  </span>
+                  <item.icon className={iconClassName} />
                   <span className={labelClassName}>{item.label}</span>
+                  {item.dot && (
+                    <span className="ml-auto h-2 w-2 rounded-full bg-red-500" />
+                  )}
+                  {item.badge && (
+                    <span
+                      className={cn(
+                        "ml-auto text-[11px] leading-none px-2 py-1 rounded-full font-semibold",
+                        item.badge === "Nuevo"
+                          ? "bg-blue-600/10 text-blue-600"
+                          : "bg-red-500 text-white"
+                      )}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
                 </>
               );
             }}
@@ -246,14 +239,12 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
           className={() =>
             cn(
               "group flex items-center gap-3 px-4 py-3 rounded-2xl mb-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background shadow-sm hover:shadow-md",
-              "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/95 hover:to-primary/75"
+              "bg-gradient-to-r from-blue-600 to-violet-600 text-white hover:from-blue-600 hover:to-violet-600"
             )
           }
         >
-          <span className="h-9 w-9 rounded-full flex items-center justify-center bg-white/15 text-primary-foreground">
-            <Plus className="h-[18px] w-[18px] text-primary-foreground" />
-          </span>
-          <span className="truncate font-semibold text-primary-foreground">Crear grupo</span>
+          <Plus className="h-[18px] w-[18px] text-white" />
+          <span className="truncate font-semibold text-white">Crear grupo</span>
         </NavLink>
 
         {groupsLoading ? (
@@ -315,34 +306,28 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
               className={({ isActive }) =>
                 cn(
                   "group flex items-center gap-3 px-3 py-2.5 rounded-2xl mb-1.5 transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                  isActive ? "bg-background/70 ring-1 ring-border/20" : "hover:bg-background/50"
+                  isActive ? "bg-blue-50 border border-blue-100" : "hover:bg-muted/30"
                 )
               }
             >
               {({ isActive }) => {
-                const style = getIconStyle(item.path);
-                const iconWrapperClassName = cn(
-                  "h-9 w-9 rounded-full flex items-center justify-center transition-colors duration-200 ease-out ring-1 ring-border/20",
-                  isActive ? style.activeBg : style.bg
-                );
                 const iconClassName = cn(
                   "h-[18px] w-[18px] transition-colors duration-200",
-                  isActive ? style.activeFg : style.fg
+                  isActive ? "text-blue-600" : "text-muted-foreground"
                 );
                 const labelClassName = cn(
                   "flex-1 truncate",
-                  isActive ? "text-foreground font-semibold" : "text-foreground/80 font-medium"
+                  isActive ? "text-blue-600 font-semibold" : "text-foreground/80 font-medium"
                 );
                 return (
                   <>
-                    <span className={iconWrapperClassName}>
-                      <item.icon className={iconClassName} />
-                    </span>
+                    <item.icon className={iconClassName} />
                     <span className={labelClassName}>{item.label}</span>
                   </>
                 );
               }}
             </NavLink>
+
             {index < bottomItems.length - 1 && <Separator className="my-2 opacity-0" />}
           </Fragment>
         ))}

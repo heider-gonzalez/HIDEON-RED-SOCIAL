@@ -23,7 +23,7 @@ import { MentionsText } from "./post/MentionsText";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useNavigate } from "react-router-dom";
-import { Briefcase } from "lucide-react";
+import { Briefcase, CircleAlert, Users } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "react-router-dom";
 import { JoinIdeaButton } from "@/components/post/actions/join-idea/JoinIdeaButton";
@@ -596,15 +596,21 @@ function IdeaPostView({ post }: { post: PostType }) {
             {(problem || forWho) && (
               <div className="mt-4 space-y-3">
                 {problem && (
-                  <div className="rounded-xl border border-border bg-muted/30 p-4">
-                    <div className="text-sm font-semibold text-foreground">Problema:</div>
-                    <div className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap break-words">{problem}</div>
+                  <div className="rounded-xl border border-red-100/70 dark:border-red-950/40 bg-red-50/70 dark:bg-red-950/15 p-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-red-700 dark:text-red-200">
+                      <CircleAlert className="h-4 w-4" />
+                      Problema:
+                    </div>
+                    <div className="mt-1 text-sm text-red-900/80 dark:text-red-50/80 whitespace-pre-wrap break-words">{problem}</div>
                   </div>
                 )}
                 {forWho && (
-                  <div className="rounded-xl border border-border bg-blue-50/60 dark:bg-blue-950/20 p-4">
-                    <div className="text-sm font-semibold text-foreground">Para quién:</div>
-                    <div className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap break-words">{forWho}</div>
+                  <div className="rounded-xl border border-blue-100/70 dark:border-blue-950/40 bg-blue-50/70 dark:bg-blue-950/15 p-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-blue-700 dark:text-blue-200">
+                      <Users className="h-4 w-4" />
+                      Para quién:
+                    </div>
+                    <div className="mt-1 text-sm text-blue-900/80 dark:text-blue-50/80 whitespace-pre-wrap break-words">{forWho}</div>
                   </div>
                 )}
               </div>
@@ -622,7 +628,7 @@ function IdeaPostView({ post }: { post: PostType }) {
                     {techToShow.map((t: string) => (
                       <Badge
                         key={t}
-                        className="text-xs rounded-full bg-violet-600 text-white hover:bg-violet-600"
+                        className="text-xs rounded-full border border-transparent bg-gradient-to-r from-blue-600 to-violet-600 text-white hover:from-blue-600 hover:to-violet-600"
                       >
                         {t}
                       </Badge>

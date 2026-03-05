@@ -8,16 +8,17 @@ import { Input } from "@/components/ui/input";
 import { 
   User, 
   UserPlus, 
+  Users,
   MessageCircle,
   Search
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 // Removed engagement sidebar
+
 import { useChatSystem } from "@/hooks/use-chat-system";
 import { useBatchFollowingStatus } from "@/hooks/use-batch-following-status";
 import { useFollowUser } from "@/hooks/use-follow-user";
 import { getRecentActivityLabel, isRecentlyOnline, isUserOnline } from "@/utils/time-utils";
-
 import { useGlobalPresence } from "@/hooks/use-global-presence";
 
 interface RightSidebarProps {
@@ -164,7 +165,7 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
 
   if (loading) {
     return (
-      <div className="h-full bg-background border-l border-border p-4">
+      <div className="h-full bg-background/70 backdrop-blur p-4">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-muted rounded w-1/2"></div>
           <div className="space-y-2">
@@ -181,31 +182,35 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
   }
 
   return (
-    <div className="h-full bg-card border-l border-border p-4 overflow-y-auto custom-scrollbar">
+    <div className="h-full bg-background/70 backdrop-blur p-4 overflow-y-auto custom-scrollbar">
       {/* Engagement Tracker */}
       <div className="mb-6">
         {/* Engagement sidebar removed for performance */}
       </div>
 
-      {/* Online Friends */}
-      <Card className="mb-6 border-border/60 shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={contactsQuery}
-              onChange={(e) => setContactsQuery(e.target.value)}
-              placeholder="Buscar contactos..."
-              className="pl-10 pr-4 rounded-full h-10 bg-muted/40 border-border/60"
-            />
-          </div>
+      <div className="mb-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={contactsQuery}
+            onChange={(e) => setContactsQuery(e.target.value)}
+            placeholder="Buscar contactos..."
+            className="pl-10 pr-4 rounded-full h-10 bg-muted/40 border-border/60"
+          />
+        </div>
+      </div>
 
-          <div className="flex items-center justify-between pt-3">
+      {/* Online Friends */}
+      <Card className="mb-6 border-border/40 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-bold flex items-center gap-2 text-[#050505] dark:text-white [.tech_&]:text-white">
-              <MessageCircle className="h-4 w-4" />
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-violet-600/10 text-violet-700 dark:text-violet-300">
+                <User className="h-4 w-4" />
+              </span>
               Contactos
             </CardTitle>
-            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-semibold">
+            <span className="text-xs px-2.5 py-1 rounded-full bg-violet-600/10 text-violet-700 dark:text-violet-300 font-semibold">
               {onlineCount} en línea
             </span>
           </div>

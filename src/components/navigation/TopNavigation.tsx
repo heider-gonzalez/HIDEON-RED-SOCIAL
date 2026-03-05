@@ -226,24 +226,24 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
     <nav className="bg-background/95 backdrop-blur border-b border-border/30 h-16 fixed top-0 left-0 right-0 z-[70]">
       <div className="w-full flex items-center justify-between h-full px-3 lg:px-6">
 
-        {/* Logo and Search - Left */}
         <div className="flex items-center gap-4 flex-shrink-0 w-[720px]">
           <HSocialLogo
             size="md"
             showText={true}
             onClick={() => navigate(isAuthenticated ? "/home" : "/")}
           />
-          
-          {/* Search bar - desktop inline search */}
+
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
+              strokeWidth={1.5}
+            />
             <div className="w-full">
               <FriendSearch />
             </div>
           </div>
         </div>
 
-        {/* Center Navigation - Facebook Icons */}
         <div className="flex items-center justify-center flex-1 max-w-2xl">
           <div className="flex items-center gap-2">
             {desktopCenterNavItems.map((item) => (
@@ -289,30 +289,56 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
           </div>
         </div>
 
-        {/* Right Section - Desktop Actions (solo + y menú) */}
         <div className="flex items-center gap-2 flex-shrink-0 w-80 justify-end">
           {isAuthenticated && (
             <>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors text-muted-foreground"
-                title="Crear"
-                onClick={() => openComposer({ userAvatar: userProfile?.avatar_url || user?.user_metadata?.avatar_url })}
+                className="h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors relative text-muted-foreground"
+                onClick={() => navigate("/messages")}
+                title="Mensajes"
               >
-                <Plus className="h-5 w-5" strokeWidth={1.5} />
+                <MessageCircle className="h-5 w-5" strokeWidth={1.5} />
+                {unreadMessagesCount > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  >
+                    {unreadMessagesCount}
+                  </Badge>
+                )}
               </Button>
 
-              <UserMenu
-                triggerClassName="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
+              <NotificationDropdown
+                triggerClassName="h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors relative shadow-none ring-1 ring-border/30"
                 iconClassName="h-5 w-5"
+                onOpen={handleNotificationClick}
               />
+
+              <Button
+                variant="ghost"
+                className="h-10 px-3 rounded-full hover:bg-muted transition-colors"
+                onClick={handleProfileClick}
+                title="Perfil"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={userProfile?.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                    {(userProfile?.username?.[0] ?? "U").toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="ml-2 text-sm font-semibold text-foreground/90 max-w-20 truncate">
+                  {userProfile?.username || "Usuario"}
+                </span>
+              </Button>
+
+              <UserMenu />
             </>
           )}
         </div>
       </div>
 
-      {/* Full Screen Search for Desktop */}
       <FullScreenSearch
         isOpen={showFullScreenSearch}
         onClose={() => setShowFullScreenSearch(false)}

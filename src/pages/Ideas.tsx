@@ -16,23 +16,20 @@ export default function Ideas() {
 
   return (
     <Layout>
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-10 space-y-6">
+      <div className="w-full space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between gap-6">
-          <div>
-            <h1 className="text-3xl font-extrabold text-[#ff8a00] flex items-center gap-2">
-              <span className="h-9 w-9 rounded-xl bg-[#ff8a00] text-white flex items-center justify-center shadow-sm">
-                <Lightbulb className="h-5 w-5" />
-              </span>
-              Ideas
-            </h1>
-            <p className="text-muted-foreground mt-1 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#ff8a00]" />
-              Descubre ideas que buscan colaboradores
-            </p>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 text-white flex items-center justify-center shadow-lg">
+              <Lightbulb className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Ideas</h1>
+              <p className="text-sm text-muted-foreground">Descubre ideas que buscan colaboradores</p>
+            </div>
           </div>
           <Button
-            className="gap-2 rounded-full bg-gradient-to-r from-[#ff8a00] to-[#ff6a00] hover:from-[#ff8a00]/95 hover:to-[#ff6a00]/95 text-white shadow-sm"
+            className="gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-600/95 hover:to-blue-600/95 text-white shadow-lg font-semibold px-6"
             onClick={() => openComposer({ initialPostType: "idea" })}
           >
             <Plus className="h-5 w-5" />
@@ -67,17 +64,17 @@ export default function Ideas() {
         </Card>
 
         {/* Filters */}
-        <div className="flex items-center gap-6 flex-wrap">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setActiveFilter("all")}
             className={
               activeFilter === "all"
-                ? "text-[#ff8a00] font-semibold border-b-2 border-[#ff8a00] pb-2 inline-flex items-center gap-2"
-                : "text-muted-foreground hover:text-foreground pb-2 inline-flex items-center gap-2"
+                ? "bg-violet-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
+                : "bg-muted text-muted-foreground hover:text-foreground font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2"
             }
           >
-            <span className={activeFilter === "all" ? "text-[#ff8a00]" : "text-muted-foreground"}>~</span>
+            <span className="text-lg">~</span>
             Todas
           </button>
           <button
@@ -85,8 +82,8 @@ export default function Ideas() {
             onClick={() => setActiveFilter("dev")}
             className={
               activeFilter === "dev"
-                ? "text-foreground font-semibold border-b-2 border-[#ff8a00] pb-2 inline-flex items-center gap-2"
-                : "text-muted-foreground hover:text-foreground pb-2 inline-flex items-center gap-2"
+                ? "bg-violet-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
+                : "bg-muted text-muted-foreground hover:text-foreground font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2"
             }
           >
             <Code2 className="h-4 w-4" />
@@ -97,8 +94,8 @@ export default function Ideas() {
             onClick={() => setActiveFilter("design")}
             className={
               activeFilter === "design"
-                ? "text-foreground font-semibold border-b-2 border-[#ff8a00] pb-2 inline-flex items-center gap-2"
-                : "text-muted-foreground hover:text-foreground pb-2 inline-flex items-center gap-2"
+                ? "bg-violet-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
+                : "bg-muted text-muted-foreground hover:text-foreground font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2"
             }
           >
             <PencilRuler className="h-4 w-4" />
@@ -109,8 +106,8 @@ export default function Ideas() {
             onClick={() => setActiveFilter("mkt")}
             className={
               activeFilter === "mkt"
-                ? "text-foreground font-semibold border-b-2 border-[#ff8a00] pb-2 inline-flex items-center gap-2"
-                : "text-muted-foreground hover:text-foreground pb-2 inline-flex items-center gap-2"
+                ? "bg-violet-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
+                : "bg-muted text-muted-foreground hover:text-foreground font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2"
             }
           >
             <Megaphone className="h-4 w-4" />

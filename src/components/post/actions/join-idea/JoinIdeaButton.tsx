@@ -79,7 +79,10 @@ export function JoinIdeaButton({
   if (isParticipant) {
     return (
       <Button 
-        className={cn("flex items-center gap-2", className)}
+        className={cn(
+          "flex items-center gap-2 w-full rounded-xl font-semibold border border-border bg-muted/40 text-foreground hover:bg-muted/60",
+          className
+        )}
         variant={variant === "default" ? "secondary" : variant}
         size={size}
         onClick={handleLeaveIdea}
@@ -94,8 +97,11 @@ export function JoinIdeaButton({
   return (
     <>
       <Button 
-        className={cn("flex items-center gap-2", className)}
-        variant={variant}
+        className={cn(
+          "flex items-center justify-center gap-2 w-full rounded-xl font-semibold shadow-sm transition-all hover:shadow-md hover:-translate-y-[1px] bg-gradient-to-r from-blue-700 to-violet-700 hover:from-blue-800 hover:to-violet-800 text-white",
+          className
+        )}
+        variant={variant === "default" ? "default" : variant}
         size={size}
         onClick={() => setDialogOpen(true)}
       >

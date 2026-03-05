@@ -324,7 +324,7 @@ export default function Projects() {
 
         {/* Header Section */}
         <div className="bg-gradient-to-r from-primary to-primary/80 text-white">
-          <div className="container mx-auto px-4 py-8">
+          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-10 py-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="text-center lg:text-left">
                 <h1 className="text-3xl lg:text-4xl font-bold mb-2">
@@ -347,7 +347,7 @@ export default function Projects() {
 
         {/* Search and Filter Section */}
         <div className="bg-white dark:bg-card border-b border-border text-foreground dark:text-foreground">
-          <div className="container mx-auto px-4 py-6">
+          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-10 py-6">
             <div className="flex flex-col md:flex-row gap-4">
               {/* Search Bar */}
               <div className="relative flex-1">
@@ -401,9 +401,9 @@ export default function Projects() {
         </div>
 
         {/* Projects List - Single Column */}
-        <div className="container mx-auto px-4 py-12">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-10 py-12">
           {isLoading ? (
-            <div className="max-w-5xl mx-auto space-y-6">
+            <div className="space-y-6">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="bg-muted rounded-xl h-56"></div>
@@ -411,7 +411,7 @@ export default function Projects() {
               ))}
             </div>
           ) : filteredProjects.length > 0 ? (
-            <div className="max-w-5xl mx-auto space-y-6">
+            <div className="space-y-6">
               {filteredProjects.map((project) => (
                 <ProjectCard
                   key={project.id}

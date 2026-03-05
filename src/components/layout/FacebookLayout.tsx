@@ -44,6 +44,12 @@ export function FacebookLayout({
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
   const [newPosts, setNewPosts] = useState<number>(0);
 
+  const isWideCenterPage =
+    location.pathname.startsWith("/ideas") ||
+    location.pathname.startsWith("/projects") ||
+    location.pathname.startsWith("/project") ||
+    location.pathname.startsWith("/profile");
+
   useEffect(() => {
     if (!isMobile) return;
     forceUnlockBodyScroll();
@@ -142,35 +148,40 @@ export function FacebookLayout({
           </div>
         )}
         
-        {/* Main Content Area - Facebook 3-column layout */}
+        {/* Main Content Area - 3-column grid layout */}
         <div className="pt-16 h-svh w-full">
-          <div className="flex h-[calc(100svh-4rem)] w-full overflow-hidden">
-          {/* Left Sidebar - Fixed width on desktop only */}
-          {!hideLeftSidebar && (
-            <div className="hidden lg:block fixed left-0 top-16 bottom-0 w-[280px] z-10">
-              <LeftSidebar currentUserId={currentUserId} />
-            </div>
-          )}
-          
-          {/* Center Content - Full width estilo LinkedIn */}
-          <main
-            className={`flex-1 h-full w-full overflow-y-auto ${!hideLeftSidebar ? 'lg:ml-[280px]' : ''} ${!hideRightSidebar ? 'xl:mr-[320px]' : ''}`}
+          <div
+            className="grid h-[calc(100svh-4rem)] w-full overflow-hidden"
+            style={{ gridTemplateColumns: "260px 1fr 300px" }}
           >
-            <div className="w-full min-h-full bg-muted/10">
-              <div className="mx-auto w-full max-w-[1400px] px-3 sm:px-6 lg:px-10 py-4 lg:py-7">
-                {currentUserId && <NotificationPermissionBanner />}
-                {children}
-                <AppLegalFooter />
+            {/* Left Sidebar */}
+            <aside className="hidden lg:block h-full">
+              {!hideLeftSidebar && (
+                <div className="sticky top-16 h-[calc(100svh-4rem)] overflow-y-auto">
+                  <LeftSidebar currentUserId={currentUserId} />
+                </div>
+              )}
+            </aside>
+
+            {/* Center Content */}
+            <main className="h-full overflow-y-auto bg-muted/10">
+              <div className="w-full min-h-full px-3 sm:px-6 py-4 lg:py-7">
+                <div className={isWideCenterPage ? "mx-auto w-full max-w-[1400px]" : "mx-auto w-full max-w-[900px]"}>
+                  {currentUserId && <NotificationPermissionBanner />}
+                  {children}
+                  <AppLegalFooter />
+                </div>
               </div>
-            </div>
-          </main>
-          
-          {/* Right Sidebar - Fixed width on desktop only */}
-          {!hideRightSidebar && (
-            <div className="hidden xl:block fixed right-0 top-16 bottom-0 w-[320px] z-10">
-              <RightSidebar currentUserId={currentUserId} />
-            </div>
-          )}
+            </main>
+
+            {/* Right Sidebar */}
+            <aside className="hidden xl:block h-full">
+              {!hideRightSidebar && (
+                <div className="sticky top-16 h-[calc(100svh-4rem)] overflow-y-auto">
+                  <RightSidebar currentUserId={currentUserId} />
+                </div>
+              )}
+            </aside>
           </div>
         </div>
         
