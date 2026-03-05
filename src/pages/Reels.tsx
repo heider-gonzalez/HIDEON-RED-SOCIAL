@@ -22,7 +22,7 @@ export default function Reels() {
 
   if (!isLoading && !hasVideos) {
     return (
-      <FacebookLayout hideNavigation={!shouldUseMobileLayout} hideLeftSidebar={!shouldUseMobileLayout}>
+      <FacebookLayout>
         <Helmet>
           <title>Reels - HIDEON</title>
           <meta name="description" content="Descubre videos cortos y creativos de la comunidad universitaria" />
@@ -69,16 +69,17 @@ export default function Reels() {
   ) : null;
 
   return (
-    <FacebookLayout hideNavigation={!shouldUseMobileLayout} hideLeftSidebar={!shouldUseMobileLayout}>
+    <FacebookLayout>
       <Helmet>
         <title>Reels - HIDEON</title>
         <meta name="description" content="Descubre videos cortos y creativos de la comunidad universitaria" />
       </Helmet>
 
-      {/* Layout responsive */}
-      <ReelsDesktopLayout>
-        {reelsContent}
-      </ReelsDesktopLayout>
+      <div className="flex justify-center items-center min-h-screen bg-black">
+        <div className="w-full max-w-[1400px]">
+          {reelsContent}
+        </div>
+      </div>
 
     </FacebookLayout>
   );
