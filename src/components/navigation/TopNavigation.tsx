@@ -180,12 +180,6 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
               <Link
                 key={item.path}
                 to={item.path}
-                onClick={(e) => {
-                  if (item.onClick) {
-                    e.preventDefault();
-                    item.onClick();
-                  }
-                }}
                 className={cn(
                   "relative flex-1 flex items-center justify-center h-full rounded-lg transition-colors",
                   item.isActive ? "text-primary" : "text-muted-foreground hover:bg-muted/60"
@@ -295,28 +289,10 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
           </div>
         </div>
 
-        {/* Right Section - User Actions */}
-        <div className="flex items-center gap-1 flex-shrink-0 w-80 justify-end">
+        {/* Right Section - Desktop Actions (solo + y menú) */}
+        <div className="flex items-center gap-2 flex-shrink-0 w-80 justify-end">
           {isAuthenticated && (
             <>
-              {/* Profile */}
-              <Button
-                variant="ghost"
-                className="h-10 px-3 rounded-full hover:bg-muted transition-colors"
-                onClick={handleProfileClick}
-              >
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={userProfile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                    {(userProfile?.username?.[0] ?? "U").toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="ml-2 text-sm font-semibold text-foreground/90 max-w-20 truncate">
-                  {userProfile?.username || "Usuario"}
-                </span>
-              </Button>
-
-              {/* Plus Menu */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -327,34 +303,10 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
                 <Plus className="h-5 w-5" strokeWidth={1.5} />
               </Button>
 
-              {/* Messenger */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors relative text-muted-foreground"
-                onClick={() => navigate("/messages")}
-                title="Mensajes"
-              >
-                <MessageCircle className="h-5 w-5" strokeWidth={1.5} />
-                {unreadMessagesCount > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-                  >
-                    {unreadMessagesCount}
-                  </Badge>
-                )}
-              </Button>
-
-              {/* Notifications */}
-              <NotificationDropdown
-                triggerClassName="h-10 w-10 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors relative shadow-none ring-1 ring-border/30"
+              <UserMenu
+                triggerClassName="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
                 iconClassName="h-5 w-5"
-                onOpen={handleNotificationClick}
               />
-
-              {/* User Menu */}
-              <UserMenu />
             </>
           )}
         </div>
