@@ -62,6 +62,7 @@ const NotFound = React.lazy(() => import("@/pages/NotFound"));
 const IdeaParticipants = React.lazy(() => import("@/pages/IdeaParticipants"));
 const IdeaChat = React.lazy(() => import("@/pages/IdeaChat"));
 const ProjectDetail = React.lazy(() => import("@/pages/ProjectDetail"));
+const Help = React.lazy(() => import("@/pages/Help"));
 const PostDetail = React.lazy(() => import("@/pages/PostDetail"));
 
 const queryClient = new QueryClient({
@@ -399,7 +400,15 @@ const App = () => {
                         </Suspense>
                       </AuthGuard>
                     } />
-                    
+
+                    <Route path="/help" element={
+                      <AuthGuard>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Help />
+                        </Suspense>
+                      </AuthGuard>
+                    } />
+
                     {/* Settings pages */}
                     <Route path="/settings" element={
                       <AuthGuard>

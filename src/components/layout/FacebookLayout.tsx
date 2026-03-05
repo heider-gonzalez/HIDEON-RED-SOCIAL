@@ -148,7 +148,7 @@ export function FacebookLayout({
           {/* Left Sidebar - Fixed width on desktop only */}
           {!hideLeftSidebar && (
             <div className="hidden lg:block fixed left-0 top-16 bottom-0 w-[280px] z-10">
-              <LeftSidebar currentUserId={currentUserId} pendingRequestsCount={pendingRequestsCount} />
+              <LeftSidebar currentUserId={currentUserId} />
             </div>
           )}
           

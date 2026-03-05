@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Home, Search, Users, PlaySquare, Plus, Bell, MessageCircle, Compass } from "lucide-react";
+import { Search, Plus, Bell, MessageCircle, Compass } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,10 +24,9 @@ interface TopNavigationProps {
 }
 
 export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
+  void pendingRequestsCount;
   const {
     currentUserId,
-    newPosts,
-    handleHomeClick,
     handleNotificationClick,
     location,
     unreadNotifications
@@ -100,21 +99,6 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
   // Facebook-style navigation items
   const centerNavItems = [
     {
-      icon: Home,
-      label: "Inicio",
-      path: "/home",
-      onClick: handleHomeClick,
-      badge: newPosts > 0 ? newPosts : null,
-      isActive: location.pathname === "/home"
-    },
-    {
-      icon: Users,
-      label: "Amigos",
-      path: "/friends",
-      badge: pendingRequestsCount > 0 ? pendingRequestsCount : null,
-      isActive: location.pathname.startsWith('/friends')
-    },
-    {
       icon: Compass,
       label: "Explorar",
       path: "/explore",
@@ -126,12 +110,6 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
       path: "/messages",
       badge: unreadMessagesCount > 0 ? unreadMessagesCount : null,
       isActive: location.pathname.startsWith('/messages')
-    },
-    {
-      icon: PlaySquare,
-      label: "Reels",
-      path: "/reels",
-      isActive: location.pathname.startsWith('/reels')
     },
     {
       icon: Bell,

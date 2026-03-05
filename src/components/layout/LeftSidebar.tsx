@@ -2,24 +2,29 @@ import { Link, NavLink } from "react-router-dom";
 import {
   Bookmark,
   Briefcase,
+  Home,
   Lightbulb,
+  MessageCircle,
+  Bell,
   Plus,
+  PlaySquare,
+  TrendingUp,
   User,
   UserPlus,
   Users,
+  Settings,
+  HelpCircle,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useNavigation } from "@/components/navigation/use-navigation";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Fragment, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LeftSidebarProps {
   currentUserId: string | null;
-  pendingRequestsCount?: number;
 }
 
 type SidebarItem = {
@@ -29,7 +34,7 @@ type SidebarItem = {
   onClick?: () => void;
 };
 
-export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebarProps) {
+export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   useNavigation();
   const [userProfile, setUserProfile] = useState<any>(null);
   const [myGroups, setMyGroups] = useState<any[]>([]);
@@ -48,10 +53,24 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
   const getIconStyle = (path: string) => iconStyles[path] ?? defaultIconStyle;
 
   const menuItems: SidebarItem[] = [
+    { icon: Home, label: "Feed", path: "/home" },
     { icon: Lightbulb, label: "Ideas", path: "/ideas" },
     { icon: Briefcase, label: "Proyectos", path: "/projects" },
+    { icon: UserPlus, label: "Amigos", path: "/friends" },
     { icon: Users, label: "Grupos", path: "/groups" },
     { icon: Bookmark, label: "Guardados", path: "/saved" },
+  ];
+
+  const quickActions: SidebarItem[] = [
+    { icon: PlaySquare, label: "Reels", path: "/reels" },
+    { icon: TrendingUp, label: "Tendencias", path: "/explore" },
+    { icon: Bell, label: "Notificaciones", path: "/notifications" },
+    { icon: MessageCircle, label: "Mensajes", path: "/messages" },
+  ];
+
+  const bottomItems: SidebarItem[] = [
+    { icon: Settings, label: "Configuración", path: "/settings" },
+    { icon: HelpCircle, label: "Ayuda", path: "/help" },
   ];
 
   // Load user profile
@@ -114,7 +133,15 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
 
   return (
     <aside className="h-full bg-muted/10 border-r border-border/20 overflow-y-auto custom-scrollbar">
-      <div className="px-3 pt-4 pb-3">
+      <div className="px-3 pt-4 pb-2">
+        <div className="px-2 pb-2">
+          <Link to={currentUserId ? "/home" : "/"} className="flex items-center gap-2">
+            <span className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-extrabold">
+              H
+            </span>
+            <span className="text-lg font-extrabold tracking-[0.22em] text-primary">HIDEON</span>
+          </Link>
+        </div>
         {currentUserId && userProfile && (
           <Link
             to={`/profile/${currentUserId}`}
@@ -177,7 +204,49 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
             {index < menuItems.length - 1 && <Separator className="my-2 opacity-0" />}
           </Fragment>
         ))}
-        <Separator className="my-2 opacity-0" />
+        <Separator className="my-3 opacity-0" />
+
+        <div className="px-3 py-2">
+          <p className="text-xs font-medium text-muted-foreground">ACCIONES RÁPIDAS</p>
+        </div>
+
+        {quickActions.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            onClick={item.onClick}
+            className={({ isActive }) =>
+              cn(
+                "group flex items-center gap-3 px-3 py-2.5 rounded-2xl mb-1.5 transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                isActive ? "bg-background/70 ring-1 ring-border/20" : "hover:bg-background/50"
+              )
+            }
+          >
+            {({ isActive }) => {
+              const style = getIconStyle(item.path);
+              const iconWrapperClassName = cn(
+                "h-9 w-9 rounded-full flex items-center justify-center transition-colors duration-200 ease-out ring-1 ring-border/20",
+                isActive ? style.activeBg : style.bg
+              );
+              const iconClassName = cn(
+                "h-[18px] w-[18px] transition-colors duration-200",
+                isActive ? style.activeFg : style.fg
+              );
+              const labelClassName = cn(
+                "flex-1 truncate",
+                isActive ? "text-foreground font-semibold" : "text-foreground/80 font-medium"
+              );
+              return (
+                <>
+                  <span className={iconWrapperClassName}>
+                    <item.icon className={iconClassName} />
+                  </span>
+                  <span className={labelClassName}>{item.label}</span>
+                </>
+              );
+            }}
+          </NavLink>
+        ))}
 
         <NavLink
           to="/groups/create"
@@ -272,6 +341,47 @@ export function LeftSidebar({ currentUserId, pendingRequestsCount }: LeftSidebar
             )}
           </>
         )}
+        <Separator className="my-3 opacity-0" />
+
+        {bottomItems.map((item, index) => (
+          <Fragment key={item.path}>
+            <NavLink
+              to={item.path}
+              onClick={item.onClick}
+              className={({ isActive }) =>
+                cn(
+                  "group flex items-center gap-3 px-3 py-2.5 rounded-2xl mb-1.5 transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  isActive ? "bg-background/70 ring-1 ring-border/20" : "hover:bg-background/50"
+                )
+              }
+            >
+              {({ isActive }) => {
+                const style = getIconStyle(item.path);
+                const iconWrapperClassName = cn(
+                  "h-9 w-9 rounded-full flex items-center justify-center transition-colors duration-200 ease-out ring-1 ring-border/20",
+                  isActive ? style.activeBg : style.bg
+                );
+                const iconClassName = cn(
+                  "h-[18px] w-[18px] transition-colors duration-200",
+                  isActive ? style.activeFg : style.fg
+                );
+                const labelClassName = cn(
+                  "flex-1 truncate",
+                  isActive ? "text-foreground font-semibold" : "text-foreground/80 font-medium"
+                );
+                return (
+                  <>
+                    <span className={iconWrapperClassName}>
+                      <item.icon className={iconClassName} />
+                    </span>
+                    <span className={labelClassName}>{item.label}</span>
+                  </>
+                );
+              }}
+            </NavLink>
+            {index < bottomItems.length - 1 && <Separator className="my-2 opacity-0" />}
+          </Fragment>
+        ))}
       </nav>
     </aside>
   );
