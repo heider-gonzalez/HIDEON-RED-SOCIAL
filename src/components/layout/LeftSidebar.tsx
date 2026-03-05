@@ -23,7 +23,6 @@ import { useNavigation } from "@/components/navigation/use-navigation";
 import { cn } from "@/lib/utils";
 import { Fragment, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { HSocialLogo } from "@/components/navigation/HSocialLogo";
 
 interface LeftSidebarProps {
   currentUserId: string | null;
@@ -113,7 +112,6 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
 
         const mineRows = (mine?.data ?? []) as any[];
         const publicRows = (publicGroups?.data ?? []) as any[];
-
         setMyGroups(mineRows.slice(0, 6));
         const mineIds = new Set(mineRows.map((g) => String(g?.id)).filter(Boolean));
         const recs = publicRows.filter((g) => !mineIds.has(String(g?.id))).slice(0, 6);
@@ -136,9 +134,7 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   return (
     <aside className="h-full bg-muted/10 border-r border-border/20 overflow-y-auto custom-scrollbar">
       <div className="px-3 pt-4 pb-2">
-        <div className="px-2 pb-2">
-          <HSocialLogo size="md" showText={true} variant="brand" />
-        </div>
+        <div className="h-2" />
         {currentUserId && userProfile && (
           <Link
             to={`/profile/${currentUserId}`}

@@ -4,10 +4,12 @@ import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
   User, 
   UserPlus, 
-  MessageCircle
+  MessageCircle,
+  Search
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 // Removed engagement sidebar
@@ -44,6 +46,7 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
   const [friendSuggestions, setFriendSuggestions] = useState<FriendSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [nowTick, setNowTick] = useState(0);
+  const [contactsQuery, setContactsQuery] = useState("");
 
   const { isOnline } = useGlobalPresence();
 
@@ -59,6 +62,12 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
 
   const visibleSuggestions = friendSuggestions.filter(s => !getFollowingStatus(s.id));
 
+  const filteredContacts = useMemo(() => {
+    const q = contactsQuery.trim().toLowerCase();
+    if (!q) return onlineFriends;
+    return onlineFriends.filter((f) => String(f.username || "").toLowerCase().includes(q));
+  }, [onlineFriends, contactsQuery]);
+
   const contactMeta = useMemo(() => {
     void nowTick;
     const map = new Map<string, { showOnline: boolean; label: string }>();
@@ -69,6 +78,10 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
     });
     return map;
   }, [onlineFriends, nowTick]);
+
+  const onlineCount = useMemo(() => {
+    return onlineFriends.filter((f) => contactMeta.get(f.id)?.showOnline && isOnline(f.id)).length;
+  }, [onlineFriends, contactMeta, isOnline]);
 
   // Load online friends and suggestions
   useEffect(() => {
@@ -113,7 +126,7 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
         setOnlineFriends(followingProfiles);
 
         // Load friend suggestions (users not yet friends with)
-        const { data: suggestionsData, error: suggestionsError } = await supabase
+        const { data: suggestionsDataRaw, error: suggestionsError } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
           .neq('id', currentUserId)
@@ -123,12 +136,20 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
 
         // Filter out users you already follow
         const existingFriendIds = followingProfiles.map(f => f.id);
+        const suggestionsData = (suggestionsDataRaw ?? []) as Array<{
+          id: string;
+          username: string | null;
+          avatar_url: string | null;
+        }>;
+
         const suggestions = suggestionsData
-          ?.filter(profile => !existingFriendIds.includes(profile.id))
-          .map(profile => ({
-            ...profile,
+          .filter((profile) => profile?.id && !existingFriendIds.includes(profile.id))
+          .map((profile) => ({
+            id: profile.id,
+            username: profile.username || "",
+            avatar_url: profile.avatar_url,
             mutual_friends: Math.floor(Math.random() * 10) // Simulate mutual friends count
-          })) || [];
+          }));
 
         setFriendSuggestions(suggestions);
       } catch (error) {
@@ -167,63 +188,90 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
       </div>
 
       {/* Online Friends */}
-      <Card className="mb-6">
+      <Card className="mb-6 border-border/60 shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-bold flex items-center gap-2 text-[#050505] dark:text-white [.tech_&]:text-white">
-            <MessageCircle className="h-4 w-4" />
-            Contactos
-          </CardTitle>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={contactsQuery}
+              onChange={(e) => setContactsQuery(e.target.value)}
+              placeholder="Buscar contactos..."
+              className="pl-10 pr-4 rounded-full h-10 bg-muted/40 border-border/60"
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-3">
+            <CardTitle className="text-sm font-bold flex items-center gap-2 text-[#050505] dark:text-white [.tech_&]:text-white">
+              <MessageCircle className="h-4 w-4" />
+              Contactos
+            </CardTitle>
+            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-semibold">
+              {onlineCount} en línea
+            </span>
+          </div>
         </CardHeader>
+
         <CardContent className="space-y-2">
-          {onlineFriends.length > 0 ? (
-            onlineFriends.map((friend) => (
-              <div
-                key={friend.id}
-                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
-              >
-                <div className="relative">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={friend.avatar_url || undefined} />
-                    <AvatarFallback>
-                      {friend.username?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  {contactMeta.get(friend.id)?.showOnline && isOnline(friend.id) && (
-                    <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-background"></div>
-                  )}
-                </div>
+          {filteredContacts.length > 0 ? (
+            filteredContacts.map((friend) => {
+              const isFriendOnline = Boolean(contactMeta.get(friend.id)?.showOnline && isOnline(friend.id));
+              return (
                 <div
-                  className="flex-1 min-w-0 cursor-pointer"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openChat(friend.id, friend.username, friend.avatar_url)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      openChat(friend.id, friend.username, friend.avatar_url);
-                    }
-                  }}
+                  key={friend.id}
+                  className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-muted/40 transition-colors group"
                 >
-                  <p className="text-sm font-bold truncate text-[#050505] dark:text-white [.tech_&]:text-white">{friend.username}</p>
-                  {(() => {
-                    const meta = contactMeta.get(friend.id);
-                    if (!meta?.label) return null;
-                    return <p className="text-xs text-muted-foreground">{meta.label}</p>;
-                  })()}
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Link
-                    to={`/profile/${friend.id}`}
-                    className="p-1 rounded hover:bg-muted/70 transition-colors"
-                    title="Ver perfil"
+                  <div className="relative">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={friend.avatar_url || undefined} />
+                      <AvatarFallback>
+                        {friend.username?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    {isFriendOnline && (
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-green-500 rounded-full border-2 border-card" />
+                    )}
+                  </div>
+
+                  <div
+                    className="flex-1 min-w-0 cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openChat(friend.id, friend.username, friend.avatar_url)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openChat(friend.id, friend.username, friend.avatar_url);
+                      }
+                    }}
                   >
-                    <User className="h-4 w-4 text-muted-foreground" />
-                  </Link>
+                    <p className="text-sm font-bold truncate text-[#050505] dark:text-white [.tech_&]:text-white">
+                      {friend.username}
+                    </p>
+                    {isFriendOnline ? (
+                      <p className="text-xs font-semibold text-green-600">En línea</p>
+                    ) : (
+                      (() => {
+                        const meta = contactMeta.get(friend.id);
+                        if (!meta?.label) return null;
+                        return <p className="text-xs text-muted-foreground">{meta.label}</p>;
+                      })()
+                    )}
+                  </div>
+
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Link
+                      to={`/profile/${friend.id}`}
+                      className="p-1.5 rounded-full hover:bg-muted/70 transition-colors"
+                      title="Ver perfil"
+                    >
+                      <User className="h-4 w-4 text-muted-foreground" />
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
+            <p className="text-sm text-muted-foreground text-center py-6">
               No tienes contactos activos
             </p>
           )}
