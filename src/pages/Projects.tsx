@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Search, Plus, Filter } from 'lucide-react';
+import { Search, Plus, Filter, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -323,7 +323,7 @@ export default function Projects() {
         </Helmet>
 
         {/* Header Section */}
-        <div className="bg-gradient-to-r from-primary to-primary/80 text-white">
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
           <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-10 py-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="text-center lg:text-left">
@@ -336,10 +336,10 @@ export default function Projects() {
               </div>
               <Button
                 onClick={() => openComposer({ initialPostType: 'proyecto' })}
-                className="bg-white text-primary hover:bg-gray-100 font-semibold px-6 py-3 rounded-lg flex items-center gap-2 self-center lg:self-auto"
+                className="bg-white text-orange-500 hover:bg-gray-100 font-semibold px-6 py-3 rounded-full flex items-center gap-2 self-center lg:self-auto shadow-lg"
               >
-                <Plus size={20} />
-                Crear
+                <Rocket size={20} className="text-orange-500" />
+                Crear proyecto
               </Button>
             </div>
           </div>

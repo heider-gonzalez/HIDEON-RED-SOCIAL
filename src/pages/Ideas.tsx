@@ -32,7 +32,7 @@ export default function Ideas() {
             </div>
           </div>
           <Button
-            className="gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-500/95 hover:to-orange-600/95 text-white shadow-lg font-semibold px-6"
+            className="gap-2 rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-400/95 hover:to-orange-500/95 text-white shadow-lg font-semibold px-6"
             onClick={() => openComposer({ initialPostType: "idea" })}
           >
             <Plus className="h-5 w-5" />
