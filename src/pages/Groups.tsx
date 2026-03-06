@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FullScreenPageLayout } from "@/components/layout/FullScreenPageLayout";
+import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { GroupGrid } from "@/components/explore/GroupGrid";
@@ -10,8 +10,8 @@ export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <FullScreenPageLayout title="Grupos">
-      <div className="container px-2 sm:px-4 max-w-5xl pt-4 pb-10">
+    <FacebookLayout>
+      <div className="w-full px-2 sm:px-4 pt-4 pb-10">
         <div className="sticky top-0 z-10 bg-background pb-3">
           <div className="flex items-center justify-between gap-3 pb-3">
             <div className="min-w-0">
@@ -35,6 +35,6 @@ export default function Groups() {
 
         <GroupGrid searchQuery={searchQuery} />
       </div>
-    </FullScreenPageLayout>
+    </FacebookLayout>
   );
 }

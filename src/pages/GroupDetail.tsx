@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { FullScreenPageLayout } from "@/components/layout/FullScreenPageLayout";
+import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Feed } from "@/components/feed/Feed";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -318,314 +318,323 @@ export default function GroupDetail() {
 
   if (groupLoading) {
     return (
-      <FullScreenPageLayout title="Grupo">
-        <div className="container px-2 sm:px-4 max-w-5xl pt-4">
+      <FacebookLayout>
+        <div className="w-full px-2 sm:px-4 pt-4">
           <div className="h-40 bg-muted animate-pulse rounded-lg" />
         </div>
-      </FullScreenPageLayout>
+      </FacebookLayout>
     );
   }
 
   if (!group) {
     return (
-      <FullScreenPageLayout title="Grupo">
-        <div className="container px-2 sm:px-4 max-w-5xl pt-4">
+      <FacebookLayout>
+        <div className="w-full px-2 sm:px-4 pt-4">
           <Card>
             <CardContent className="p-6">
               <p className="text-muted-foreground">Grupo no encontrado o no tienes acceso.</p>
             </CardContent>
           </Card>
         </div>
-      </FullScreenPageLayout>
+      </FacebookLayout>
     );
   }
 
   return (
-    <FullScreenPageLayout title={group.name || "Grupo"}>
-      <div className="container px-2 sm:px-4 max-w-5xl pt-4 pb-10 space-y-4">
-        <Card className="overflow-hidden">
-          <div className="relative h-44 sm:h-56 bg-muted">
-            {group.cover_url ? (
-              <img src={group.cover_url} alt="Portada" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImagePlus className="h-10 w-10 text-muted-foreground/50" />
-              </div>
-            )}
+    <FacebookLayout>
+      <div className="w-full px-2 sm:px-4 pt-4 pb-10">
+        <div className="space-y-6">
+          <div className="relative overflow-hidden rounded-2xl border border-border">
+            <div
+              className="h-44 sm:h-56 bg-muted"
+              style={{
+                backgroundImage: group.cover_url ? `url(${group.cover_url})` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            >
+              {group.cover_url ? (
+                <img src={group.cover_url} alt="Portada" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <ImagePlus className="h-10 w-10 text-muted-foreground/50" />
+                </div>
+              )}
 
-            {isManager && (
-              <div className="absolute top-3 right-3">
-                <input
-                  type="file"
-                  id="group-cover-upload"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={(e) => uploadGroupImage("cover", e)}
-                  disabled={uploadingCover}
-                />
-                <label htmlFor="group-cover-upload">
-                  <Button size="sm" variant="secondary" asChild disabled={uploadingCover}>
-                    <span className="cursor-pointer bg-background/80 backdrop-blur-sm hover:bg-background/90">
-                      {uploadingCover ? "Subiendo..." : "Editar portada"}
-                    </span>
-                  </Button>
-                </label>
-              </div>
-            )}
+              {isManager && (
+                <div className="absolute top-3 right-3">
+                  <input
+                    type="file"
+                    id="group-cover-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => uploadGroupImage("cover", e)}
+                    disabled={uploadingCover}
+                  />
+                  <label htmlFor="group-cover-upload">
+                    <Button size="sm" variant="secondary" asChild disabled={uploadingCover}>
+                      <span className="cursor-pointer bg-background/80 backdrop-blur-sm hover:bg-background/90">
+                        {uploadingCover ? "Subiendo..." : "Editar portada"}
+                      </span>
+                    </Button>
+                  </label>
+                </div>
+              )}
 
-            <div className="absolute -bottom-10 left-4 flex items-end gap-4">
-              <div className="relative">
-                <Avatar className="h-20 w-20 border-4 border-background">
-                  <AvatarImage src={group.avatar_url || undefined} />
-                  <AvatarFallback>{(group.name || "G").slice(0, 1).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                {isManager && (
-                  <div className="absolute -bottom-1 -right-1">
-                    <input
-                      type="file"
-                      id="group-avatar-upload"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={(e) => uploadGroupImage("avatar", e)}
-                      disabled={uploadingAvatar}
-                    />
-                    <label htmlFor="group-avatar-upload">
-                      <Button size="icon" className="h-8 w-8 rounded-full" asChild disabled={uploadingAvatar}>
-                        <span className="cursor-pointer">
-                          <ImagePlus className="h-4 w-4" />
-                        </span>
+              <div className="absolute -bottom-10 left-4 flex items-end gap-4">
+                <div className="relative">
+                  <Avatar className="h-20 w-20 border-4 border-background">
+                    <AvatarImage src={group.avatar_url || undefined} />
+                    <AvatarFallback>{(group.name || "G").slice(0, 1).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  {isManager && (
+                    <div className="absolute -bottom-1 -right-1">
+                      <input
+                        type="file"
+                        id="group-avatar-upload"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => uploadGroupImage("avatar", e)}
+                        disabled={uploadingAvatar}
+                      />
+                      <label htmlFor="group-avatar-upload">
+                        <Button size="icon" className="h-8 w-8 rounded-full" asChild disabled={uploadingAvatar}>
+                          <span className="cursor-pointer">
+                            <ImagePlus className="h-4 w-4" />
+                          </span>
+                        </Button>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {isAdmin && (
+                <div className="absolute bottom-3 right-3">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Eliminar grupo
                       </Button>
-                    </label>
-                  </div>
-                )}
-              </div>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar este grupo?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer. Se eliminarán el grupo y sus miembros.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteGroup}>Eliminar</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
             </div>
 
-            {isAdmin && (
-              <div className="absolute bottom-3 right-3">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Eliminar grupo
+            <CardContent className="pt-14 sm:pt-16 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-xl font-semibold truncate">{group.name}</h2>
+                    {group.type && (
+                      <Badge variant="secondary" className="text-xs">
+                        {String(group.type).toUpperCase()}
+                      </Badge>
+                    )}
+                    {group.is_private && (
+                      <Badge variant="outline" className="text-xs">
+                        <Lock className="h-3 w-3 mr-1" />
+                        Privado
+                      </Badge>
+                    )}
+                  </div>
+                  {group.description && <p className="text-sm text-muted-foreground mt-1">{group.description}</p>}
+                  <div className="flex flex-wrap items-center gap-2 mt-3">
+                    <Badge variant="secondary" className="text-xs">
+                      <Users className="h-3 w-3 mr-1" />
+                      {group.member_count ?? 0} miembros
+                    </Badge>
+                    {group.category && (
+                      <Badge variant="outline" className="text-xs">
+                        {group.category}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="shrink-0">
+                  {myRole ? (
+                    <Button variant="secondary" disabled>
+                      Miembro
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>¿Eliminar este grupo?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción no se puede deshacer. Se eliminarán el grupo y sus miembros.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteGroup}>Eliminar</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                  ) : (
+                    <Button onClick={handleRequestJoin} disabled={joining}>
+                      {joining ? "Enviando..." : "Solicitar unirme"}
+                    </Button>
+                  )}
+                </div>
               </div>
-            )}
+            </CardContent>
           </div>
 
-          <CardContent className="pt-14 sm:pt-16 pb-4">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-xl font-semibold truncate">{group.name}</h2>
-                  {group.type && (
-                    <Badge variant="secondary" className="text-xs">
-                      {String(group.type).toUpperCase()}
-                    </Badge>
-                  )}
-                  {group.is_private && (
-                    <Badge variant="outline" className="text-xs">
-                      <Lock className="h-3 w-3 mr-1" />
-                      Privado
-                    </Badge>
-                  )}
-                </div>
-                {group.description && <p className="text-sm text-muted-foreground mt-1">{group.description}</p>}
-                <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <Badge variant="secondary" className="text-xs">
-                    <Users className="h-3 w-3 mr-1" />
-                    {group.member_count ?? 0} miembros
-                  </Badge>
-                  {group.category && (
-                    <Badge variant="outline" className="text-xs">
-                      {group.category}
-                    </Badge>
-                  )}
-                </div>
-              </div>
+          <Tabs defaultValue="posts">
+            <TabsList className="w-full justify-start">
+              <TabsTrigger value="posts">Publicaciones</TabsTrigger>
+              <TabsTrigger value="members">Miembros</TabsTrigger>
+              <TabsTrigger value="info">Info</TabsTrigger>
+            </TabsList>
 
-              <div className="shrink-0">
-                {myRole ? (
-                  <Button variant="secondary" disabled>
-                    Miembro
-                  </Button>
-                ) : (
-                  <Button onClick={handleRequestJoin} disabled={joining}>
-                    {joining ? "Enviando..." : "Solicitar unirme"}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <TabsContent value="posts">
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  <Feed groupId={group.id} />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-        <Tabs defaultValue="posts">
-          <TabsList className="w-full justify-start">
-            <TabsTrigger value="posts">Publicaciones</TabsTrigger>
-            <TabsTrigger value="members">Miembros</TabsTrigger>
-            <TabsTrigger value="info">Info</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="posts">
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <Feed groupId={group.id} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="members">
-            <div className="space-y-4">
-              {isManager && (joinRequests?.length ?? 0) > 0 && (
-                <Card>
-                  <CardContent className="p-4 sm:p-6 space-y-3">
-                    <h3 className="font-semibold">Solicitudes pendientes</h3>
-                    <div className="space-y-2">
-                      {(joinRequests ?? []).map((r: any) => (
-                        <div key={r.id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <Avatar className="h-9 w-9">
-                              <AvatarImage src={r.avatar_url || undefined} />
-                              <AvatarFallback>{String(r.username || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">{r.username || "Usuario"}</p>
-                              {r.message && <p className="text-xs text-muted-foreground truncate">{r.message}</p>}
+            <TabsContent value="members">
+              <div className="space-y-4">
+                {isManager && (joinRequests?.length ?? 0) > 0 && (
+                  <Card>
+                    <CardContent className="p-4 sm:p-6 space-y-3">
+                      <h3 className="font-semibold">Solicitudes pendientes</h3>
+                      <div className="space-y-2">
+                        {(joinRequests ?? []).map((r: any) => (
+                          <div key={r.id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <Avatar className="h-9 w-9">
+                                <AvatarImage src={r.avatar_url || undefined} />
+                                <AvatarFallback>{String(r.username || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{r.username || "Usuario"}</p>
+                                {r.message && <p className="text-xs text-muted-foreground truncate">{r.message}</p>}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="secondary" onClick={() => handleRespondRequest(String(r.id), false)}>
+                                Rechazar
+                              </Button>
+                              <Button size="sm" onClick={() => handleRespondRequest(String(r.id), true)}>
+                                Aprobar
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="secondary" onClick={() => handleRespondRequest(String(r.id), false)}>
-                              Rechazar
-                            </Button>
-                            <Button size="sm" onClick={() => handleRespondRequest(String(r.id), true)}>
-                              Aprobar
-                            </Button>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <Card>
+                  <CardContent className="p-4 sm:p-6 space-y-3">
+                    <h3 className="font-semibold">Miembros</h3>
+                    <div className="space-y-2">
+                      {(members ?? []).map((m: any) => (
+                        <div key={m.user_id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Avatar className="h-9 w-9">
+                              <AvatarImage src={m.avatar_url || undefined} />
+                              <AvatarFallback>{String(m.username || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{m.username || "Usuario"}</p>
+                              <p className="text-xs text-muted-foreground">{String(m.role || "member")}</p>
+                            </div>
                           </div>
+
+                          {isManager && String(m.user_id) !== String(group.created_by) && (
+                            <Button size="sm" variant="outline" onClick={() => handleRemoveMember(String(m.user_id))}>
+                              Expulsar
+                            </Button>
+                          )}
                         </div>
                       ))}
                     </div>
                   </CardContent>
                 </Card>
-              )}
+              </div>
+            </TabsContent>
 
-              <Card>
-                <CardContent className="p-4 sm:p-6 space-y-3">
-                  <h3 className="font-semibold">Miembros</h3>
-                  <div className="space-y-2">
-                    {(members ?? []).map((m: any) => (
-                      <div key={m.user_id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={m.avatar_url || undefined} />
-                            <AvatarFallback>{String(m.username || "U").slice(0, 1).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{m.username || "Usuario"}</p>
-                            <p className="text-xs text-muted-foreground">{String(m.role || "member")}</p>
+            <TabsContent value="info">
+              <div className="space-y-4">
+                <Card>
+                  <CardContent className="p-4 sm:p-6 space-y-3">
+                    <h3 className="font-semibold">Información</h3>
+
+                    {isManager ? (
+                      <>
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Nombre</p>
+                          <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                        </div>
+
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Descripción</p>
+                          <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Categoría</p>
+                            <Input value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Tags (separados por coma)</p>
+                            <Input value={editTagsInput} onChange={(e) => setEditTagsInput(e.target.value)} />
                           </div>
                         </div>
 
-                        {isManager && String(m.user_id) !== String(group.created_by) && (
-                          <Button size="sm" variant="outline" onClick={() => handleRemoveMember(String(m.user_id))}>
-                            Expulsar
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Reglas</p>
+                          <Textarea value={editRules} onChange={(e) => setEditRules(e.target.value)} placeholder="Reglas del grupo" />
+                        </div>
+
+                        <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                          <div>
+                            <p className="text-sm font-medium">Grupo privado</p>
+                            <p className="text-xs text-muted-foreground">Solo miembros podrán ver publicaciones.</p>
+                          </div>
+                          <Switch checked={editIsPrivate} onCheckedChange={setEditIsPrivate} />
+                        </div>
+
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="outline" onClick={syncEditorFromGroup} disabled={savingInfo}>
+                            Descartar
                           </Button>
+                          <Button onClick={handleSaveInfo} disabled={savingInfo || editName.trim().length < 3}>
+                            {savingInfo ? "Guardando..." : "Guardar"}
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-2">
+                        {group.category && <p className="text-sm">Categoría: {group.category}</p>}
+                        {Array.isArray(group.tags) && (group.tags as any[]).length > 0 && (
+                          <p className="text-sm">Tags: {(group.tags as any[]).join(", ")}</p>
+                        )}
+                        {group.rules && (
+                          <div>
+                            <p className="text-sm font-medium">Reglas</p>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{group.rules}</p>
+                          </div>
+                        )}
+                        {!group.category && !group.rules && (!Array.isArray(group.tags) || (group.tags as any[]).length === 0) && (
+                          <p className="text-sm text-muted-foreground">No hay información adicional.</p>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="info">
-            <div className="space-y-4">
-              <Card>
-                <CardContent className="p-4 sm:p-6 space-y-3">
-                  <h3 className="font-semibold">Información</h3>
-
-                  {isManager ? (
-                    <>
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Nombre</p>
-                        <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
-                      </div>
-
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Descripción</p>
-                        <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">Categoría</p>
-                          <Input value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">Tags (separados por coma)</p>
-                          <Input value={editTagsInput} onChange={(e) => setEditTagsInput(e.target.value)} />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Reglas</p>
-                        <Textarea value={editRules} onChange={(e) => setEditRules(e.target.value)} placeholder="Reglas del grupo" />
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                        <div>
-                          <p className="text-sm font-medium">Grupo privado</p>
-                          <p className="text-xs text-muted-foreground">Solo miembros podrán ver publicaciones.</p>
-                        </div>
-                        <Switch checked={editIsPrivate} onCheckedChange={setEditIsPrivate} />
-                      </div>
-
-                      <div className="flex gap-2 justify-end">
-                        <Button variant="outline" onClick={syncEditorFromGroup} disabled={savingInfo}>
-                          Descartar
-                        </Button>
-                        <Button onClick={handleSaveInfo} disabled={savingInfo || editName.trim().length < 3}>
-                          {savingInfo ? "Guardando..." : "Guardar"}
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="space-y-2">
-                      {group.category && <p className="text-sm">Categoría: {group.category}</p>}
-                      {Array.isArray(group.tags) && (group.tags as any[]).length > 0 && (
-                        <p className="text-sm">Tags: {(group.tags as any[]).join(", ")}</p>
-                      )}
-                      {group.rules && (
-                        <div>
-                          <p className="text-sm font-medium">Reglas</p>
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{group.rules}</p>
-                        </div>
-                      )}
-                      {!group.category && !group.rules && (!Array.isArray(group.tags) || (group.tags as any[]).length === 0) && (
-                        <p className="text-sm text-muted-foreground">No hay información adicional.</p>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </FullScreenPageLayout>
+    </FacebookLayout>
   );
 }

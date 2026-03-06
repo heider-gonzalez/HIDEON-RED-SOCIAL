@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FullScreenPageLayout } from "@/components/layout/FullScreenPageLayout";
+import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -78,7 +78,7 @@ export default function CreateGroup() {
       const fallbackSlug = `group-${Date.now()}`;
       const groupSlug = baseSlug || fallbackSlug;
 
-      const { data, error } = await supabase.rpc("create_group_atomic", {
+      const { data, error } = await (supabase as any).rpc("create_group_atomic", {
         group_name: name.trim(),
         group_description: description.trim(),
         group_slug: groupSlug,
@@ -130,8 +130,8 @@ export default function CreateGroup() {
   };
 
   return (
-    <FullScreenPageLayout title="Crear grupo">
-      <div className="container px-2 sm:px-4 max-w-3xl pt-4 pb-10">
+    <FacebookLayout>
+      <div className="w-full px-2 sm:px-4 max-w-3xl pt-4 pb-10">
         <Card>
           <CardContent className="p-4 sm:p-6 space-y-5">
             <div className="space-y-2">
@@ -215,6 +215,6 @@ export default function CreateGroup() {
           </CardContent>
         </Card>
       </div>
-    </FullScreenPageLayout>
+    </FacebookLayout>
   );
 }

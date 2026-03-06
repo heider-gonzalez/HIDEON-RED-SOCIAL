@@ -226,14 +226,14 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
     <nav className="bg-background/95 backdrop-blur border-b border-border/30 h-16 fixed top-0 left-0 right-0 z-[70]">
       <div className="w-full flex items-center justify-between h-full px-3 lg:px-6">
 
-        <div className="flex items-center gap-6 flex-shrink-0 w-[640px]">
+        <div className="flex items-center gap-3 flex-shrink-0 w-[720px]">
           <HSocialLogo
             size="md"
             showText={true}
             onClick={() => navigate(isAuthenticated ? "/home" : "/")}
           />
 
-          <div className="flex-1 pl-4 max-w-[460px]">
+          <div className="flex-1 max-w-[540px]">
             <FriendSearch />
           </div>
         </div>

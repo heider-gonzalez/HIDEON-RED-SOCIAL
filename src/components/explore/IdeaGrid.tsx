@@ -74,7 +74,7 @@ export function IdeaGrid({
                 className="w-full h-44 object-cover"
               />
             ) : (
-              <div className="w-full h-44 bg-gradient-to-br from-[#FDBA74] via-[#F97316] to-[#EA580C] flex items-center justify-center relative">
+              <div className="w-full h-44 bg-gradient-to-br from-[#FBBF24] via-[#F59E0B] to-[#EA580C] flex items-center justify-center relative">
                 <Lightbulb className="h-14 w-14 text-white" />
                 <span className="absolute top-3 right-3 h-7 w-7 rounded-full bg-white/15 flex items-center justify-center">
                   <Sparkles className="h-4 w-4 text-white" />
