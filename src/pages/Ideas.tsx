@@ -20,11 +20,14 @@ export default function Ideas() {
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white flex items-center justify-center shadow-lg">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 text-white flex items-center justify-center shadow-lg">
               <Lightbulb className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Ideas</h1>
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+                Ideas
+                <Sparkles className="h-6 w-6 text-yellow-500" />
+              </h1>
               <p className="text-sm text-muted-foreground">Descubre ideas que buscan colaboradores</p>
             </div>
           </div>
