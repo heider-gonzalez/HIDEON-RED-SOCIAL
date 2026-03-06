@@ -223,17 +223,17 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
                 return (
                   <div
                     key={friend.id}
-                    className="flex items-center gap-2 px-2 py-2 rounded-2xl hover:bg-muted/60 transition-colors group"
+                    className="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-muted/60 transition-colors group"
                   >
                     <div className="relative">
-                      <Avatar className="h-6 w-6">
+                      <Avatar className="h-9 w-9">
                         <AvatarImage src={friend.avatar_url || undefined} />
                         <AvatarFallback>
-                          {friend.username?.[0]?.toUpperCase() || <User className="h-3 w-3" />}
+                          {friend.username?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
                         </AvatarFallback>
                       </Avatar>
                       {isFriendOnline && (
-                        <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-muted/40" />
+                        <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-muted/40" />
                       )}
                     </div>
 
@@ -252,15 +252,6 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
                       <p className="text-sm font-medium truncate text-foreground">
                         {friend.username}
                       </p>
-                      {isFriendOnline ? (
-                        <p className="text-xs font-medium text-green-600">En línea</p>
-                      ) : (
-                        (() => {
-                          const meta = contactMeta.get(friend.id);
-                          if (!meta?.label) return null;
-                          return <p className="text-xs text-muted-foreground">{meta.label}</p>;
-                        })()
-                      )}
                     </div>
 
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
