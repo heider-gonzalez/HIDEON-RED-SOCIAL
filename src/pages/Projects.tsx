@@ -323,7 +323,7 @@ export default function Projects() {
         </Helmet>
 
         {/* Header Section */}
-        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
           <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-10 py-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="text-center lg:text-left">
