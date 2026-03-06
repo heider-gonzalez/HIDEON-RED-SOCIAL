@@ -25,7 +25,7 @@ const gradientOptions = [
   {
     id: 'gradient-4',
     name: 'Purple Dream',
-    class: 'bg-gradient-to-br from-purple-400 to-violet-400'
+    class: 'bg-gradient-to-br from-blue-400 to-blue-500'
   },
   {
     id: 'gradient-5',

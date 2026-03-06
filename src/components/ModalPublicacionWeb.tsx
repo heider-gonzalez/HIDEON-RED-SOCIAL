@@ -170,11 +170,13 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [projectDescription, setProjectDescription] = useState('');
   const [projectStatus, setProjectStatus] = useState<'idea' | 'in_progress' | 'completed'>('in_progress');
   const [projectTechnologies, setProjectTechnologies] = useState<string[]>([]);
+  const [projectHashtags, setProjectHashtags] = useState<string[]>([]);
   const [projectObjectives, setProjectObjectives] = useState('');
   const [projectTeamMembers, setProjectTeamMembers] = useState<string[]>([]);
   const [projectGithubUrl, setProjectGithubUrl] = useState('');
   const [projectDemoUrl, setProjectDemoUrl] = useState('');
   const [techInput, setTechInput] = useState('');
+  const [hashtagInput, setHashtagInput] = useState('');
   const [teamMemberInput, setTeamMemberInput] = useState('');
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
@@ -1757,6 +1759,110 @@ Qué buscas ahora:
                 rows={4}
                 className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
+
+              {/* Tecnologías (opcional) */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                  Tecnologías (opcional):
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={techInput}
+                    onChange={(e) => setTechInput(e.target.value)}
+                    placeholder="Ej: React, Node.js, Python"
+                    className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && techInput.trim()) {
+                        e.preventDefault();
+                        setProjectTechnologies([...projectTechnologies, techInput.trim()]);
+                        setTechInput('');
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-8"
+                    onClick={() => {
+                      if (techInput.trim()) {
+                        setProjectTechnologies([...projectTechnologies, techInput.trim()]);
+                        setTechInput('');
+                      }
+                    }}
+                  >
+                    Agregar
+                  </Button>
+                </div>
+                {projectTechnologies.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {projectTechnologies.map((tech, index) => (
+                      <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                        {tech}
+                        <button
+                          type="button"
+                          onClick={() => setProjectTechnologies(projectTechnologies.filter((_, i) => i !== index))}
+                          className="hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Hashtags (opcional) */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                  Hashtags (opcional):
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={hashtagInput}
+                    onChange={(e) => setHashtagInput(e.target.value.replace(/^#/, ''))}
+                    placeholder="Ej: innovacion, tecnologia, startup"
+                    className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && hashtagInput.trim()) {
+                        e.preventDefault();
+                        setProjectHashtags([...projectHashtags, hashtagInput.trim()]);
+                        setHashtagInput('');
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-8"
+                    onClick={() => {
+                      if (hashtagInput.trim()) {
+                        setProjectHashtags([...projectHashtags, hashtagInput.trim()]);
+                        setHashtagInput('');
+                      }
+                    }}
+                  >
+                    Agregar
+                  </Button>
+                </div>
+                {projectHashtags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {projectHashtags.map((tag, index) => (
+                      <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={() => setProjectHashtags(projectHashtags.filter((_, i) => i !== index))}
+                          className="hover:text-green-600 dark:hover:text-green-400"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

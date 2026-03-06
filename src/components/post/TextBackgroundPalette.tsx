@@ -15,7 +15,7 @@ export const backgroundPresets = [
   { key: 'gradient-5', gradient: 'bg-gradient-to-br from-indigo-600 via-purple-600 to-purple-500 shadow-xl shadow-indigo-500/30 p-6 rounded-2xl', textColor: 'text-white', label: 'Índigo-Púrpura' },
   { key: 'gradient-6', gradient: 'bg-gradient-to-br from-pink-600 via-pink-500 to-rose-400 shadow-xl shadow-pink-500/30 p-6 rounded-2xl', textColor: 'text-white', label: 'Rosa Premium' },
   { key: 'gradient-7', gradient: 'bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600 shadow-xl shadow-slate-700/40 p-6 rounded-2xl', textColor: 'text-white', label: 'Elegante Oscuro' },
-  { key: 'gradient-8', gradient: 'bg-gradient-to-br from-violet-600 via-blue-600 to-cyan-500 shadow-xl shadow-violet-500/30 p-6 rounded-2xl', textColor: 'text-white', label: 'Galaxia' },
+  { key: 'gradient-8', gradient: 'bg-gradient-to-br from-blue-600 via-blue-600 to-cyan-500 shadow-xl shadow-blue-500/30 p-6 rounded-2xl', textColor: 'text-white', label: 'Galaxia' },
   { key: 'solid-primary', gradient: 'bg-primary shadow-lg shadow-primary/25 p-6 rounded-2xl', textColor: 'text-primary-foreground', label: 'Principal' },
 ];
 

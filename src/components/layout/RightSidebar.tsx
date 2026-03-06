@@ -204,8 +204,8 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
       <Card className="mb-6 border-border/40 shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-bold flex items-center gap-2 text-[#050505] dark:text-white [.tech_&]:text-white">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-violet-600/10 text-violet-700 dark:text-violet-300">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-[#0F172A] dark:text-white [.tech_&]:text-white">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                 <User className="h-4 w-4" />
               </span>
               Contactos

@@ -628,7 +628,7 @@ function IdeaPostView({ post }: { post: PostType }) {
                     {techToShow.map((t: string) => (
                       <Badge
                         key={t}
-                        className="text-xs rounded-full border border-transparent bg-gradient-to-r from-blue-600 to-violet-600 text-white hover:from-blue-600 hover:to-violet-600"
+                        className="text-xs rounded-full border border-transparent bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-600 hover:to-blue-700"
                       >
                         {t}
                       </Badge>

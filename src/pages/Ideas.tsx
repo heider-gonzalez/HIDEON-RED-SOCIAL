@@ -20,7 +20,7 @@ export default function Ideas() {
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 text-white flex items-center justify-center shadow-lg">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center shadow-lg">
               <Lightbulb className="h-6 w-6" />
             </div>
             <div>
@@ -29,7 +29,7 @@ export default function Ideas() {
             </div>
           </div>
           <Button
-            className="gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-600/95 hover:to-blue-600/95 text-white shadow-lg font-semibold px-6"
+            className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-600/95 hover:to-blue-700/95 text-white shadow-lg font-semibold px-6"
             onClick={() => openComposer({ initialPostType: "idea" })}
           >
             <Plus className="h-5 w-5" />
@@ -70,7 +70,7 @@ export default function Ideas() {
             onClick={() => setActiveFilter("all")}
             className={
               activeFilter === "all"
-                ? "bg-violet-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
+                ? "bg-blue-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
                 : "bg-muted text-muted-foreground hover:text-foreground font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2"
             }
           >
@@ -82,7 +82,7 @@ export default function Ideas() {
             onClick={() => setActiveFilter("dev")}
             className={
               activeFilter === "dev"
-                ? "bg-violet-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
+                ? "bg-blue-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
                 : "bg-muted text-muted-foreground hover:text-foreground font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2"
             }
           >
@@ -94,7 +94,7 @@ export default function Ideas() {
             onClick={() => setActiveFilter("design")}
             className={
               activeFilter === "design"
-                ? "bg-violet-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
+                ? "bg-blue-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
                 : "bg-muted text-muted-foreground hover:text-foreground font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2"
             }
           >
@@ -106,7 +106,7 @@ export default function Ideas() {
             onClick={() => setActiveFilter("mkt")}
             className={
               activeFilter === "mkt"
-                ? "bg-violet-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
+                ? "bg-blue-600 text-white font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2 shadow-sm"
                 : "bg-muted text-muted-foreground hover:text-foreground font-medium px-4 py-2 rounded-xl inline-flex items-center gap-2"
             }
           >

@@ -98,7 +98,7 @@ export function JoinIdeaButton({
     <>
       <Button 
         className={cn(
-          "flex items-center justify-center gap-2 w-full rounded-xl font-semibold shadow-sm transition-all hover:shadow-md hover:-translate-y-[1px] bg-gradient-to-r from-blue-700 to-violet-700 hover:from-blue-800 hover:to-violet-800 text-white",
+          "flex items-center justify-center gap-2 w-full rounded-xl font-semibold shadow-sm transition-all hover:shadow-md hover:-translate-y-[1px] bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-800 hover:to-blue-900 text-white",
           className
         )}
         variant={variant === "default" ? "default" : variant}
