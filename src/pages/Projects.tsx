@@ -336,9 +336,9 @@ export default function Projects() {
               </div>
               <Button
                 onClick={() => openComposer({ initialPostType: 'proyecto' })}
-                className="bg-white text-orange-500 hover:bg-gray-100 font-semibold px-6 py-3 rounded-full flex items-center gap-2 self-center lg:self-auto shadow-lg"
+                className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-6 py-3 rounded-full flex items-center gap-2 self-center lg:self-auto shadow-lg"
               >
-                <Rocket size={20} className="text-orange-500" />
+                <Rocket size={20} className="text-blue-600" />
                 Crear proyecto
               </Button>
             </div>
@@ -351,12 +351,12 @@ export default function Projects() {
             <div className="flex flex-col md:flex-row gap-4">
               {/* Search Bar */}
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
                 <Input
                   placeholder="Buscar proyectos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 py-3 rounded-lg border-2 focus:border-primary bg-background text-foreground"
+                  className="pl-12 h-12 rounded-full border-2 focus:border-blue-500 bg-gray-50 text-foreground"
                 />
               </div>
 

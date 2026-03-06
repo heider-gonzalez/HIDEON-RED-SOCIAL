@@ -226,64 +226,68 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
     <nav className="bg-background/95 backdrop-blur border-b border-border/30 h-16 fixed top-0 left-0 right-0 z-[70]">
       <div className="w-full flex items-center justify-between h-full px-3 lg:px-6">
 
-        <div className="flex items-center gap-3 flex-shrink-0 w-[720px]">
+        <div className="flex items-center gap-3 flex-shrink-0 w-[260px]">
           <HSocialLogo
             size="md"
             showText={true}
             onClick={() => navigate(isAuthenticated ? "/home" : "/")}
           />
-
-          <div className="flex-1 max-w-[540px]">
-            <FriendSearch />
-          </div>
         </div>
 
-        <div className="flex items-center justify-center flex-1 max-w-2xl">
-          <div className="flex items-center gap-2">
-            {desktopCenterNavItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex items-center justify-center h-12 w-32 rounded-xl transition-colors duration-200 relative group",
-                  item.isActive ? "bg-muted/60" : "hover:bg-muted/50"
-                )}
-              >
-                {(() => {
-                  const style = getCenterIconStyle(item.path);
-                  const bubbleClassName = cn(
-                    "h-10 w-10 rounded-full flex items-center justify-center transition-colors ring-1 ring-border/30",
-                    item.isActive ? style.activeBg : style.bg
-                  );
-                  const iconClassName = cn(
-                    "h-[22px] w-[22px] transition-colors",
-                    item.isActive ? style.activeFg : style.fg
-                  );
-                  return (
-                    <span className={bubbleClassName}>
-                      <span className={cn(item.path === "/explore" && !item.isActive && "explore-attention")}>
-                        <item.icon className={iconClassName} strokeWidth={item.isActive ? 1.8 : 1.4} />
-                      </span>
-                    </span>
-                  );
-                })()}
-                {item.badge && item.badge > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full p-0 flex items-center justify-center text-[10px]"
+        <div className="flex items-center flex-1 min-w-0">
+          <div className="w-full flex items-center gap-6">
+            <div className="flex-1 max-w-[520px]">
+              <FriendSearch />
+            </div>
+
+            <div className="flex items-center justify-center flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                {desktopCenterNavItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={cn(
+                      "flex items-center justify-center h-12 w-32 rounded-xl transition-colors duration-200 relative group",
+                      item.isActive ? "bg-muted/60" : "hover:bg-muted/50"
+                    )}
                   >
-                    {item.badge}
-                  </Badge>
-                )}
-                {item.isActive && (
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-primary rounded-t-full" />
-                )}
-              </Link>
-            ))}
+                    {(() => {
+                      const style = getCenterIconStyle(item.path);
+                      const bubbleClassName = cn(
+                        "h-10 w-10 rounded-full flex items-center justify-center transition-colors ring-1 ring-border/30",
+                        item.isActive ? style.activeBg : style.bg
+                      );
+                      const iconClassName = cn(
+                        "h-[22px] w-[22px] transition-colors",
+                        item.isActive ? style.activeFg : style.fg
+                      );
+                      return (
+                        <span className={bubbleClassName}>
+                          <span className={cn(item.path === "/explore" && !item.isActive && "explore-attention")}>
+                            <item.icon className={iconClassName} strokeWidth={item.isActive ? 1.8 : 1.4} />
+                          </span>
+                        </span>
+                      );
+                    })()}
+                    {item.badge && item.badge > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="absolute -top-1 -right-1 h-4 w-4 rounded-full p-0 flex items-center justify-center text-[10px]"
+                      >
+                        {item.badge}
+                      </Badge>
+                    )}
+                    {item.isActive && (
+                      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-primary rounded-t-full" />
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0 w-80 justify-end">
+        <div className="flex items-center gap-2 flex-shrink-0 w-[300px] justify-end">
           {isAuthenticated && (
             <>
               <Button
