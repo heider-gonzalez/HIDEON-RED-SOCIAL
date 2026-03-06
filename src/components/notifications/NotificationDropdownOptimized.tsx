@@ -150,7 +150,7 @@ export function NotificationDropdown({ triggerClassName, iconClassName, onOpen }
       <PopoverContent
         ref={popoverRef}
         className={cn(
-          "p-0 max-h-[80vh] overflow-hidden",
+          "p-0 max-h-[80vh] overflow-hidden flex flex-col",
           // Desktop: posicionado a la derecha
           !isMobile && "w-96 fixed right-4 top-[56px] z-50",
           // Mobile: centrado en pantalla con márgenes seguros
@@ -175,10 +175,12 @@ export function NotificationDropdown({ triggerClassName, iconClassName, onOpen }
           />
         </div>
 
-        <ScrollArea className={cn(
-          "max-h-[calc(80vh-120px)]",
-          isMobile && "max-h-[calc(100vh-200px)]"
-        )}>
+        <ScrollArea
+          className={cn(
+            "flex-1 h-[calc(80vh-120px)]",
+            isMobile && "h-[calc(100vh-200px)]"
+          )}
+        >
           {filteredNotifications.length === 0 ? (
             <div className="p-6 text-center text-muted-foreground">
               <div className="flex flex-col items-center gap-2">

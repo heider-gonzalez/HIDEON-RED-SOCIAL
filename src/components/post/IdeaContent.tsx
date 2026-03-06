@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Users, Clock, Target, MapPin, Briefcase, MessageCircle, UserPlus, Check, Loader2 } from "lucide-react";
 import type { Idea } from "@/types/post";
 import { MentionsText } from "./MentionsText";
@@ -18,11 +18,23 @@ interface IdeaContentProps {
   postOwnerId: string;
 }
 
+ function normalizePostText(input: string) {
+   return input
+     .replace(/\r\n/g, "\n")
+     .split("\n")
+     .map((line) => line.trimEnd())
+     .join("\n")
+     .replace(/\n{3,}/g, "\n\n")
+     .trim();
+ }
+
 export function IdeaContent({ idea, content, postId, postOwnerId }: IdeaContentProps) {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [shouldShowMoreDescription, setShouldShowMoreDescription] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const descriptionRef = useRef<HTMLDivElement | null>(null);
   
   const { data: participants = [] } = useIdeaParticipants(postId);
   const { data: requestStatus } = useUserRequestStatus(postId, postOwnerId);
@@ -51,12 +63,38 @@ export function IdeaContent({ idea, content, postId, postOwnerId }: IdeaContentP
     setShowRequestDialog(false);
   };
 
-  const fullDescriptionText = (idea.description || content || '').trim();
-  const shouldTruncateDescription = fullDescriptionText.length > 380;
-  const truncatedDescriptionText = shouldTruncateDescription
-    ? fullDescriptionText.substring(0, 380) + '...'
-    : fullDescriptionText;
-  const displayDescriptionText = showFullDescription ? fullDescriptionText : truncatedDescriptionText;
+  const fullDescriptionText = normalizePostText(idea.description || content || "");
+
+  useEffect(() => {
+    if (showFullDescription) {
+      setShouldShowMoreDescription(true);
+      return;
+    }
+
+    const el = descriptionRef.current;
+    if (!el) {
+      setShouldShowMoreDescription(false);
+      return;
+    }
+
+    let raf = 0;
+    const recompute = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const next = el.scrollHeight > el.clientHeight + 1;
+        setShouldShowMoreDescription(next);
+      });
+    };
+
+    recompute();
+    const ro = new ResizeObserver(recompute);
+    ro.observe(el);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [fullDescriptionText, showFullDescription]);
 
   const getPhaseColor = (phase?: string) => {
     switch (phase) {
@@ -101,18 +139,24 @@ export function IdeaContent({ idea, content, postId, postOwnerId }: IdeaContentP
         )}
 
         {/* Description */}
-        <MentionsText 
-          content={displayDescriptionText} 
-          className="text-sm text-muted-foreground whitespace-pre-wrap break-words mb-3" 
-        />
+        <div
+          ref={descriptionRef}
+          className={
+            !showFullDescription
+              ? "text-sm text-muted-foreground break-words whitespace-pre-line mb-1 overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]"
+              : "text-sm text-muted-foreground break-words whitespace-pre-line mb-1"
+          }
+        >
+          <MentionsText content={fullDescriptionText} className="" />
+        </div>
 
-        {shouldTruncateDescription && (
+        {shouldShowMoreDescription && (
           <button
             type="button"
             onClick={() => setShowFullDescription((v) => !v)}
-            className="text-xs text-muted-foreground hover:underline mb-3"
+            className="text-sm font-semibold text-foreground hover:underline mb-3"
           >
-            {showFullDescription ? 'Ver menos' : 'Ver más'}
+            {showFullDescription ? "Ver menos" : "Ver más"}
           </button>
         )}
 

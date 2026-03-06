@@ -171,14 +171,14 @@ export function FacebookLayout({
             {/* Left Sidebar */}
             <aside className="hidden lg:block h-full">
               {!hideLeftSidebar && (
-                <div className="sticky top-16 h-[calc(100svh-4rem)] overflow-y-auto">
+                <div className="sticky top-16 h-[calc(100svh-4rem)] overflow-y-auto scrollbar-hide overscroll-contain">
                   <LeftSidebar currentUserId={currentUserId} />
                 </div>
               )}
             </aside>
 
             {/* Center Content */}
-            <main className="h-full overflow-y-auto bg-muted/10">
+            <main className="h-full overflow-y-auto scrollbar-hide bg-muted/10">
               <div className="w-full min-h-full px-3 sm:px-6 py-4 lg:py-7">
                 <div className={isWideCenterPage ? "mx-auto w-full max-w-[1400px]" : "mx-auto w-full max-w-[900px]"}>
                   {currentUserId && <NotificationPermissionBanner />}
@@ -191,7 +191,7 @@ export function FacebookLayout({
             {/* Right Sidebar */}
             <aside className="hidden xl:block h-full">
               {!hideRightSidebar && (
-                <div className="sticky top-16 h-[calc(100svh-4rem)] overflow-y-auto">
+                <div className="sticky top-16 h-[calc(100svh-4rem)] overflow-y-auto custom-scrollbar overscroll-contain">
                   <RightSidebar currentUserId={currentUserId} />
                 </div>
               )}

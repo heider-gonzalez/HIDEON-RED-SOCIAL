@@ -1,5 +1,5 @@
 
-import { useState, memo } from "react";
+import { useState, memo, useEffect, useRef } from "react";
 import { ImageModal } from "./ImageModal";
 import { VideoModal } from "./VideoModal";
 // PostPoll removed for performance
@@ -18,11 +18,23 @@ interface PostContentProps {
   hideText?: boolean;
 }
 
+ function normalizePostText(input: string) {
+   return input
+     .replace(/\r\n/g, "\n")
+     .split("\n")
+     .map((line) => line.trimEnd())
+     .join("\n")
+     .replace(/\n{3,}/g, "\n\n")
+     .trim();
+ }
+
 function PostContentComponent({ post, postId, hideText = false }: PostContentProps) {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
+  const [shouldShowMore, setShouldShowMore] = useState(false);
+  const textRef = useRef<HTMLDivElement | null>(null);
 
   const { submitVote, isPending: isVoting } = usePollVoteMutation(postId);
   
@@ -100,12 +112,43 @@ function PostContentComponent({ post, postId, hideText = false }: PostContentPro
                           backgroundPreset && 
                           !hasMedia;
 
-  // Truncar texto si es muy largo
-  const contentLength = post.content?.length || 0;
-  const shouldTruncate = contentLength > 400 && !isStyledTextPost;
-  const displayContent = shouldTruncate && !showFullText 
-    ? post.content?.substring(0, 400) + '...' 
-    : post.content;
+  const normalizedContent = normalizePostText(post.content || "");
+
+  useEffect(() => {
+    if (isStyledTextPost) {
+      setShouldShowMore(false);
+      return;
+    }
+
+    if (showFullText) {
+      setShouldShowMore(true);
+      return;
+    }
+
+    const el = textRef.current;
+    if (!el) {
+      setShouldShowMore(false);
+      return;
+    }
+
+    let raf = 0;
+    const recompute = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const next = el.scrollHeight > el.clientHeight + 1;
+        setShouldShowMore(next);
+      });
+    };
+
+    recompute();
+    const ro = new ResizeObserver(recompute);
+    ro.observe(el);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [normalizedContent, showFullText, isStyledTextPost]);
 
   return (
     <div className="px-0 md:px-4 pb-0 pt-0">
@@ -125,20 +168,33 @@ function PostContentComponent({ post, postId, hideText = false }: PostContentPro
           )}
           
           <div>
-            <MentionsText 
-              content={displayContent || ''}
+            <div
+              ref={textRef}
               className={
-                isStyledTextPost 
-                  ? "relative z-10 text-lg font-semibold text-white text-center py-10 px-4 md:px-6 whitespace-pre-wrap break-words"
-                  : "text-[15px] leading-relaxed whitespace-pre-wrap break-words post-content px-4 md:px-0 text-foreground"
+                isStyledTextPost
+                  ? undefined
+                  : !showFullText
+                    ? "px-4 md:px-0 text-[15px] leading-relaxed text-foreground break-words whitespace-pre-line overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]"
+                    : "px-4 md:px-0 text-[15px] leading-relaxed text-foreground break-words whitespace-pre-line"
               }
-            />
-            {shouldTruncate && (
+            >
+              <MentionsText
+                content={normalizedContent || ""}
+                className={
+                  isStyledTextPost
+                    ? "relative z-10 text-lg font-semibold text-white text-center py-10 px-4 md:px-6 whitespace-pre-wrap break-words"
+                    : "post-content"
+                }
+              />
+            </div>
+
+            {!isStyledTextPost && shouldShowMore && (
               <button
-                onClick={() => setShowFullText(!showFullText)}
-                className="text-muted-foreground text-sm hover:underline px-4 md:px-0 mt-1"
+                type="button"
+                onClick={() => setShowFullText((v) => !v)}
+                className="px-4 md:px-0 mt-1 text-[15px] font-semibold text-foreground hover:underline"
               >
-                {showFullText ? 'Ver menos →' : 'Ver más →'}
+                {showFullText ? "Ver menos" : "Ver más"}
               </button>
             )}
           </div>

@@ -2,14 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   User, 
   UserPlus, 
-  Users,
-  MessageCircle,
   Search
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -165,16 +162,18 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
 
   if (loading) {
     return (
-      <div className="h-full bg-background/70 backdrop-blur p-4">
-        <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-muted rounded w-1/2"></div>
-          <div className="space-y-2">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-center space-x-2">
-                <div className="h-8 w-8 bg-muted rounded-full"></div>
-                <div className="h-4 bg-muted rounded flex-1"></div>
-              </div>
-            ))}
+      <div className="h-full bg-muted/40">
+        <div className="px-4 py-4">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-muted rounded w-1/2"></div>
+            <div className="space-y-2">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-2">
+                  <div className="h-8 w-8 bg-muted rounded-full"></div>
+                  <div className="h-4 bg-muted rounded flex-1"></div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -182,178 +181,179 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
   }
 
   return (
-    <div className="h-full bg-background/70 backdrop-blur p-4 overflow-y-auto custom-scrollbar">
-      {/* Engagement Tracker */}
-      <div className="mb-6">
-        {/* Engagement sidebar removed for performance */}
-      </div>
-
-      <div className="mb-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={contactsQuery}
-            onChange={(e) => setContactsQuery(e.target.value)}
-            placeholder="Buscar contactos..."
-            className="pl-10 pr-4 rounded-full h-10 bg-muted/40 border-border/60"
-          />
+    <div className="h-full bg-muted/40">
+      <div className="px-4 py-4">
+        {/* Engagement Tracker */}
+        <div className="mb-6">
+          {/* Engagement sidebar removed for performance */}
         </div>
-      </div>
 
-      {/* Online Friends */}
-      <Card className="mb-6 border-border/40 shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-[#0F172A] dark:text-white [.tech_&]:text-white">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                <User className="h-4 w-4" />
-              </span>
-              Contactos
-            </CardTitle>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-violet-600/10 text-violet-700 dark:text-violet-300 font-semibold">
-              {onlineCount} en línea
-            </span>
+        <div className="mb-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={contactsQuery}
+              onChange={(e) => setContactsQuery(e.target.value)}
+              placeholder="Buscar contactos..."
+              className="pl-10 pr-4 rounded-full h-10 bg-muted/60 border-border/40"
+            />
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="space-y-2">
-          {filteredContacts.length > 0 ? (
-            filteredContacts.map((friend) => {
-              const isFriendOnline = Boolean(contactMeta.get(friend.id)?.showOnline && isOnline(friend.id));
-              return (
-                <div
-                  key={friend.id}
-                  className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-muted/40 transition-colors group"
-                >
-                  <div className="relative">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={friend.avatar_url || undefined} />
-                      <AvatarFallback>
-                        {friend.username?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
-                      </AvatarFallback>
-                    </Avatar>
-                    {isFriendOnline && (
-                      <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-green-500 rounded-full border-2 border-card" />
-                    )}
-                  </div>
+        {/* Online Friends */}
+        <div className="mb-6">
+          <div className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                  <User className="h-4 w-4" />
+                </span>
+                Contactos
+              </div>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-violet-600/10 text-violet-700 dark:text-violet-300 font-semibold">
+                {onlineCount} en línea
+              </span>
+            </div>
+          </div>
 
+          <div className="space-y-1">
+            {filteredContacts.length > 0 ? (
+              filteredContacts.map((friend) => {
+                const isFriendOnline = Boolean(contactMeta.get(friend.id)?.showOnline && isOnline(friend.id));
+                return (
                   <div
-                    className="flex-1 min-w-0 cursor-pointer"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openChat(friend.id, friend.username, friend.avatar_url)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        openChat(friend.id, friend.username, friend.avatar_url);
-                      }
-                    }}
+                    key={friend.id}
+                    className="flex items-center gap-2 px-2 py-2 rounded-2xl hover:bg-muted/60 transition-colors group"
                   >
-                    <p className="text-sm font-bold truncate text-[#050505] dark:text-white [.tech_&]:text-white">
-                      {friend.username}
-                    </p>
-                    {isFriendOnline ? (
-                      <p className="text-xs font-semibold text-green-600">En línea</p>
-                    ) : (
-                      (() => {
-                        const meta = contactMeta.get(friend.id);
-                        if (!meta?.label) return null;
-                        return <p className="text-xs text-muted-foreground">{meta.label}</p>;
-                      })()
-                    )}
-                  </div>
+                    <div className="relative">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={friend.avatar_url || undefined} />
+                        <AvatarFallback>
+                          {friend.username?.[0]?.toUpperCase() || <User className="h-3 w-3" />}
+                        </AvatarFallback>
+                      </Avatar>
+                      {isFriendOnline && (
+                        <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-muted/40" />
+                      )}
+                    </div>
 
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Link
-                      to={`/profile/${friend.id}`}
-                      className="p-1.5 rounded-full hover:bg-muted/70 transition-colors"
-                      title="Ver perfil"
+                    <div
+                      className="flex-1 min-w-0 cursor-pointer"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openChat(friend.id, friend.username, friend.avatar_url)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openChat(friend.id, friend.username, friend.avatar_url);
+                        }
+                      }}
                     >
-                      <User className="h-4 w-4 text-muted-foreground" />
-                    </Link>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-6">
-              No tienes contactos activos
-            </p>
-          )}
-        </CardContent>
-      </Card>
+                      <p className="text-sm font-medium truncate text-foreground">
+                        {friend.username}
+                      </p>
+                      {isFriendOnline ? (
+                        <p className="text-xs font-medium text-green-600">En línea</p>
+                      ) : (
+                        (() => {
+                          const meta = contactMeta.get(friend.id);
+                          if (!meta?.label) return null;
+                          return <p className="text-xs text-muted-foreground">{meta.label}</p>;
+                        })()
+                      )}
+                    </div>
 
-      {/* Friend Suggestions */}
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-bold flex items-center gap-2 text-[#050505] dark:text-white [.tech_&]:text-white">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Link
+                        to={`/profile/${friend.id}`}
+                        className="p-1.5 rounded-full hover:bg-muted/70 transition-colors"
+                        title="Ver perfil"
+                      >
+                        <User className="h-4 w-4 text-muted-foreground" />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                No tienes contactos activos
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Friend Suggestions */}
+        <div className="mb-6">
+          <div className="pb-2 text-sm font-medium flex items-center gap-2 text-foreground">
             <UserPlus className="h-4 w-4" />
             Personas que podrías conocer
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {visibleSuggestions.length > 0 ? (
-            visibleSuggestions.map((suggestion) => (
-              <div key={suggestion.id} className="space-y-2">
-                <Link
-                  to={`/profile/${suggestion.id}`}
-                  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={suggestion.avatar_url || undefined} />
-                    <AvatarFallback>
-                      {suggestion.username?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate text-[#050505] dark:text-white [.tech_&]:text-white">{suggestion.username}</p>
-                    {suggestion.mutual_friends && suggestion.mutual_friends > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        {suggestion.mutual_friends} seguidores en común
-                      </p>
-                    )}
-                  </div>
-                </Link>
-                <div className="flex gap-2 px-2">
-                  <Button
-                    size="sm"
-                    className="flex-1 h-7 text-xs"
-                    disabled={isFollowLoading(suggestion.id)}
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const result = await followUser(suggestion.id);
-                      if (result.success) {
-                        updateFollowingStatus(suggestion.id, true);
-                        setFriendSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
-                      }
-                    }}
-                  >
-                    Seguir
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="flex-1 h-7 text-xs"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setFriendSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
-                    }}
-                  >
-                    Eliminar
-                  </Button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No hay sugerencias disponibles
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          </div>
 
+          <div className="space-y-3">
+            {visibleSuggestions.length > 0 ? (
+              visibleSuggestions.map((suggestion) => (
+                <div key={suggestion.id} className="space-y-2">
+                  <Link
+                    to={`/profile/${suggestion.id}`}
+                    className="flex items-center space-x-3 px-2 py-2 rounded-2xl hover:bg-muted/60 transition-colors"
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={suggestion.avatar_url || undefined} />
+                      <AvatarFallback>
+                        {suggestion.username?.[0]?.toUpperCase() || <User className="h-3 w-3" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate text-foreground">{suggestion.username}</p>
+                      {suggestion.mutual_friends && suggestion.mutual_friends > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {suggestion.mutual_friends} seguidores en común
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+
+                  <div className="flex gap-2 px-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 h-7 text-xs"
+                      disabled={isFollowLoading(suggestion.id)}
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const result = await followUser(suggestion.id);
+                        if (result.success) {
+                          updateFollowingStatus(suggestion.id, true);
+                          setFriendSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
+                        }
+                      }}
+                    >
+                      Seguir
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1 h-7 text-xs"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setFriendSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
+                      }}
+                    >
+                      Eliminar
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No hay sugerencias disponibles
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MediaRenderer } from "@/components/media/MediaRenderer";
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -43,6 +43,11 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const navigate = useNavigate();
   const statusConfig = PROJECT_STATUS_CONFIG[project.status || 'idea'];
   const videoRef = useRef<HTMLVideoElement>(null);
+  const instanceIdRef = useRef<string>(
+    typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function"
+      ? (crypto as any).randomUUID()
+      : `pc_${Math.random().toString(16).slice(2)}_${Date.now()}`
+  );
   const fullscreenVideo = useFullscreenVideo();
   const [isVideoHovered, setIsVideoHovered] = useState(false);
   const [isVideoInView, setIsVideoInView] = useState(false);
@@ -741,14 +746,14 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
     {/* Image Gallery Dialog */}
     <Dialog open={showImageGallery} onOpenChange={setShowImageGallery}>
       <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+        <DialogHeader>
+          <DialogTitle className="sr-only">Galería de imágenes del proyecto</DialogTitle>
+        </DialogHeader>
         <div className="relative">
           {/* Close button */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowImageGallery(false);
-            }}
-            className="absolute top-4 right-4 z-50 bg-black/50 backdrop-blur-sm rounded-full p-2 text-white hover:bg-black/70 transition-colors"
+            onClick={() => setShowImageGallery(false)}
+            className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
           >
             <X size={20} />
           </button>

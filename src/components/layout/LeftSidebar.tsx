@@ -5,12 +5,9 @@ import {
   Briefcase,
   Home,
   Lightbulb,
-  MessageCircle,
-  Bell,
   Plus,
   PlaySquare,
   TrendingUp,
-  User,
   Users,
   Settings,
   HelpCircle,
@@ -38,7 +35,6 @@ type SidebarItem = {
 
 export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   useNavigation();
-  const [userProfile, setUserProfile] = useState<any>(null);
   const [myGroups, setMyGroups] = useState<any[]>([]);
   const [recommendedGroups, setRecommendedGroups] = useState<any[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
@@ -54,29 +50,13 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   const quickActions: SidebarItem[] = [
     { icon: PlaySquare, label: "Reels", path: "/reels", badge: "Nuevo" },
     { icon: TrendingUp, label: "Tendencias", path: "/explore" },
-    { icon: Bell, label: "Notificaciones", path: "/notifications", dot: true },
-    { icon: MessageCircle, label: "Mensajes", path: "/messages", badge: "3" },
+    { icon: Users, label: "Personas", path: "/discover" },
   ];
 
   const bottomItems: SidebarItem[] = [
     { icon: Settings, label: "Configuración", path: "/settings" },
     { icon: HelpCircle, label: "Ayuda", path: "/help" },
   ];
-
-  useEffect(() => {
-    if (!currentUserId) return;
-
-    const loadProfile = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('username, avatar_url')
-        .eq('id', currentUserId)
-        .single();
-      setUserProfile(data);
-    };
-
-    loadProfile();
-  }, [currentUserId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,26 +100,11 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   }, [currentUserId]);
 
   return (
-    <aside className="h-full bg-background/70 backdrop-blur overflow-y-auto custom-scrollbar">
+    <aside className="h-full bg-background/70 backdrop-blur">
       <div className="px-3 pt-4 pb-2">
         <Link to="/home" className="flex items-center gap-3 px-2 pb-4">
         </Link>
         <Separator className="opacity-0" />
-        {currentUserId && userProfile && (
-          <Link
-            to={`/profile/${currentUserId}`}
-            className="flex flex-col items-center justify-center text-center px-2 py-3 rounded-2xl hover:bg-muted/30 transition-colors duration-200"
-          >
-            <Avatar className="h-12 w-12 mb-2">
-              <AvatarImage src={userProfile?.avatar_url || undefined} />
-              <AvatarFallback>
-                {userProfile?.username?.[0]?.toUpperCase() || <User className="h-5 w-5" />}
-              </AvatarFallback>
-            </Avatar>
-            <p className="text-sm font-bold text-foreground">{userProfile?.username || "Mi perfil"}</p>
-            <p className="text-xs text-muted-foreground">Ver perfil</p>
-          </Link>
-        )}
       </div>
 
       <nav className="flex-1 px-3">

@@ -17,6 +17,19 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const isPermissionError = (err: any) => {
+    const status = Number(err?.status ?? err?.statusCode ?? err?.code);
+    const code = String(err?.code ?? "");
+    const message = String(err?.message ?? "").toLowerCase();
+    return (
+      status === 401 ||
+      status === 403 ||
+      code === "42501" ||
+      message.includes("permission") ||
+      message.includes("not allowed")
+    );
+  };
+
   const joinIdeaFn = async (profession: string, callbacks?: JoinIdeaCallbacks): Promise<JoinIdeaResult> => {
     try {
       setIsJoining(true);
@@ -63,15 +76,20 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
         });
       
       if (participationError) {
-        console.error("Error al registrar participación:", participationError);
-        toast({
-          title: "Error",
-          description: "No se pudo guardar tu participación",
-          variant: "destructive"
-        });
-        setIsJoining(false);
-        if (callbacks?.onError) callbacks.onError(new Error(participationError.message));
-        return { success: false, message: participationError.message };
+        // If RLS/policies block the backup table, continue with the JSON update (best-effort)
+        // so the user experience still works while DB policies are corrected.
+        if (!isPermissionError(participationError)) {
+          console.error("Error al registrar participación:", participationError);
+          toast({
+            title: "Error",
+            description: "No se pudo guardar tu participación",
+            variant: "destructive"
+          });
+          setIsJoining(false);
+          if (callbacks?.onError) callbacks.onError(new Error(participationError.message));
+          return { success: false, message: participationError.message };
+        }
+        console.warn("⚠️ idea_participants blocked by policy; continuing with JSON update:", participationError);
       }
       
       // Update post with participant info
@@ -85,7 +103,9 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
       
       toast({
         title: "¡Te has unido!",
-        description: "Ahora eres parte de esta idea colaborativa",
+        description: participationError
+          ? "Ahora eres parte de esta idea. (Algunas funciones pueden requerir ajustes de permisos)"
+          : "Ahora eres parte de esta idea colaborativa",
       });
       
       setIsJoining(false);
