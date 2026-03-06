@@ -106,12 +106,12 @@ export function IdeaGrid({
                 </div>
               </div>
 
-              <div className="pt-1 grid grid-cols-2 gap-2">
+              <div className="pt-1 flex flex-col gap-2">
                 <Button
                   type="button"
                   variant="default"
                   size="sm"
-                  className="h-9 text-xs rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white"
+                  className="h-9 text-xs rounded-xl bg-orange-500 hover:bg-orange-600 text-white"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedPost(idea as PostType);
@@ -131,7 +131,7 @@ export function IdeaGrid({
                       postId={idea.id}
                       size="sm"
                       variant="outline"
-                      className="h-9 w-full text-xs rounded-xl border-[#F97316] text-[#F97316] hover:bg-[#F97316]/10"
+                      className="h-9 w-full text-xs rounded-xl border-orange-500 text-orange-500 hover:bg-orange-500/10"
                     />
                   ) : (
                     <Button
