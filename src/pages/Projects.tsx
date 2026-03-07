@@ -131,6 +131,12 @@ export default function Projects() {
         .from('comments')
         .select('post_id')
         .in('post_id', postIds);
+
+      // Get project views (one row per viewer thanks to upsert/onConflict)
+      const { data: viewsData } = await supabase
+        .from('project_views')
+        .select('post_id')
+        .in('post_id', postIds);
       
       // Group reactions by post_id
       const reactionsByPost = reactionsData?.reduce((acc: any, reaction: any) => {
@@ -146,12 +152,19 @@ export default function Projects() {
         acc[comment.post_id] = (acc[comment.post_id] || 0) + 1;
         return acc;
       }, {}) || {};
+
+      // Count views by post_id
+      const viewsCountByPost = viewsData?.reduce((acc: any, view: any) => {
+        acc[view.post_id] = (acc[view.post_id] || 0) + 1;
+        return acc;
+      }, {}) || {};
       
       // Attach reactions and comments count to posts
       const postsWithReactions = posts.map((post: any) => ({
         ...post,
         reactions: reactionsByPost[post.id] || [],
-        comments_count: commentsCountByPost[post.id] || 0
+        comments_count: commentsCountByPost[post.id] || 0,
+        views_count: viewsCountByPost[post.id] || 0
       }));
       
       return postsWithReactions as any[];
@@ -290,7 +303,7 @@ export default function Projects() {
         additional_links: [],
         likes_count: reactionCount,
         comments_count: post.comments_count || 0,
-        views_count: 0,
+        views_count: post.views_count || 0,
         image_url: post.media_urls && post.media_urls.length > 0 ? post.media_urls[0] : undefined,
         media_urls: post.media_urls || [],
         video_url: videoUrl, // Agregar video_url

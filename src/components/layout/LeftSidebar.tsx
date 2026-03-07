@@ -50,7 +50,7 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   const quickActions: SidebarItem[] = [
     { icon: PlaySquare, label: "Reels", path: "/reels", badge: "Nuevo" },
     { icon: TrendingUp, label: "Tendencias", path: "/explore" },
-    { icon: Users, label: "Personas", path: "/discover" },
+    { icon: Users, label: "Personas", path: "/leaderboard" },
   ];
 
   const bottomItems: SidebarItem[] = [

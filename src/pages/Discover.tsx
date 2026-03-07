@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMatchRecommendations } from "@/hooks/use-match-recommendations";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,8 +7,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Heart, X, Star, MapPin, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigate } from "react-router-dom";
 
 const Discover = () => {
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const {
@@ -18,6 +22,11 @@ const Discover = () => {
     handleSuperLike,
     loading
   } = useMatchRecommendations(user?.id);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    navigate("/leaderboard", { replace: true });
+  }, [isMobile, navigate]);
 
   const handleAction = async (action: 'like' | 'pass' | 'super_like') => {
     if (!currentProfile) return;
