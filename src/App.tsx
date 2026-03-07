@@ -1,8 +1,8 @@
 
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/providers/AuthProvider";
@@ -13,6 +13,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { initializePortalContainer } from "@/utils/portal-container";
 import { RealtimeNotificationHandler } from "@/components/notifications/RealtimeNotificationHandler";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { useServiceWorker } from "@/hooks/use-service-worker";
 import { useNotificationQueue } from "@/hooks/use-notification-queue";
 import { useNotificationCleanup } from "@/hooks/use-notification-cleanup";
@@ -21,6 +22,9 @@ import { FullscreenVideoProvider } from "@/components/video/FullscreenVideoConte
 import { FullscreenVideoRoot } from "@/components/video/FullscreenVideoRoot";
 import { PerformanceOptimizer } from "@/components/performance/PerformanceOptimizer";
 import { PostComposerProvider } from "@/providers/PostComposerProvider";
+import { FacebookLayout } from "@/components/layout/FacebookLayout";
+import { ProfileCompletionModal } from "@/components/onboarding/ProfileCompletionModal";
+import { useToast } from "@/hooks/use-toast";
 
 // Critical pages loaded immediately
 import Index from "./pages/Index";
@@ -181,6 +185,99 @@ function ServiceWorkerRegistration() {
   return null;
 }
 
+function ProfileCompletionEnforcer() {
+  const { user, loading, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const [open, setOpen] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!isAuthenticated || !user?.id) {
+      setOpen(false);
+      return;
+    }
+    if (location.pathname === "/auth") {
+      setOpen(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const run = async () => {
+      setChecking(true);
+      try {
+        const { data, error } = await (supabase as any)
+          .from("profiles")
+          .select("institution_name, career")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (cancelled) return;
+        if (error) return;
+
+        const institutionName = String((data as any)?.institution_name || "").trim();
+        const career = String((data as any)?.career || "").trim();
+        setOpen(!institutionName || !career);
+      } finally {
+        if (!cancelled) setChecking(false);
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, loading, location.pathname, user?.id]);
+
+  if (!open) return null;
+
+  return (
+    <ProfileCompletionModal
+      open={open && !checking}
+      onComplete={async ({ institutionName, career }) => {
+        if (!user?.id) return;
+        if (saving) return;
+        setSaving(true);
+        try {
+          const { error } = await (supabase as any)
+            .from("profiles")
+            .update({
+              institution_name: institutionName,
+              career,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", user.id);
+
+          if (error) {
+            toast({
+              variant: "destructive",
+              title: "No se pudo guardar tu información",
+              description: error.message,
+            });
+            return;
+          }
+
+          setOpen(false);
+        } finally {
+          setSaving(false);
+        }
+      }}
+    />
+  );
+}
+
+function AppShell() {
+  return (
+    <FacebookLayout>
+      <Outlet />
+    </FacebookLayout>
+  );
+}
+
 const App = () => {
   // Initialize portal container on app start
   useEffect(() => {
@@ -205,20 +302,22 @@ const App = () => {
                       <RealtimeNotificationsRoot />
                       <ServiceWorkerRegistration />
                       <FullscreenVideoRoot />
+                      <ProfileCompletionEnforcer />
                       <Routes>
                     {/* Critical pages - no lazy loading */}
                     <Route path="/auth" element={<Auth />} />
-                    
-                    <Route path="/" element={<Index />} />
 
-                    <Route
-                      path="/home"
-                      element={
-                        <AuthGuard>
-                          <Index />
-                        </AuthGuard>
-                      }
-                    />
+                    <Route element={<AppShell />}>
+                      <Route path="/" element={<Index />} />
+
+                      <Route
+                        path="/home"
+                        element={
+                          <AuthGuard>
+                            <Index />
+                          </AuthGuard>
+                        }
+                      />
                     
                     {/* Core features - lazy loaded */}
                     <Route path="/password-reset" element={
@@ -311,6 +410,11 @@ const App = () => {
                         </Suspense>
                       </AuthGuard>
                     } />
+
+                    <Route
+                      path="/discover"
+                      element={<Navigate to="/leaderboard" replace />}
+                    />
 
 
                     <Route
@@ -499,6 +603,7 @@ const App = () => {
                         <NotFound />
                       </Suspense>
                     } />
+                    </Route>
                   </Routes>
                 </FullscreenVideoProvider>
                 </PostComposerProvider>

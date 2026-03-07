@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getInstitutionByDomain, institutionsBarranquilla } from "@/data/institutions-barranquilla";
 
 export function useRegister(setLoading: (loading: boolean) => void, sendVerificationEmail: (email: string, username: string) => Promise<any>) {
   const [email, setEmail] = useState("");
@@ -22,6 +23,15 @@ export function useRegister(setLoading: (loading: boolean) => void, sendVerifica
     setLoading(true);
 
     try {
+      if (!institutionName.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Universidad requerida",
+          description: "Por favor selecciona o escribe tu institución educativa para continuar.",
+        });
+        return;
+      }
+
       if (!career.trim()) {
         toast({
           variant: "destructive",
@@ -31,9 +41,16 @@ export function useRegister(setLoading: (loading: boolean) => void, sendVerifica
         return;
       }
 
+      const trimmedEmail = email.trim().toLowerCase();
+      const institutionByDomain = getInstitutionByDomain(trimmedEmail);
+      const autoVerifyEdu =
+        Boolean(institutionByDomain) ||
+        trimmedEmail.endsWith(".edu") ||
+        trimmedEmail.includes(".edu.");
+
       // Registro simplificado - solo campos básicos
       const { error, data } = await supabase.auth.signUp({
-        email,
+        email: trimmedEmail,
         password,
         options: {
           data: {
@@ -44,7 +61,7 @@ export function useRegister(setLoading: (loading: boolean) => void, sendVerifica
             career: career.trim(),
             semester: semester || null,
             gender: gender || null,
-            institution_name: institutionName || null,
+            institution_name: institutionName.trim(),
             academic_role: academicRole || null,
           },
           emailRedirectTo: undefined, // Remove redirect to avoid 500 error
@@ -65,7 +82,7 @@ export function useRegister(setLoading: (loading: boolean) => void, sendVerifica
             career: career.trim(),
             semester: semester || null,
             gender: gender || null,
-            institution_name: institutionName || null,
+            institution_name: institutionName.trim(),
             academic_role: academicRole || null,
           });
         
@@ -74,6 +91,42 @@ export function useRegister(setLoading: (loading: boolean) => void, sendVerifica
           const status = (profileError as any)?.status as number | undefined;
           if (code !== '23505' && status !== 409) {
             console.error("Error updating profile:", profileError);
+          }
+        }
+
+        if (autoVerifyEdu) {
+          try {
+            const normalizeText = (value: string) =>
+              value
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .trim()
+                .replace(/\s+/g, " ");
+
+            const instNorm = normalizeText(institutionName);
+            const matchedInstitution =
+              institutionByDomain ||
+              institutionsBarranquilla.find((i) =>
+                normalizeText(i.name).includes(instNorm)
+              );
+
+            const verificationInstitutionId =
+              matchedInstitution?.id && matchedInstitution.id !== "otros"
+                ? matchedInstitution.id
+                : "otra";
+
+            await (supabase as any)
+              .from('university_verifications')
+              .insert({
+                user_id: data.user.id,
+                institution_id: verificationInstitutionId,
+                institutional_email: trimmedEmail,
+                is_verified: true,
+                verified_at: new Date().toISOString(),
+              });
+          } catch {
+            // Best-effort: table/columns might not exist in all environments
           }
         }
       }

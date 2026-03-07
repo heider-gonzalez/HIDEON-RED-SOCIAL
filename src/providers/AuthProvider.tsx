@@ -84,6 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       birth_date: u.user_metadata?.birth_date || null,
       account_type: u.user_metadata?.account_type || 'person',
       person_status: u.user_metadata?.person_status || null,
+      institution_name: u.user_metadata?.institution_name || null,
+      academic_role: u.user_metadata?.academic_role || null,
       updated_at: new Date().toISOString(),
     };
   };
@@ -269,7 +271,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: existing, error: existingError } = await withRetry(async () => {
         return await (supabase as any)
           .from('profiles')
-          .select('id, username, name_manually_edited, career, semester, birth_date, account_type, person_status')
+          .select('id, username, name_manually_edited, career, semester, birth_date, account_type, person_status, institution_name, academic_role')
           .eq('id', user.id)
           .maybeSingle();
       });
@@ -280,6 +282,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // 🚀 OPTIMIZATION: If profile exists, cache and return early
       if (existingRow) {
+        try {
+          const needsInstitutionBackfill =
+            !existingRow.institution_name &&
+            Boolean(computed.institution_name);
+          const needsAcademicRoleBackfill =
+            !existingRow.academic_role &&
+            Boolean(computed.academic_role);
+
+          if (needsInstitutionBackfill || needsAcademicRoleBackfill) {
+            const now = new Date().toISOString();
+            await withRetry(async () => {
+              return await (supabase as any)
+                .from('profiles')
+                .update({
+                  institution_name: needsInstitutionBackfill ? computed.institution_name : undefined,
+                  academic_role: needsAcademicRoleBackfill ? computed.academic_role : undefined,
+                  updated_at: now,
+                })
+                .eq('id', user.id);
+            });
+          }
+        } catch {
+          // Best-effort
+        }
         profileCacheRef.current.set(user.id, true);
         if (debug) console.log('🚀 Auth Cache: Profile exists, cached for user:', user.id);
         return;
