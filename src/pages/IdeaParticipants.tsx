@@ -1,7 +1,5 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -235,8 +233,7 @@ export default function IdeaParticipants() {
   };
 
   return (
-    <FacebookLayout>
-      <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="max-w-2xl mx-auto px-4 py-6">
         <Button 
           variant="ghost" 
           className="mb-4 pl-0" 
@@ -299,7 +296,6 @@ export default function IdeaParticipants() {
             )}
           </CardContent>
         </Card>
-      </div>
-    </FacebookLayout>
+    </div>
   );
 }

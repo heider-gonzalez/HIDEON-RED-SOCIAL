@@ -1,7 +1,5 @@
-
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { ComingSoon } from "@/components/common/ComingSoon";
 
 const NotFound = () => {
@@ -15,12 +13,10 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <FacebookLayout>
-      <ComingSoon 
-        title="Sección no disponible" 
-        description="La página que buscas no existe o aún no está disponible."
-      />
-    </FacebookLayout>
+    <ComingSoon 
+      title="Sección no disponible" 
+      description="La página que buscas no existe o aún no está disponible."
+    />
   );
 };
 

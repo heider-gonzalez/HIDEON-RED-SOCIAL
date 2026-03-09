@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -295,9 +294,8 @@ export default function IdeaChat() {
   };
 
   return (
-    <FacebookLayout>
-      <div className="w-full bg-background min-h-screen">
-        <div className="max-w-4xl mx-auto p-4">
+    <div className="w-full bg-background min-h-screen">
+      <div className="max-w-4xl mx-auto p-4">
           <div className="flex items-center justify-between mb-4">
             <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
               <ChevronLeft className="h-4 w-4" />
@@ -411,8 +409,7 @@ export default function IdeaChat() {
               </>
             )}
           </div>
-        </div>
       </div>
-    </FacebookLayout>
+    </div>
   );
 }

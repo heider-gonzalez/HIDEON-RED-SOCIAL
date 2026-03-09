@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { Post } from "@/components/Post";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { transformPostData } from "@/lib/api/posts/retrieve/utils/transform-data";
@@ -91,35 +90,29 @@ export default function PostDetail() {
 
   if (isLoading) {
     return (
-      <FacebookLayout>
-        <div className="w-full bg-background min-h-screen">
-          <div className="max-w-[680px] mx-auto px-2 lg:px-0 py-6">
-            <LoadingSpinner />
-          </div>
+      <div className="w-full bg-background min-h-screen">
+        <div className="max-w-[680px] mx-auto px-2 lg:px-0 py-6">
+          <LoadingSpinner />
         </div>
-      </FacebookLayout>
+      </div>
     );
   }
 
   if (isError || !post) {
     return (
-      <FacebookLayout>
-        <div className="w-full bg-background min-h-screen">
-          <div className="max-w-[680px] mx-auto px-2 lg:px-0 py-6 text-center text-muted-foreground">
-            Publicación no encontrada
-          </div>
+      <div className="w-full bg-background min-h-screen">
+        <div className="max-w-[680px] mx-auto px-2 lg:px-0 py-6 text-center text-muted-foreground">
+          Publicación no encontrada
         </div>
-      </FacebookLayout>
+      </div>
     );
   }
 
   return (
-    <FacebookLayout>
-      <div className="w-full bg-background min-h-screen">
-        <div className="max-w-[680px] mx-auto px-2 lg:px-0 py-4">
-          <Post post={post as any} initialShowComments={!!commentId} />
-        </div>
+    <div className="w-full bg-background min-h-screen">
+      <div className="max-w-[680px] mx-auto px-2 lg:px-0 py-4">
+        <Post post={post as any} initialShowComments={!!commentId} />
       </div>
-    </FacebookLayout>
+    </div>
   );
 }

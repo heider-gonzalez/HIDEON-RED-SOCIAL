@@ -1,5 +1,3 @@
-
-import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { ReactNode } from "react";
 
 interface LayoutProps {
@@ -15,13 +13,9 @@ export function Layout({
   hideLeftSidebar = false, 
   hideRightSidebar = false 
 }: LayoutProps) {
-  return (
-    <FacebookLayout 
-      hideNavigation={hideNavigation}
-      hideLeftSidebar={hideLeftSidebar}
-      hideRightSidebar={hideRightSidebar}
-    >
-      {children}
-    </FacebookLayout>
-  );
+  void hideNavigation;
+  void hideLeftSidebar;
+  void hideRightSidebar;
+
+  return <>{children}</>;
 }

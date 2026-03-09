@@ -1,4 +1,3 @@
-import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Filter, Lightbulb, Plus, Search, Sparkles, Code2, PencilRuler, Megaphone } from "lucide-react";
@@ -15,8 +14,7 @@ export default function Ideas() {
   const { open: openComposer } = usePostComposer();
 
   return (
-    <FacebookLayout>
-      <div className="w-full space-y-6">
+    <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -120,8 +118,6 @@ export default function Ideas() {
 
         {/* Empty State */}
         <IdeaGrid searchQuery={searchTerm} institutionName={institutionName} />
-      </div>
-
-    </FacebookLayout>
+    </div>
   );
 }

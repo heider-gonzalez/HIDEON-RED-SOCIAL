@@ -1,7 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
-import { FacebookLayout } from '@/components/layout/FacebookLayout';
 import { ReelsInfiniteViewer } from '@/components/reels/ReelsInfiniteViewer';
 import { OptimizedReelsInfiniteViewer } from '@/components/reels/OptimizedReelsInfiniteViewer';
 import { ReelsDesktopLayout } from '@/components/reels/ReelsDesktopLayout';
@@ -22,7 +21,7 @@ export default function Reels() {
 
   if (!isLoading && !hasVideos) {
     return (
-      <FacebookLayout>
+      <>
         <Helmet>
           <title>Reels - HIDEON</title>
           <meta name="description" content="Descubre videos cortos y creativos de la comunidad universitaria" />
@@ -42,7 +41,7 @@ export default function Reels() {
             </button>
           </div>
         </div>
-      </FacebookLayout>
+      </>
     );
   }
 
@@ -69,7 +68,7 @@ export default function Reels() {
   ) : null;
 
   return (
-    <FacebookLayout>
+    <>
       <Helmet>
         <title>Reels - HIDEON</title>
         <meta name="description" content="Descubre videos cortos y creativos de la comunidad universitaria" />
@@ -81,6 +80,6 @@ export default function Reels() {
         </div>
       </div>
 
-    </FacebookLayout>
+    </>
   );
 }
