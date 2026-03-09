@@ -1,12 +1,12 @@
 // Enhanced Service Worker for HIDEON - Push Notifications & Offline Support
-const CACHE_NAME = 'hideon-v2';
-const STATIC_CACHE = 'hideon-static-v2';
-const MESSAGES_CACHE = 'hideon-messages-v2';
-const IMAGES_CACHE = 'hideon-images-v2';
+const CACHE_VERSION = 'v3';
+const CACHE_NAME = `hideon-${CACHE_VERSION}`;
+const STATIC_CACHE = `hideon-static-${CACHE_VERSION}`;
+const MESSAGES_CACHE = `hideon-messages-${CACHE_VERSION}`;
+const IMAGES_CACHE = `hideon-images-${CACHE_VERSION}`;
 
 // Resources to cache for offline
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
   '/favicon.svg',
   '/icon.svg',
@@ -35,9 +35,10 @@ self.addEventListener('activate', (event) => {
     Promise.all([
       // Clean old caches
       caches.keys().then((cacheNames) => {
+        const keep = new Set([CACHE_NAME, STATIC_CACHE, MESSAGES_CACHE, IMAGES_CACHE]);
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (!cacheName.includes('hideon-v2')) {
+            if (!keep.has(cacheName)) {
               console.log('🗑️ Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
