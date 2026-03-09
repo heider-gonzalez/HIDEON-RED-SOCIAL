@@ -269,6 +269,8 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
   const isProjectPost = post.post_type === 'project';
   const isProyectoPost = post.post_type === 'proyecto';
   const isAnyProjectPost = isProjectPost || isProyectoPost;
+  // Combinar idea y project para aplicar degradado
+  const shouldShowGradient = isIdeaPost || isAnyProjectPost;
   // Determinar si la publicación está fijada
   const isPinned = post.is_pinned;
 
@@ -321,7 +323,7 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
   }, [post.shared_post_id, post.shared_post]);
 
   return (
-    <PostWrapper isHidden={isHidden} isIdeaPost={isIdeaPost} isPinned={isPinned}>
+    <PostWrapper isHidden={isHidden} isIdeaPost={shouldShowGradient} isPinned={isPinned}>
       <PostHeader 
         post={post} 
         onDelete={shouldBlockInteractions ? undefined : (canDeletePost ? onDeletePost : undefined)}
