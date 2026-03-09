@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +29,38 @@ function slugify(input: string) {
     .replace(/^-|-$/g, "");
 }
 
+function normalizeGroupName(input: string) {
+  return input.replace(/\s+/g, " ").trim();
+}
+
+function validateGroupName(input: string) {
+  const name = normalizeGroupName(input);
+  const minLen = 3;
+  const maxLen = 50;
+
+  if (name.length < minLen) {
+    return { ok: false, message: `Mínimo ${minLen} caracteres.` };
+  }
+  if (name.length > maxLen) {
+    return { ok: false, message: `Máximo ${maxLen} caracteres.` };
+  }
+
+  const hasLetter = /\p{L}/u.test(name);
+  if (!hasLetter) {
+    return { ok: false, message: "Debe incluir al menos una letra." };
+  }
+
+  const allowed = /^[\p{L}\p{N}][\p{L}\p{N} ._-]*[\p{L}\p{N}]$/u;
+  if (!allowed.test(name)) {
+    return {
+      ok: false,
+      message: "Solo letras, números, espacios y . _ - (sin empezar/terminar con símbolo).",
+    };
+  }
+
+  return { ok: true, message: "" };
+}
+
 export default function CreateGroup() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -52,7 +83,8 @@ export default function CreateGroup() {
     return Array.from(new Set(raw)).slice(0, 12);
   }, [tagsInput]);
 
-  const canSubmit = name.trim().length >= 3 && category.trim().length >= 2;
+  const nameValidation = useMemo(() => validateGroupName(name), [name]);
+  const canSubmit = nameValidation.ok && category.trim().length >= 2;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -74,12 +106,13 @@ export default function CreateGroup() {
         return;
       }
 
-      const baseSlug = slugify(name);
+      const normalizedName = normalizeGroupName(name);
+      const baseSlug = slugify(normalizedName);
       const fallbackSlug = `group-${Date.now()}`;
       const groupSlug = baseSlug || fallbackSlug;
 
       const { data, error } = await (supabase as any).rpc("create_group_atomic", {
-        group_name: name.trim(),
+        group_name: normalizedName,
         group_description: description.trim(),
         group_slug: groupSlug,
         is_private: isPrivate,
@@ -130,15 +163,16 @@ export default function CreateGroup() {
   };
 
   return (
-    <FacebookLayout>
-      <div className="w-full px-2 sm:px-4 max-w-3xl pt-4 pb-10">
-        <Card>
-          <CardContent className="p-4 sm:p-6 space-y-5">
-            <div className="space-y-2">
-              <Label>Nombre</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del grupo" />
-              <p className="text-xs text-muted-foreground">Mínimo 3 caracteres.</p>
-            </div>
+    <div className="w-full px-2 sm:px-4 max-w-3xl pt-4 pb-10">
+      <Card>
+        <CardContent className="p-4 sm:p-6 space-y-5">
+          <div className="space-y-2">
+            <Label>Nombre</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del grupo" />
+            <p className="text-xs text-muted-foreground">
+              {name.length === 0 ? "3-50 caracteres." : nameValidation.ok ? "Nombre válido." : nameValidation.message}
+            </p>
+          </div>
 
             <div className="space-y-2">
               <Label>Descripción</Label>
@@ -204,17 +238,16 @@ export default function CreateGroup() {
               <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
             </div>
 
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => navigate(-1)} disabled={saving}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSubmit} disabled={!canSubmit || saving}>
-                {saving ? "Creando..." : "Crear"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </FacebookLayout>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => navigate(-1)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} disabled={!canSubmit || saving}>
+              {saving ? "Creando..." : "Crear"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

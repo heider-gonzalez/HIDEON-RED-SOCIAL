@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Feed } from "@/components/feed/Feed";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,6 +25,30 @@ import {
 } from "@/components/ui/alert-dialog";
 import { uploadWithOptimization } from "@/lib/storage/cloudflare-r2";
 import { ImagePlus, Lock, Trash2, Users } from "lucide-react";
+
+function normalizeGroupName(input: string) {
+  return input.replace(/\s+/g, " ").trim();
+}
+
+function validateGroupName(input: string) {
+  const name = normalizeGroupName(input);
+  const minLen = 3;
+  const maxLen = 50;
+
+  if (name.length < minLen) return { ok: false, message: `Mínimo ${minLen} caracteres.` };
+  if (name.length > maxLen) return { ok: false, message: `Máximo ${maxLen} caracteres.` };
+  if (!/\p{L}/u.test(name)) return { ok: false, message: "Debe incluir al menos una letra." };
+
+  const allowed = /^[\p{L}\p{N}][\p{L}\p{N} ._-]*[\p{L}\p{N}]$/u;
+  if (!allowed.test(name)) {
+    return {
+      ok: false,
+      message: "Solo letras, números, espacios y . _ - (sin empezar/terminar con símbolo).",
+    };
+  }
+
+  return { ok: true, message: "" };
+}
 
 export default function GroupDetail() {
   const { slugOrId } = useParams();
@@ -263,11 +286,19 @@ export default function GroupDetail() {
   const handleSaveInfo = async () => {
     if (!group?.id) return;
     if (!isManager) return;
+
+    const normalizedName = normalizeGroupName(editName);
+    const nameValidation = validateGroupName(normalizedName);
+    if (!nameValidation.ok) {
+      toast({ title: "Nombre inválido", description: nameValidation.message, variant: "destructive" });
+      return;
+    }
+
     setSavingInfo(true);
     try {
       const { data, error } = await (supabase as any).rpc("update_group_profile", {
         group_id_param: group.id,
-        name_param: editName,
+        name_param: normalizedName,
         description_param: editDescription,
         category_param: editCategory,
         tags_param: tagsFromInput(editTagsInput),
@@ -318,32 +349,27 @@ export default function GroupDetail() {
 
   if (groupLoading) {
     return (
-      <FacebookLayout>
-        <div className="w-full px-2 sm:px-4 pt-4">
-          <div className="h-40 bg-muted animate-pulse rounded-lg" />
-        </div>
-      </FacebookLayout>
+      <div className="w-full px-2 sm:px-4 pt-4">
+        <div className="h-40 bg-muted animate-pulse rounded-lg" />
+      </div>
     );
   }
 
   if (!group) {
     return (
-      <FacebookLayout>
-        <div className="w-full px-2 sm:px-4 pt-4">
-          <Card>
-            <CardContent className="p-6">
-              <p className="text-muted-foreground">Grupo no encontrado o no tienes acceso.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </FacebookLayout>
+      <div className="w-full px-2 sm:px-4 pt-4">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">Grupo no encontrado o no tienes acceso.</p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <FacebookLayout>
-      <div className="w-full px-2 sm:px-4 pt-4 pb-10">
-        <div className="space-y-6">
+    <div className="w-full px-2 sm:px-4 pt-4 pb-10">
+      <div className="space-y-6">
           <div className="relative overflow-hidden rounded-2xl border border-border">
             <div
               className="h-44 sm:h-56 bg-muted"
@@ -633,8 +659,7 @@ export default function GroupDetail() {
               </div>
             </TabsContent>
           </Tabs>
-        </div>
       </div>
-    </FacebookLayout>
+    </div>
   );
 }

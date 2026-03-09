@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { GroupGrid } from "@/components/explore/GroupGrid";
@@ -10,11 +9,11 @@ export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <FacebookLayout>
-      <div className="w-full px-2 sm:px-4 pt-4 pb-10">
-        <div className="sticky top-0 z-10 bg-background pb-3">
+    <div className="w-full px-2 sm:px-4 pt-4 pb-10">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur pb-3">
           <div className="flex items-center justify-between gap-3 pb-3">
             <div className="min-w-0">
+              <h1 className="text-lg font-semibold leading-none">Grupos</h1>
               <p className="text-sm text-muted-foreground">Explora y crea comunidades</p>
             </div>
             <Button asChild>
@@ -31,10 +30,9 @@ export default function Groups() {
               className="pl-10 h-11 rounded-lg bg-muted border-none text-foreground placeholder:text-muted-foreground"
             />
           </div>
-        </div>
-
-        <GroupGrid searchQuery={searchQuery} />
       </div>
-    </FacebookLayout>
+
+      <GroupGrid searchQuery={searchQuery} />
+    </div>
   );
 }
