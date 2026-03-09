@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search, Lightbulb, FolderOpen, Users, Plus } from "lucide-react";
@@ -21,11 +20,10 @@ export default function Explore() {
   const { open: openComposer } = usePostComposer();
 
   return (
-    <FacebookLayout>
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
         {/* Sticky header: search + filters + tabs */}
         <div className="sticky top-0 z-40 bg-background border-b border-border">
-          <div className="px-3 sm:px-4 py-3 ml-64">
+          <div className="px-3 sm:px-4 py-3">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -107,6 +105,5 @@ export default function Explore() {
           </div>
         )}
       </div>
-    </FacebookLayout>
   );
 }

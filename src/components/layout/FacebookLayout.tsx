@@ -12,6 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { forceUnlockBodyScroll } from '@/utils/scroll-lock';
 
+const FACEBOOK_LAYOUT_GUARD_KEY = "__HSOCIAL_FACEBOOK_LAYOUT_MOUNTED__";
+
 interface FacebookLayoutProps {
   children: ReactNode;
   hideLeftSidebar?: boolean;
@@ -37,6 +39,27 @@ export function FacebookLayout({
   hideRightSidebar = false,
   hideNavigation = false 
 }: FacebookLayoutProps) {
+  const shouldBypassLayout = (() => {
+    if (typeof window === "undefined") return false;
+    const w = window as any;
+    if (w[FACEBOOK_LAYOUT_GUARD_KEY] === true) return true;
+    w[FACEBOOK_LAYOUT_GUARD_KEY] = true;
+    return false;
+  })();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (shouldBypassLayout) return;
+    const w = window as any;
+    return () => {
+      w[FACEBOOK_LAYOUT_GUARD_KEY] = false;
+    };
+  }, [shouldBypassLayout]);
+
+  if (shouldBypassLayout) {
+    return <>{children}</>;
+  }
+
   const isMobile = useIsMobile();
   const location = useLocation();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
