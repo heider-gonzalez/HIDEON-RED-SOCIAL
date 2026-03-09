@@ -380,6 +380,50 @@ export default function Leaderboard() {
             Volver al top
           </button>
         )}
+        {/* Botón temporal de depuración */}
+        <button
+          type="button"
+          className="w-full h-10 rounded-lg border border-red-500 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors"
+          onClick={async () => {
+            const email = "heider.gonzalez@unireformada.edu.co";
+            try {
+              // Buscar perfil
+              const { data: profileData, error: profileError } = await supabase
+                .from("profiles")
+                .select("id, email")
+                .eq("email", email)
+                .maybeSingle();
+              
+              console.log("🔍 Perfil Alexandra:", { profileData, profileError });
+              
+              if (profileData?.id) {
+                // Verificar estado
+                const { data: verificationData, error: verificationError } = await supabase
+                  .from("university_verifications")
+                  .select("*")
+                  .eq("user_id", profileData.id)
+                  .maybeSingle();
+                
+                console.log("🔍 Verificación Alexandra:", { verificationData, verificationError });
+                
+                // Probar RPC
+                try {
+                  const { data: rpcData, error: rpcError } = await (supabase as any).rpc(
+                    "get_verified_user_ids",
+                    { user_ids: [profileData.id] }
+                  );
+                  console.log("🔍 RPC Alexandra:", { rpcData, rpcError });
+                } catch (rpcErr) {
+                  console.log("🔍 RPC Error:", rpcErr);
+                }
+              }
+            } catch (err) {
+              console.error("🔍 Error general:", err);
+            }
+          }}
+        >
+          🔍 Depurar Alexandra
+        </button>
       </div>
 
       <div className="space-y-3">
