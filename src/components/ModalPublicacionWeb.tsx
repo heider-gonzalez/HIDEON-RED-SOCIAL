@@ -63,13 +63,13 @@ const ValidationSummary = ({ validation }: { validation: ValidationResult }) => 
   if (validation.isValid) return null;
 
   return (
-    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <div className="mb-4 p-3 rounded-lg border border-blue-500/20 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-sm font-medium text-yellow-800">
-          ⚠️ Completa los campos requeridos:
+        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+          💡 Para publicar, completa:
         </span>
       </div>
-      <ul className="text-xs text-yellow-700 space-y-1">
+      <ul className="text-xs text-muted-foreground space-y-1">
         {validation.missingFields.map((field, index) => (
           <li key={index}>• {field}</li>
         ))}
