@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Brain, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { Brain, Search, Shield } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -40,12 +40,31 @@ export default function Leaderboard() {
   const navigate = useNavigate();
   const [institution, setInstitution] = useState("");
   const [careerQuery, setCareerQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [showAllPeople, setShowAllPeople] = useState(false);
+  const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const hasFilters = Boolean(institution.trim() || careerQuery.trim());
+  const hasFilters = Boolean(institution.trim() || careerQuery.trim() || showVerifiedOnly);
   const peopleMode = hasFilters || showAllPeople;
   const PEOPLE_PAGE_SIZE = 50;
+  
+  // Debounced search - only search when user stops typing for 500ms
+  const debouncedSearch = useCallback((value: string) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      setCareerQuery(value);
+    }, 500);
+  }, []);
+  
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchInput(value);
+    debouncedSearch(value);
+  };
   
   const { data: topUsers, isLoading } = useQuery<CoquitosRow[]>({
     queryKey: ["coquitos-leaderboard", 50, 30],
@@ -68,7 +87,7 @@ export default function Leaderboard() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery<PeopleRow[]>({
-    queryKey: ["people-search", institution, careerQuery],
+    queryKey: ["people-search", institution, careerQuery, showVerifiedOnly],
     enabled: peopleMode,
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
@@ -91,6 +110,18 @@ export default function Leaderboard() {
         .select("id, username, avatar_url, career, institution_name")
         .order("updated_at", { ascending: false })
         .range(from, to);
+
+      if (showVerifiedOnly) {
+        // Get verified users first
+        const { data: verifiedIds, error: verifiedError } = await (supabase as any).rpc(
+          "get_verified_user_ids",
+          { user_ids: null }
+        );
+        
+        if (verifiedError) throw verifiedError;
+        const verifiedUserIds = (verifiedIds || []).map((v: any) => v.user_id);
+        query = query.in("id", verifiedUserIds);
+      }
 
       if (inst) {
         if (instTokens.length > 0) {
@@ -156,7 +187,13 @@ export default function Leaderboard() {
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      // Clean up search timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
   }, [fetchNextPage, hasNextPage, peopleMode]);
 
   const userIds = useMemo(
@@ -294,7 +331,7 @@ export default function Leaderboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <InstitutionCombobox
           value={institution}
           onChange={setInstitution}
@@ -304,12 +341,24 @@ export default function Leaderboard() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            value={careerQuery}
-            onChange={(e) => setCareerQuery(e.target.value)}
+            value={searchInput}
+            onChange={handleSearchChange}
             placeholder="Buscar por carrera o usuario..."
             className="pl-9 h-11 rounded-lg"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
+          className={`h-11 rounded-lg border font-medium transition-colors flex items-center justify-center gap-2 ${
+            showVerifiedOnly
+              ? "bg-primary text-primary-foreground border-primary"
+              : "border-border bg-card hover:bg-muted/30"
+          }`}
+        >
+          <Shield className="h-4 w-4" />
+          {showVerifiedOnly ? "Todos" : "Verificados"}
+        </button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
