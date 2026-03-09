@@ -1,4 +1,4 @@
-import { ReactNode, useRef } from 'react';
+import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { TopNavigation } from '@/components/navigation/TopNavigation';
 import { LeftSidebar } from './LeftSidebar';
@@ -11,8 +11,6 @@ import { NotificationPermissionBanner } from '@/components/notifications/Notific
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { forceUnlockBodyScroll } from '@/utils/scroll-lock';
-
-const FACEBOOK_LAYOUT_GUARD_KEY = "__HSOCIAL_FACEBOOK_LAYOUT_MOUNTED__";
 
 interface FacebookLayoutProps {
   children: ReactNode;
@@ -45,30 +43,6 @@ export function FacebookLayout({
   const [pendingRequestsCount, setPendingRequestsCount] = useState<number>(0);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
   const [newPosts, setNewPosts] = useState<number>(0);
-
-  const ownsLayoutGuardRef = useRef(false);
-  const shouldBypassLayout = (() => {
-    if (typeof window === "undefined") return false;
-    const w = window as any;
-    if (ownsLayoutGuardRef.current) return false;
-    if (w[FACEBOOK_LAYOUT_GUARD_KEY] === true) return true;
-    w[FACEBOOK_LAYOUT_GUARD_KEY] = true;
-    ownsLayoutGuardRef.current = true;
-    return false;
-  })();
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!ownsLayoutGuardRef.current) return;
-    const w = window as any;
-    return () => {
-      w[FACEBOOK_LAYOUT_GUARD_KEY] = false;
-    };
-  }, []);
-
-  if (shouldBypassLayout) {
-    return <>{children}</>;
-  }
 
   const isWideCenterPage =
     location.pathname.startsWith("/ideas") ||
