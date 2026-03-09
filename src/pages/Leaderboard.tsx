@@ -46,7 +46,7 @@ export default function Leaderboard() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const hasFilters = Boolean(institution.trim() || careerQuery.trim() || showVerifiedOnly);
+  const hasFilters = Boolean(institution.trim() || careerQuery.trim());
   const peopleMode = hasFilters || showAllPeople;
   const PEOPLE_PAGE_SIZE = 50;
   
@@ -111,18 +111,6 @@ export default function Leaderboard() {
         .order("updated_at", { ascending: false })
         .range(from, to);
 
-      if (showVerifiedOnly) {
-        // Get verified users first
-        const { data: verifiedIds, error: verifiedError } = await (supabase as any).rpc(
-          "get_verified_user_ids",
-          { user_ids: null }
-        );
-        
-        if (verifiedError) throw verifiedError;
-        const verifiedUserIds = (verifiedIds || []).map((v: any) => v.user_id);
-        query = query.in("id", verifiedUserIds);
-      }
-
       if (inst) {
         if (instTokens.length > 0) {
           const orExpr = instTokens
@@ -141,8 +129,10 @@ export default function Leaderboard() {
       const { data, error } = await query;
       if (error) throw error;
 
+      const rows = data || [];
+
       const qNorm = normalizeText(q);
-      return (data || []).filter((row: any) => {
+      return rows.filter((row: any) => {
         const rowInstNorm = normalizeText(String(row.institution_name || ""));
         const rowCareerNorm = normalizeText(String(row.career || ""));
         const rowUsernameNorm = normalizeText(String(row.username || ""));
@@ -232,26 +222,24 @@ export default function Leaderboard() {
     enabled: userIds.length > 0,
     queryFn: async () => {
       try {
-        // Prefer RPC to bypass RLS for leaderboard views (SECURITY DEFINER function in DB)
+        // Educational = has email in auth.users matching any active university_email_domains
         try {
           const { data: rpcData, error: rpcError } = await (supabase as any).rpc(
-            "get_verified_user_ids",
+            "get_educational_user_ids",
             { user_ids: userIds }
           );
           if (rpcError) throw rpcError;
           return new Set<string>((rpcData || []).map((r: any) => String(r.user_id)));
         } catch (rpcErr: any) {
           const rpcMsg = String(rpcErr?.message || "").toLowerCase();
-          if (rpcMsg.includes("get_verified_user_ids") || rpcMsg.includes("does not exist") || rpcMsg.includes("function")) {
-            // Fallback to direct table read when RPC isn't present
-            const { data, error } = await (supabase as any)
-              .from("university_verifications")
-              .select("user_id")
-              .in("user_id", userIds)
-              .eq("is_verified", true);
-
-            if (error) throw error;
-            return new Set<string>((data || []).map((r: any) => String(r.user_id)));
+          if (rpcMsg.includes("get_educational_user_ids") || rpcMsg.includes("does not exist") || rpcMsg.includes("function")) {
+            // Backward-compatible fallback to legacy RPC (if present)
+            const { data: legacyData, error: legacyError } = await (supabase as any).rpc(
+              "get_verified_user_ids",
+              { user_ids: userIds }
+            );
+            if (legacyError) return new Set<string>();
+            return new Set<string>((legacyData || []).map((r: any) => String(r.user_id)));
           }
           throw rpcErr;
         }
@@ -260,7 +248,7 @@ export default function Leaderboard() {
         if (
           message.includes("does not exist") ||
           message.includes("relation") ||
-          message.includes("university_verifications") ||
+          message.includes("university_email_domains") ||
           message.includes("row-level security") ||
           message.includes("permission")
         ) {
@@ -300,18 +288,22 @@ export default function Leaderboard() {
   }, [careerQuery, institution, profilesById, topUsers]);
 
   const displayRows = useMemo(() => {
-    if (peopleMode) {
-      return (peopleResults || []).map((p) => {
-        return {
-          user_id: p.id,
-          username: p.username,
-          avatar_url: p.avatar_url,
-          career: p.career,
-        };
-      });
-    }
-    return filtered;
-  }, [filtered, peopleMode, peopleResults]);
+    const baseRows = peopleMode
+      ? (peopleResults || []).map((p) => {
+          return {
+            user_id: p.id,
+            username: p.username,
+            avatar_url: p.avatar_url,
+            career: p.career,
+          };
+        })
+      : filtered;
+
+    if (!showVerifiedOnly) return baseRows;
+    if (!verifiedUserIds) return [];
+
+    return (baseRows || []).filter((r: any) => verifiedUserIds.has(String(r.user_id)));
+  }, [filtered, peopleMode, peopleResults, showVerifiedOnly, verifiedUserIds]);
 
   if (isLoading || isPeopleLoading) {
     return (
@@ -380,50 +372,6 @@ export default function Leaderboard() {
             Volver al top
           </button>
         )}
-        {/* Botón temporal de depuración */}
-        <button
-          type="button"
-          className="w-full h-10 rounded-lg border border-red-500 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors"
-          onClick={async () => {
-            const email = "heider.gonzalez@unireformada.edu.co";
-            try {
-              // Buscar perfil
-              const { data: profileData, error: profileError } = await supabase
-                .from("profiles")
-                .select("id, email")
-                .eq("email", email)
-                .maybeSingle();
-              
-              console.log("🔍 Perfil Alexandra:", { profileData, profileError });
-              
-              if (profileData?.id) {
-                // Verificar estado
-                const { data: verificationData, error: verificationError } = await supabase
-                  .from("university_verifications")
-                  .select("*")
-                  .eq("user_id", profileData.id)
-                  .maybeSingle();
-                
-                console.log("🔍 Verificación Alexandra:", { verificationData, verificationError });
-                
-                // Probar RPC
-                try {
-                  const { data: rpcData, error: rpcError } = await (supabase as any).rpc(
-                    "get_verified_user_ids",
-                    { user_ids: [profileData.id] }
-                  );
-                  console.log("🔍 RPC Alexandra:", { rpcData, rpcError });
-                } catch (rpcErr) {
-                  console.log("🔍 RPC Error:", rpcErr);
-                }
-              }
-            } catch (err) {
-              console.error("🔍 Error general:", err);
-            }
-          }}
-        >
-          🔍 Depurar Alexandra
-        </button>
       </div>
 
       <div className="space-y-3">

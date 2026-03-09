@@ -75,26 +75,24 @@ export function LeaderboardGrid({ searchQuery }: { searchQuery: string }) {
     enabled: userIds.length > 0,
     queryFn: async () => {
       try {
-        // Prefer RPC to bypass RLS for leaderboard views (SECURITY DEFINER function in DB)
+        // Educational = has email in auth.users matching any active university_email_domains
         try {
           const { data: rpcData, error: rpcError } = await (supabase as any).rpc(
-            "get_verified_user_ids",
+            "get_educational_user_ids",
             { user_ids: userIds }
           );
           if (rpcError) throw rpcError;
           return new Set<string>((rpcData || []).map((r: any) => String(r.user_id)));
         } catch (rpcErr: any) {
           const rpcMsg = String(rpcErr?.message || "").toLowerCase();
-          if (rpcMsg.includes("get_verified_user_ids") || rpcMsg.includes("does not exist") || rpcMsg.includes("function")) {
-            // Fallback to direct table read when RPC isn't present
-            const { data, error } = await (supabase as any)
-              .from("university_verifications")
-              .select("user_id")
-              .in("user_id", userIds)
-              .eq("is_verified", true);
-
-            if (error) throw error;
-            return new Set<string>((data || []).map((r: any) => String(r.user_id)));
+          if (rpcMsg.includes("get_educational_user_ids") || rpcMsg.includes("does not exist") || rpcMsg.includes("function")) {
+            // Backward-compatible fallback to legacy RPC (if present)
+            const { data: legacyData, error: legacyError } = await (supabase as any).rpc(
+              "get_verified_user_ids",
+              { user_ids: userIds }
+            );
+            if (legacyError) return new Set<string>();
+            return new Set<string>((legacyData || []).map((r: any) => String(r.user_id)));
           }
           throw rpcErr;
         }
@@ -103,7 +101,7 @@ export function LeaderboardGrid({ searchQuery }: { searchQuery: string }) {
         if (
           message.includes("does not exist") ||
           message.includes("relation") ||
-          message.includes("university_verifications") ||
+          message.includes("university_email_domains") ||
           message.includes("row-level security") ||
           message.includes("permission")
         ) {
