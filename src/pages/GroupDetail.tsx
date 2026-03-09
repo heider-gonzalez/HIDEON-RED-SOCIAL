@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useMemo, useRef, useState } from "react";
+import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,6 +58,9 @@ export default function GroupDetail() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [savingInfo, setSavingInfo] = useState(false);
+
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -370,9 +373,9 @@ export default function GroupDetail() {
   return (
     <div className="w-full px-2 sm:px-4 pt-4 pb-10">
       <div className="space-y-6">
-          <div className="relative overflow-hidden rounded-2xl border border-border">
+          <div className="relative overflow-visible rounded-2xl border border-border">
             <div
-              className="h-44 sm:h-56 bg-muted"
+              className="h-44 sm:h-56 bg-muted overflow-hidden rounded-t-2xl"
               style={{
                 backgroundImage: group.cover_url ? `url(${group.cover_url})` : undefined,
                 backgroundSize: "cover",
@@ -391,19 +394,21 @@ export default function GroupDetail() {
                 <div className="absolute top-3 right-3">
                   <input
                     type="file"
-                    id="group-cover-upload"
                     className="hidden"
                     accept="image/*"
                     onChange={(e) => uploadGroupImage("cover", e)}
                     disabled={uploadingCover}
+                    ref={coverInputRef}
                   />
-                  <label htmlFor="group-cover-upload">
-                    <Button size="sm" variant="secondary" asChild disabled={uploadingCover}>
-                      <span className="cursor-pointer bg-background/80 backdrop-blur-sm hover:bg-background/90">
-                        {uploadingCover ? "Subiendo..." : "Editar portada"}
-                      </span>
-                    </Button>
-                  </label>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={uploadingCover}
+                    className="bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                    onClick={() => coverInputRef.current?.click()}
+                  >
+                    {uploadingCover ? "Subiendo..." : "Editar portada"}
+                  </Button>
                 </div>
               )}
 
@@ -417,19 +422,20 @@ export default function GroupDetail() {
                     <div className="absolute -bottom-1 -right-1">
                       <input
                         type="file"
-                        id="group-avatar-upload"
                         className="hidden"
                         accept="image/*"
                         onChange={(e) => uploadGroupImage("avatar", e)}
                         disabled={uploadingAvatar}
+                        ref={avatarInputRef}
                       />
-                      <label htmlFor="group-avatar-upload">
-                        <Button size="icon" className="h-8 w-8 rounded-full" asChild disabled={uploadingAvatar}>
-                          <span className="cursor-pointer">
-                            <ImagePlus className="h-4 w-4" />
-                          </span>
-                        </Button>
-                      </label>
+                      <Button
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        disabled={uploadingAvatar}
+                        onClick={() => avatarInputRef.current?.click()}
+                      >
+                        <ImagePlus className="h-4 w-4" />
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -461,7 +467,7 @@ export default function GroupDetail() {
               )}
             </div>
 
-            <CardContent className="pt-14 sm:pt-16 pb-4">
+            <CardContent className="pt-16 sm:pt-20 pb-4">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
