@@ -133,16 +133,18 @@ export function ImageModal({ isOpen, onClose, imageUrl, altText = "Imagen" }: Im
             if (e.target === e.currentTarget) onClose();
           }}
         >
-          <img 
-            src={imageUrl} 
-            alt={altText}
-            className="max-h-[85vh] object-contain transition-all duration-200"
-            style={{ 
-              transform: `scale(${zoom}) rotate(${rotation}deg)`,
-              cursor: "pointer"
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div className="w-[90vw] h-[85vh] flex items-center justify-center">
+            <img 
+              src={imageUrl} 
+              alt={altText}
+              className="max-h-full max-w-full w-full h-full object-contain transition-all duration-200"
+              style={{ 
+                transform: `scale(${zoom}) rotate(${rotation}deg)`,
+                cursor: "pointer"
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         </div>
       </DialogContent>
     </Dialog>
