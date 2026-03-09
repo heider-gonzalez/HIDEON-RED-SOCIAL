@@ -1473,11 +1473,11 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   value={ideaTitle}
                   onChange={(e) => setIdeaTitle(e.target.value)}
                   placeholder={selectedTemplate ? selectedTemplate.fields.title : "Título de la idea"}
-                  className={`w-full rounded-md border px-3 py-2 text-sm pr-10 ${
+                  className={`w-full rounded-md border px-3 py-2 text-sm pr-10 text-foreground placeholder:text-muted-foreground ${
                     isFieldError('ideaTitle') 
-                      ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500' 
+                      ? 'border-red-300 bg-red-50 dark:bg-red-950/30 focus:border-red-500 focus:ring-red-500' 
                       : isFieldValid('ideaTitle')
-                      ? 'border-green-300 bg-green-50 focus:border-green-500 focus:ring-green-500'
+                      ? 'border-green-300 bg-green-50 dark:bg-green-950/30 focus:border-green-500 focus:ring-green-500'
                       : 'border-gray-200 dark:border-gray-700 bg-transparent'
                   }`}
                 />
@@ -1514,11 +1514,11 @@ Idea / solución inicial:
 Qué buscas ahora:
 ¿Equipo, feedback, validación, alguien con habilidades específicas?`}
                   rows={4}
-                  className={`w-full resize-none rounded-md border px-3 py-2 text-sm pr-10 ${
+                  className={`w-full resize-none rounded-md border px-3 py-2 text-sm pr-10 text-foreground placeholder:text-muted-foreground ${
                     isFieldError('ideaDescription') 
-                      ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500' 
+                      ? 'border-red-300 bg-red-50 dark:bg-red-950/30 focus:border-red-500 focus:ring-red-500' 
                       : isFieldValid('ideaDescription')
-                      ? 'border-green-300 bg-green-50 focus:border-green-500 focus:ring-green-500'
+                      ? 'border-green-300 bg-green-50 dark:bg-green-950/30 focus:border-green-500 focus:ring-green-500'
                       : 'border-gray-200 dark:border-gray-700 bg-transparent'
                   }`}
                 />
@@ -1539,7 +1539,7 @@ Qué buscas ahora:
                 <p key={index} className="text-xs text-red-600 mt-1">{error}</p>
               ))}
               
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-muted-foreground">
                 {ideaDescription.length}/2000 caracteres
               </div>
 
@@ -1551,7 +1551,7 @@ Qué buscas ahora:
                     value={ideaTechInput}
                     onChange={(e) => setIdeaTechInput(e.target.value)}
                     placeholder="Ej: React, Node, MongoDB"
-                    className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                    className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
                     onKeyDown={(e) => {
                       if (e.key !== 'Enter') return;
                       e.preventDefault();
