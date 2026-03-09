@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { TopNavigation } from '@/components/navigation/TopNavigation';
 import { LeftSidebar } from './LeftSidebar';
@@ -39,33 +39,36 @@ export function FacebookLayout({
   hideRightSidebar = false,
   hideNavigation = false 
 }: FacebookLayoutProps) {
-  const shouldBypassLayout = (() => {
-    if (typeof window === "undefined") return false;
-    const w = window as any;
-    if (w[FACEBOOK_LAYOUT_GUARD_KEY] === true) return true;
-    w[FACEBOOK_LAYOUT_GUARD_KEY] = true;
-    return false;
-  })();
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (shouldBypassLayout) return;
-    const w = window as any;
-    return () => {
-      w[FACEBOOK_LAYOUT_GUARD_KEY] = false;
-    };
-  }, [shouldBypassLayout]);
-
-  if (shouldBypassLayout) {
-    return <>{children}</>;
-  }
-
   const isMobile = useIsMobile();
   const location = useLocation();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [pendingRequestsCount, setPendingRequestsCount] = useState<number>(0);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
   const [newPosts, setNewPosts] = useState<number>(0);
+
+  const ownsLayoutGuardRef = useRef(false);
+  const shouldBypassLayout = (() => {
+    if (typeof window === "undefined") return false;
+    const w = window as any;
+    if (ownsLayoutGuardRef.current) return false;
+    if (w[FACEBOOK_LAYOUT_GUARD_KEY] === true) return true;
+    w[FACEBOOK_LAYOUT_GUARD_KEY] = true;
+    ownsLayoutGuardRef.current = true;
+    return false;
+  })();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!ownsLayoutGuardRef.current) return;
+    const w = window as any;
+    return () => {
+      w[FACEBOOK_LAYOUT_GUARD_KEY] = false;
+    };
+  }, []);
+
+  if (shouldBypassLayout) {
+    return <>{children}</>;
+  }
 
   const isWideCenterPage =
     location.pathname.startsWith("/ideas") ||
