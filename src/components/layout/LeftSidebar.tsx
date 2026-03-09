@@ -216,9 +216,9 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
           <div className="px-4 py-2 text-sm text-muted-foreground">Cargando...</div>
         ) : myGroups.length > 0 ? (
           <div className="mb-2">
-            {myGroups.map((g) => (
+            {myGroups.filter((g) => Boolean(g?.id)).map((g, idx) => (
               <Link
-                key={String(g.id)}
+                key={String(g.id) || `my-group-${idx}`}
                 to={`/groups/${g.slug || g.id}`}
                 className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-background/50 transition-colors"
               >
@@ -241,9 +241,9 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
                   <p className="text-xs font-medium text-muted-foreground">Sugerencias</p>
                 </div>
                 <div className="mb-2">
-                  {recommendedGroups.map((g) => (
+                  {recommendedGroups.filter((g) => Boolean(g?.id)).map((g, idx) => (
                     <Link
-                      key={String(g.id)}
+                      key={String(g.id) || `rec-group-${idx}`}
                       to={`/groups/${g.slug || g.id}`}
                       className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-background/50 transition-colors"
                     >

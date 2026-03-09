@@ -5,10 +5,8 @@ export async function fetchRawPosts(userId?: string) {
   try {
     const debug = import.meta.env.DEV;
     if (debug) console.log('📊 fetchRawPosts: Starting fetch', { userId });
-    
-    let query = supabase
-      .from("posts")
-      .select(`
+
+    const selectBase = `
         *,
         profiles:profiles(id, username, avatar_url, career),
         comments:comments(count),
@@ -22,21 +20,51 @@ export async function fetchRawPosts(userId?: string) {
           comments:comments(count),
           academic_events:academic_events(id, title, description, start_date, end_date, location, is_virtual, max_attendees, event_type, registration_required, registration_deadline, organizer_contact, banner_url)
         ),
-        post_metadata,
         project_showcases(*)
-      `);
+      `;
 
-    // Exclude project_showcase posts from feed (they should only appear in Projects page)
-    query = query.neq('post_type', 'project_showcase');
+    const selectWithMetadata = `
+      ${selectBase},
+      post_metadata
+    `;
 
-    // Si hay un userId, solo obtener los posts de ese usuario
-    if (userId) {
-      query = query.eq("user_id", userId);
+    const runQuery = async (selectClause: string) => {
+      let query = supabase
+        .from("posts")
+        .select(selectClause);
+
+      // Exclude project_showcase posts from feed (they should only appear in Projects page)
+      query = query.neq('post_type', 'project_showcase');
+
+      // Si hay un userId, solo obtener los posts de ese usuario
+      if (userId) {
+        query = query.eq("user_id", userId);
+      }
+
+      return await query
+        .order("created_at", { ascending: false })
+        .limit(20); // Limit initial load to 20 posts for better performance
+    };
+
+    let { data, error } = await runQuery(selectWithMetadata);
+
+    if (error) {
+      const msg = String((error as any)?.message || "").toLowerCase();
+      const code = String((error as any)?.code || "").toLowerCase();
+      const status = Number((error as any)?.status || 0);
+      const looksLikeMissingColumn =
+        status === 400 ||
+        code.startsWith("pgrst") ||
+        msg.includes("post_metadata") ||
+        msg.includes("could not find") ||
+        msg.includes("unknown column") ||
+        msg.includes("does not exist");
+
+      if (looksLikeMissingColumn) {
+        if (debug) console.warn('⚠️ fetchRawPosts: Retrying without post_metadata (missing column)');
+        ({ data, error } = await runQuery(selectBase));
+      }
     }
-
-    const { data, error } = await query
-      .order("created_at", { ascending: false })
-      .limit(20); // Limit initial load to 20 posts for better performance
 
     if (error) {
       console.error('❌ fetchRawPosts error:', error);

@@ -21,6 +21,7 @@ let retryAttempt = 0;
 let retryTimeoutId: NodeJS.Timeout | null = null;
 let subscriptionGeneration = 0;
 const MAX_RETRY_ATTEMPTS = 5;
+let lastNotifStatus: string | null = null;
 
 // Create a simple subscription manager for notifications
 function createNotificationSubscriptionManager() {
@@ -63,7 +64,10 @@ function createNotificationSubscriptionManager() {
         }, 60000);
 
         currentChannel.subscribe((status: string) => {
-          console.log(`Notifications channel subscription status: ${status}`);
+          if (import.meta.env.DEV && lastNotifStatus !== status) {
+            lastNotifStatus = status;
+            console.log(`Notifications channel subscription status: ${status}`);
+          }
           if (status === 'SUBSCRIBED') {
             clearTimeout(timeout);
             pendingSubscription = null;

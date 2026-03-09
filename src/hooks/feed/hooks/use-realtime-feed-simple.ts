@@ -148,6 +148,12 @@ export function useRealtimeFeedSimple(userId?: string) {
           return new Promise((resolve) => {
             let resolved = false;
 
+            if (!channel || typeof channel.subscribe !== "function") {
+              resolved = true;
+              resolve('FAILED');
+              return;
+            }
+
             channel.subscribe((status: string) => {
               if (resolved) return;
 

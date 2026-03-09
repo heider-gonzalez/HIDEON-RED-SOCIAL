@@ -513,8 +513,8 @@ export default function GroupDetail() {
             </CardContent>
           </div>
 
-          <Tabs defaultValue="posts" className="mt-14 sm:mt-12">
-            <TabsList className="w-full justify-start pl-24 sm:pl-28">
+          <Tabs defaultValue="posts" className="relative z-20 mt-14 sm:mt-12">
+            <TabsList className="relative z-20 w-full justify-start pl-24 sm:pl-28 bg-background">
               <TabsTrigger value="posts">Publicaciones</TabsTrigger>
               <TabsTrigger value="members">Miembros</TabsTrigger>
               <TabsTrigger value="info">Info</TabsTrigger>
