@@ -120,6 +120,58 @@ export function useCommentMutations(postId: string) {
       
       return { success: true };
     },
+    onMutate: async (commentId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["comments", postId] });
+      const previous = queryClient.getQueryData(["comments", postId]);
+
+      const removeFromArr = (arr: any[]): { next: any[]; removed: boolean } => {
+        let removed = false;
+        const next = (arr || [])
+          .map((c) => {
+            if (!c) return c;
+
+            if (String(c?.id) === String(commentId)) {
+              removed = true;
+              return null;
+            }
+
+            if (Array.isArray(c?.replies) && c.replies.length > 0) {
+              const { next: nextReplies, removed: removedReply } = removeFromArr(c.replies);
+              if (removedReply) {
+                removed = true;
+                const currentCount = Number(c?.replies_count || c?.replies?.length || 0);
+                return {
+                  ...c,
+                  replies: nextReplies,
+                  replies_count: Math.max(0, currentCount - 1),
+                };
+              }
+            }
+
+            return c;
+          })
+          .filter(Boolean);
+
+        return { next, removed };
+      };
+
+      queryClient.setQueryData(["comments", postId], (old: any) => {
+        if (!old?.pages) return old;
+
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => {
+            const { next } = removeFromArr(page?.comments || []);
+            return {
+              ...page,
+              comments: next,
+            };
+          }),
+        };
+      });
+
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", postId] });
       toast({
@@ -127,13 +179,22 @@ export function useCommentMutations(postId: string) {
         description: "El comentario se ha eliminado correctamente",
       });
     },
-    onError: (error) => {
+    onError: (error, _vars, context) => {
       console.error("Error deleting comment:", error);
+
+      const previous = (context as any)?.previous;
+      if (previous) {
+        queryClient.setQueryData(["comments", postId], previous);
+      }
+
       toast({
         variant: "destructive",
         title: "Error",
         description: error instanceof Error ? error.message : "No se pudo eliminar el comentario",
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", postId] });
     },
   });
 

@@ -39,16 +39,20 @@ export async function deletePost(postId: string) {
 
     // Delete associated media if exists
     if (postRow && postRow.media_url) {
-      // Extract file path from URL
-      const url = new URL(postRow.media_url);
-      const pathParts = url.pathname.split('/');
-      const filePath = pathParts.slice(pathParts.indexOf('media') + 1).join('/');
-      
-      if (filePath) {
-        await supabase
-          .storage
-          .from("media")
-          .remove([filePath]);
+      try {
+        // Extract file path from URL
+        const url = new URL(postRow.media_url);
+        const pathParts = url.pathname.split('/');
+        const filePath = pathParts.slice(pathParts.indexOf('media') + 1).join('/');
+
+        if (filePath) {
+          await supabase
+            .storage
+            .from("media")
+            .remove([filePath]);
+        }
+      } catch {
+        // ignore malformed URLs or storage cleanup issues
       }
     }
 

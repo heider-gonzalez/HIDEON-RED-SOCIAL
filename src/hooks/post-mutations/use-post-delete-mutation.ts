@@ -27,9 +27,16 @@ export function usePostDeleteMutation(postId: string) {
         
       if (fetchError) throw fetchError;
       
-      // If this post doesn't belong to the current user, don't allow deletion
+      // If this post doesn't belong to the current user, allow only moderator/admin
       if (post.user_id !== currentSession.user.id) {
-        throw new Error("No tienes permiso para eliminar esta publicación");
+        const [{ data: isMod }, { data: isAdmin }] = await Promise.all([
+          (supabase.rpc as any)("has_role", { _role: "moderator", _user_id: currentSession.user.id }),
+          (supabase.rpc as any)("has_role", { _role: "admin", _user_id: currentSession.user.id }),
+        ]);
+
+        if (!Boolean(isMod) && !Boolean(isAdmin)) {
+          throw new Error("No tienes permiso para eliminar esta publicación");
+        }
       }
       
       // Now we can delete the post
@@ -43,7 +50,10 @@ export function usePostDeleteMutation(postId: string) {
       return { success: true };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["personalized-feed"] });
+      queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["project-posts"] });
       toast({
         title: "Post eliminado",
         description: "El post se ha eliminado correctamente",

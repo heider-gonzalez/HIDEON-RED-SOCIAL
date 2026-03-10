@@ -41,6 +41,10 @@ export function AuthorPostOptionsMenu({ postId, postType, onEdit, onDelete, canD
         navigate("/");
       }
 
+      queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["personalized-feed"] });
+      queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["project-posts"] });
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
     } catch (error) {
       toast({
