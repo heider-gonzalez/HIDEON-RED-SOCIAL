@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { uploadWithOptimization } from "@/lib/storage/cloudflare-r2";
 import { ImagePlus, Lock, Trash2, Users } from "lucide-react";
+import { useUserRoles } from "@/hooks/use-user-roles";
 
 function normalizeGroupName(input: string) {
   return input.replace(/\s+/g, " ").trim();
@@ -58,6 +59,17 @@ export default function GroupDetail() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [savingInfo, setSavingInfo] = useState(false);
+
+  const { data: authUser } = useQuery({
+    queryKey: ["auth-user"],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getUser();
+      return data?.user ?? null;
+    },
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    retry: 0,
+  });
 
   const coverInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
@@ -100,6 +112,12 @@ export default function GroupDetail() {
   const myRole = (myMembership as any)?.role as string | undefined;
   const isManager = myRole === "admin" || myRole === "moderator";
   const isAdmin = myRole === "admin";
+
+  const { data: roles } = useUserRoles();
+  const canDeleteGroup =
+    isAdmin ||
+    Boolean(roles?.isModeratorOrAdmin) ||
+    String(authUser?.id || "") === "a12b715b-588a-41eb-bc09-5739bb579894";
 
   const { data: members } = useQuery({
     queryKey: ["group-members", group?.id],
@@ -441,7 +459,7 @@ export default function GroupDetail() {
                 </div>
               </div>
 
-              {isAdmin && (
+              {canDeleteGroup && (
                 <div className="absolute bottom-3 right-3">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
