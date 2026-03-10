@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Image, Video, FileText, Lightbulb, FolderKanban } from "lucide-react";
@@ -16,6 +17,8 @@ export function PostCreatorSimple({ onPostCreated }: PostCreatorSimpleProps) {
   const [content, setContent] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [postType, setPostType] = useState<'regular' | 'idea' | 'project'>('regular');
+  const [demoUrl, setDemoUrl] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [backgroundKey, setBackgroundKey] = useState<string | null>(null);
   const { toast } = useToast();
@@ -57,6 +60,15 @@ export function PostCreatorSimple({ onPostCreated }: PostCreatorSimpleProps) {
         post_type: postType
       };
 
+      if ((postType === 'idea' || postType === 'project') && (demoUrl.trim() || githubUrl.trim())) {
+        postData.post_metadata = {
+          ...(postData.post_metadata || {}),
+          ...(postType === 'idea'
+            ? { idea: { demo_url: demoUrl.trim(), github_url: githubUrl.trim() } }
+            : { proyecto: { demo_url: demoUrl.trim(), github_url: githubUrl.trim() } }),
+        };
+      }
+
       if (mediaUrls.length > 0) {
         postData.media_urls = mediaUrls;
       }
@@ -84,6 +96,8 @@ export function PostCreatorSimple({ onPostCreated }: PostCreatorSimpleProps) {
       setContent("");
       setSelectedFiles([]);
       setPostType('regular');
+      setDemoUrl("");
+      setGithubUrl("");
       onPostCreated?.();
     } catch (error) {
       console.error('Error:', error);
@@ -130,6 +144,31 @@ export function PostCreatorSimple({ onPostCreated }: PostCreatorSimpleProps) {
         className="min-h-[120px] resize-none"
       />
 
+      {(postType === 'idea' || postType === 'project') && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Enlace demo (opcional)</div>
+            <Input
+              type="url"
+              placeholder="https://demo.tuapp.com"
+              value={demoUrl}
+              onChange={(e) => setDemoUrl(e.target.value)}
+              disabled={isUploading}
+            />
+          </div>
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Enlace GitHub (opcional)</div>
+            <Input
+              type="url"
+              placeholder="https://github.com/usuario/repo"
+              value={githubUrl}
+              onChange={(e) => setGithubUrl(e.target.value)}
+              disabled={isUploading}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Adjuntos */}
       <div className="space-y-2">
         {/* Background presets */}
@@ -170,7 +209,7 @@ export function PostCreatorSimple({ onPostCreated }: PostCreatorSimpleProps) {
       {/* Botón publicar */}
       <Button
         onClick={handleSubmit}
-        disabled={isUploading || (!content.trim() && !selectedFile)}
+        disabled={isUploading || (!content.trim() && selectedFiles.length === 0 && !backgroundKey)}
         className="w-full"
       >
         {isUploading ? "Publicando..." : "Publicar"}

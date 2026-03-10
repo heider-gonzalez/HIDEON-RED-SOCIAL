@@ -2,7 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { AccountProfileSettings } from "@/components/settings/AccountProfileSettings";
 import { PersonalDataSettings } from "@/components/settings/PersonalDataSettings";
 
 export default function AccountSettings() {
@@ -18,18 +17,10 @@ export default function AccountSettings() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold">Cuenta</h1>
+        <h1 className="text-2xl font-bold">Datos personales</h1>
       </div>
       
       <div className="space-y-6">
-        <div>
-          <h2 className="text-lg font-semibold mb-1">Información del perfil</h2>
-          <p className="text-muted-foreground text-sm mb-4">
-            Actualiza tu información personal y cómo te presentas en la plataforma.
-          </p>
-          <AccountProfileSettings />
-        </div>
-
         <div>
           <h2 className="text-lg font-semibold mb-1">Datos personales</h2>
           <p className="text-muted-foreground text-sm mb-4">

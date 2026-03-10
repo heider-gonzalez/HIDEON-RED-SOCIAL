@@ -9,9 +9,11 @@ import { useState, useEffect } from "react";
 
 interface CareerSelectProps {
   form: UseFormReturn<z.infer<any>>;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
-export function CareerSelect({ form }: CareerSelectProps) {
+export function CareerSelect({ form, disabled, disabledReason }: CareerSelectProps) {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customCareer, setCustomCareer] = useState("");
 
@@ -41,6 +43,7 @@ export function CareerSelect({ form }: CareerSelectProps) {
   }, [form]);
 
   const handleCareerChange = (value: string) => {
+    if (disabled) return;
     if (value === "otra") {
       setShowCustomInput(true);
       form.setValue("career", customCareer || "");
@@ -67,6 +70,7 @@ export function CareerSelect({ form }: CareerSelectProps) {
             <Select
               onValueChange={handleCareerChange}
               defaultValue={field.value}
+              disabled={Boolean(disabled)}
             >
               <FormControl>
                 <SelectTrigger id="career">
@@ -91,6 +95,7 @@ export function CareerSelect({ form }: CareerSelectProps) {
                   placeholder="Escribe tu carrera o profesión"
                   value={customCareer}
                   onChange={(e) => handleCustomCareerChange(e.target.value)}
+                  disabled={Boolean(disabled)}
                   onBlur={() => {
                     if (!customCareer.trim()) {
                       setShowCustomInput(false);
@@ -110,6 +115,11 @@ export function CareerSelect({ form }: CareerSelectProps) {
               >
                 Volver al listado
               </button>
+            </div>
+          )}
+          {Boolean(disabled) && Boolean(disabledReason) && (
+            <div className="text-xs text-muted-foreground">
+              {disabledReason}
             </div>
           )}
           <FormDescription>

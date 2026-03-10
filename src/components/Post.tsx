@@ -23,7 +23,7 @@ import { MentionsText } from "./post/MentionsText";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useNavigate } from "react-router-dom";
-import { Briefcase, CircleAlert, Users } from "lucide-react";
+import { Briefcase, CircleAlert, ExternalLink, Github, MessageCircle, Users } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "react-router-dom";
 import { JoinIdeaButton } from "@/components/post/actions/join-idea/JoinIdeaButton";
@@ -112,6 +112,18 @@ function extractHashtags(text: string) {
     if (uniq.length >= 8) break;
   }
   return uniq;
+}
+
+function getProyectoMeta(post: PostType) {
+  const proyectoAny = (post as any)?.post_metadata?.proyecto;
+  const proyecto = proyectoAny && typeof proyectoAny === 'object' && !Array.isArray(proyectoAny) ? proyectoAny : null;
+  return proyecto as any;
+}
+
+function normalizeActionUrl(url: any) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  return raw;
 }
 
 function splitIdeaSections(description: string) {
@@ -544,43 +556,114 @@ function EventPostView({ post }: { post: PostType }) {
 
 // Componente para las publicaciones de tipo Idea
 function IdeaPostView({ post }: { post: PostType }) {
-  const idea = post.idea as any;
-  const title = String(idea?.title || '').trim();
-  const description = String(idea?.description || post.content || '').trim();
-  const { intro, problem, forWho } = splitIdeaSections(description);
+  return <CollabInlinePostView post={post} kind="idea" />;
+}
 
-  const rawTech = Array.isArray(idea?.resources_needed) ? idea.resources_needed : [];
-  const techToShow = rawTech
-    .map((t: any) => String(t || '').trim())
-    .filter(Boolean)
-    .slice(0, 4);
+// Componente para las publicaciones de tipo Proyecto
+function ProjectPostView({ post, isMobile: _isMobile }: { post: PostType; isMobile: boolean }) {
+  return <CollabInlinePostView post={post} kind="project" />;
+}
 
-  const storedIdeaTagsRaw = (post as any)?.post_metadata?.idea_tags;
-  const storedIdeaTags = Array.isArray(storedIdeaTagsRaw)
+function CollabInlinePostView({ post, kind }: { post: PostType; kind: 'idea' | 'project' }) {
+  const [expanded, setExpanded] = useState(false);
+  const navigate = useNavigate();
+
+  const isIdea = kind === 'idea';
+  const preview = isIdea
+    ? null
+    : getProjectPreviewData(post);
+
+  const ideaAny = (post as any)?.idea;
+  const idea = isIdea && ideaAny && typeof ideaAny === 'object' && !Array.isArray(ideaAny) ? ideaAny : null;
+  const proyecto = getProyectoMeta(post);
+
+  const title = String(isIdea ? idea?.title || '' : preview?.title || '').trim();
+  const rawDescription = String(
+    isIdea
+      ? (idea?.description || post.content || '')
+      : (preview?.description || post.content || '')
+  ).trim();
+
+  const { intro, problem, forWho } = splitIdeaSections(rawDescription);
+
+  const badgeClass = isIdea
+    ? 'bg-emerald-600 text-white hover:bg-emerald-600'
+    : 'bg-blue-600 text-white hover:bg-blue-600';
+
+  const badgeLabel = isIdea ? 'Idea' : 'Proyecto';
+  const statusLabel = isIdea ? '' : (preview?.statusLabel || '');
+  const statusClass = isIdea ? '' : (preview?.statusClass || '');
+
+  const technologies = isIdea
+    ? (Array.isArray(idea?.resources_needed) ? idea.resources_needed : [])
+        .map((t: any) => String(t || '').trim())
+        .filter(Boolean)
+    : (preview?.technologies || []);
+
+  const techToShow = technologies.slice(0, 8);
+
+  const storedIdeaTagsRaw = isIdea ? (post as any)?.post_metadata?.idea_tags : null;
+  const storedIdeaTags = isIdea && Array.isArray(storedIdeaTagsRaw)
     ? storedIdeaTagsRaw.map((t: any) => String(t || '').trim()).filter(Boolean)
     : [];
+  const extractedTags = extractHashtags(rawDescription);
+  const tags = Array.from(
+    new Map(
+      [...storedIdeaTags, ...extractedTags]
+        .map((t) => {
+          const v = String(t || '').trim();
+          const normalized = v ? (v.startsWith('#') ? v : `#${v}`) : '';
+          return [normalized.toLowerCase(), normalized] as const;
+        })
+        .filter(([, v]) => Boolean(v))
+    ).values(),
+  ).slice(0, 12);
 
-  const extractedTags = extractHashtags(description);
-  const tagSeen = new Set<string>();
-  const tags: string[] = [];
-  for (const t of [...storedIdeaTags, ...extractedTags]) {
-    const v = String(t || '').trim();
-    if (!v) continue;
-    const normalized = v.startsWith('#') ? v : `#${v}`;
-    const key = normalized.toLowerCase();
-    if (tagSeen.has(key)) continue;
-    tagSeen.add(key);
-    tags.push(normalized);
-    if (tags.length >= 8) break;
-  }
-  
+  const proyectoImpact = String(proyecto?.impact || '').trim();
+  const proyectoObjectivesRaw = (proyecto as any)?.objectives ?? (proyecto as any)?.objetivos ?? (proyecto as any)?.goals;
+  const proyectoBenefitsRaw = (proyecto as any)?.benefits ?? (proyecto as any)?.beneficios;
+
+  const normalizeList = (v: any) => {
+    if (Array.isArray(v)) return v.map((x) => String(x || '').trim()).filter(Boolean);
+    const s = String(v || '').trim();
+    if (!s) return [];
+    return s
+      .split(/\r?\n|\s*;\s*|\s*\|\s*/g)
+      .map((x) => String(x || '').trim())
+      .filter(Boolean);
+  };
+
+  const proyectoObjectives = normalizeList(proyectoObjectivesRaw).slice(0, 12);
+  const proyectoBenefits = normalizeList(proyectoBenefitsRaw).slice(0, 12);
+
+  const demoUrl = normalizeActionUrl(proyecto?.demo_url);
+  const githubUrl = normalizeActionUrl(proyecto?.github_url);
+  const contactLink = normalizeActionUrl(proyecto?.contact_link);
+
+  const onCollaborate = () => {
+    const draft = `Hola, vi tu ${badgeLabel.toLowerCase()} "${title || 'tu publicación'}" y me interesa colaborar. ¿Qué perfil estás buscando?`;
+    navigate(`/messages?user=${post.user_id}&draft=${encodeURIComponent(draft)}`);
+  };
+
   return (
     <div className="px-0 md:px-4 pb-2">
       <div className="px-4 md:px-0 pb-3">
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant="secondary" className="text-xs font-medium">Idea Colaborativa</Badge>
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <Badge className={`text-xs font-medium ${badgeClass}`}>{badgeLabel}</Badge>
+
+              {statusLabel && (
+                <Badge variant="outline" className={statusClass}>
+                  {statusLabel}
+                </Badge>
+              )}
+
+              {!isIdea && proyectoImpact && (
+                <Badge variant="outline" className="text-xs">
+                  Impacto: {proyectoImpact}
+                </Badge>
+              )}
             </div>
 
             {title && (
@@ -589,13 +672,31 @@ function IdeaPostView({ post }: { post: PostType }) {
               </div>
             )}
 
-            {intro && (
-              <div className="mt-2 text-[15px] leading-relaxed whitespace-pre-wrap break-words text-muted-foreground">
-                {intro}
+            {/* Texto: sin resumen, con expand/collapse */}
+            {rawDescription && (
+              <div className="mt-2">
+                <div
+                  className={
+                    !expanded
+                      ? "text-[15px] leading-relaxed whitespace-pre-wrap break-words text-muted-foreground overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:4]"
+                      : "text-[15px] leading-relaxed whitespace-pre-wrap break-words text-muted-foreground"
+                  }
+                >
+                  {isIdea ? intro : rawDescription}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setExpanded((v) => !v)}
+                  className="mt-1 text-[15px] font-semibold text-foreground hover:underline"
+                >
+                  {expanded ? 'Ver menos' : 'Ver más'}
+                </button>
               </div>
             )}
 
-            {(problem || forWho) && (
+            {/* Detalles (aparecen al expandir) */}
+            {expanded && isIdea && (problem || forWho) && (
               <div className="mt-4 space-y-3">
                 {problem && (
                   <div className="rounded-xl border border-red-100/70 dark:border-red-950/40 bg-red-50/70 dark:bg-red-950/15 p-4">
@@ -619,6 +720,7 @@ function IdeaPostView({ post }: { post: PostType }) {
             )}
           </div>
 
+          {/* Media: modal/visor grande se maneja dentro de PostContent/MediaCarousel */}
           <PostContent post={post} postId={post.id} hideText={true} />
 
           {(techToShow.length > 0 || tags.length > 0) && (
@@ -630,7 +732,11 @@ function IdeaPostView({ post }: { post: PostType }) {
                     {techToShow.map((t: string) => (
                       <Badge
                         key={t}
-                        className="text-xs rounded-full border border-transparent bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-600 hover:to-blue-700"
+                        className={
+                          isIdea
+                            ? "text-xs rounded-full border border-transparent bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-600 hover:to-emerald-700"
+                            : "text-xs bg-primary text-primary-foreground hover:bg-primary"
+                        }
                       >
                         {t}
                       </Badge>
@@ -651,104 +757,51 @@ function IdeaPostView({ post }: { post: PostType }) {
             </div>
           )}
 
-          {post.idea ? (
-            <div className="p-4 pt-0">
-              <JoinIdeaButton postId={post.id} className="w-full" />
-            </div>
-          ) : (
-            <div className="p-4 pt-0">
-              <Button variant="outline" className="w-full" disabled>
-                Idea incompleta
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Componente para las publicaciones de tipo Proyecto
-function ProjectPostView({ post, isMobile }: { post: PostType; isMobile: boolean }) {
-  const preview = getProjectPreviewData(post);
-  const excerptToShow =
-    preview.description.length > 220
-      ? `${preview.description.slice(0, 220)}...`
-      : preview.description;
-  const techToShow = preview.technologies.slice(0, 3);
-  const remainingTechCount = Math.max(0, preview.technologies.length - techToShow.length);
-  const tags = extractHashtags(preview.description);
-  
-  return (
-    <div className="px-0 md:px-4 pb-2">
-      <div className="px-4 md:px-0 pb-3">
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant="secondary" className="text-xs font-medium">Proyecto</Badge>
-              {preview.statusLabel && (
-                <Badge variant="outline" className={preview.statusClass}>
-                  {preview.statusLabel}
-                </Badge>
-              )}
-            </div>
-
-            {preview.title && (
-              <div className="text-lg md:text-xl font-bold leading-snug text-foreground">
-                {preview.title}
-              </div>
-            )}
-
-            {excerptToShow && (
-              <div className="mt-2 text-[15px] leading-relaxed whitespace-pre-wrap break-words text-muted-foreground">
-                {excerptToShow}
-              </div>
-            )}
-          </div>
-
-          <PostContent post={post} postId={post.id} hideText={true} />
-
-          {(techToShow.length > 0 || tags.length > 0) && (
-            <div className="p-4 pt-3">
-              {techToShow.length > 0 && (
-                <>
-                  <div className="text-xs tracking-wide text-muted-foreground">TECNOLOGÍAS</div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {techToShow.map((t) => (
-                      <Badge
-                        key={t}
-                        className="text-xs bg-primary text-primary-foreground hover:bg-primary"
-                      >
-                        {t}
-                      </Badge>
-                    ))}
-                    {remainingTechCount > 0 && (
-                      <Badge className="text-xs bg-primary text-primary-foreground hover:bg-primary">
-                        +{remainingTechCount}
-                      </Badge>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {tags.length > 0 && (
-                <div className={techToShow.length > 0 ? 'mt-3 flex flex-wrap gap-2' : 'flex flex-wrap gap-2'}>
-                  {tags.map((t) => (
-                    <Badge key={t} variant="outline" className="text-xs bg-background">
-                      {t}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
+          {/* CTA: no redirecciones forzosas */}
           <div className="p-4 pt-0">
-            <Button asChild variant="outline" className="w-full">
-              <Link to={`/project/${post.id}`}>
-                Ver objetivos y tecnologías
-              </Link>
-            </Button>
+            {isIdea ? (
+              post.idea ? (
+                <JoinIdeaButton postId={post.id} className="w-full" />
+              ) : (
+                <Button variant="outline" className="w-full" disabled>
+                  Idea incompleta
+                </Button>
+              )
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={!demoUrl}
+                  onClick={() => demoUrl && window.open(demoUrl, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Demo
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={!githubUrl}
+                  onClick={() => githubUrl && window.open(githubUrl, '_blank')}
+                >
+                  <Github className="h-4 w-4 mr-2" />
+                  GitHub
+                </Button>
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={() => {
+                    if (contactLink) window.open(contactLink, '_blank');
+                    else onCollaborate();
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  {contactLink ? 'Contactar' : 'Colaborar'}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

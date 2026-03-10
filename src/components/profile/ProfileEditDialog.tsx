@@ -32,6 +32,11 @@ export function ProfileEditDialog({
   onUpdate,
 }: ProfileEditDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [cooldown, setCooldown] = useState<{
+    username: { locked: boolean; remainingDays: number };
+    career: { locked: boolean; remainingDays: number };
+    semester: { locked: boolean; remainingDays: number };
+  } | null>(null);
   const debug = import.meta.env.DEV;
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -58,17 +63,57 @@ export function ProfileEditDialog({
     });
   }, [profile, form]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!profile?.id) return;
+
+    const COOLDOWN_DAYS = 60;
+
+    const diffRemaining = (lastIso: string | null | undefined) => {
+      if (!lastIso) return { locked: false, remainingDays: 0 };
+      const last = new Date(lastIso);
+      const now = new Date();
+      const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+      const remaining = Math.max(0, COOLDOWN_DAYS - diffDays);
+      return { locked: remaining > 0, remainingDays: remaining };
+    };
+
+    const run = async () => {
+      const { data, error } = await (supabase as any)
+        .from("profiles")
+        .select("last_name_change,last_career_change,last_semester_change")
+        .eq("id", profile.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading cooldowns:', error);
+        return;
+      }
+
+      const row = data as any;
+      setCooldown({
+        username: diffRemaining(row?.last_name_change),
+        career: diffRemaining(row?.last_career_change),
+        semester: diffRemaining(row?.last_semester_change),
+      });
+    };
+
+    void run();
+  }, [isOpen, profile?.id]);
+
   const onSubmit = async (values: ProfileFormValues) => {
     setIsLoading(true);
 
     try {
       // Verificar si el nombre de usuario cambió
       const nameChanged = values.username !== profile.username;
+      const careerChanged = (values.career || "") !== (profile.career || "");
+      const semesterChanged = (values.semester || "") !== (profile.semester || "");
 
       if (nameChanged) {
         const { data: cooldownRow, error: cooldownError } = await (supabase as any)
           .from("profiles")
-          .select("last_name_change")
+          .select("last_name_change,last_career_change,last_semester_change")
           .eq("id", profile.id)
           .maybeSingle();
 
@@ -79,11 +124,61 @@ export function ProfileEditDialog({
           const last = new Date(lastChange);
           const now = new Date();
           const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
-          if (diffDays < 30) {
+          if (diffDays < 60) {
             toast({
               variant: "destructive",
               title: "Cambio de nombre limitado",
-              description: `Puedes cambiar tu nombre nuevamente en ${30 - diffDays} día(s).`,
+              description: `Puedes cambiar tu nombre nuevamente en ${60 - diffDays} día(s).`,
+            });
+            return;
+          }
+        }
+      }
+
+      if (careerChanged) {
+        const { data: cooldownRow, error: cooldownError } = await (supabase as any)
+          .from("profiles")
+          .select("last_career_change")
+          .eq("id", profile.id)
+          .maybeSingle();
+
+        if (cooldownError) throw cooldownError;
+
+        const lastChange = (cooldownRow as any)?.last_career_change as string | null | undefined;
+        if (lastChange) {
+          const last = new Date(lastChange);
+          const now = new Date();
+          const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays < 60) {
+            toast({
+              variant: "destructive",
+              title: "Cambio de carrera limitado",
+              description: `Puedes cambiar tu carrera nuevamente en ${60 - diffDays} día(s).`,
+            });
+            return;
+          }
+        }
+      }
+
+      if (semesterChanged) {
+        const { data: cooldownRow, error: cooldownError } = await (supabase as any)
+          .from("profiles")
+          .select("last_semester_change")
+          .eq("id", profile.id)
+          .maybeSingle();
+
+        if (cooldownError) throw cooldownError;
+
+        const lastChange = (cooldownRow as any)?.last_semester_change as string | null | undefined;
+        if (lastChange) {
+          const last = new Date(lastChange);
+          const now = new Date();
+          const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays < 60) {
+            toast({
+              variant: "destructive",
+              title: "Cambio de semestre limitado",
+              description: `Puedes cambiar tu semestre nuevamente en ${60 - diffDays} día(s).`,
             });
             return;
           }
@@ -111,6 +206,14 @@ export function ProfileEditDialog({
 
       if (nameChanged) {
         updateData.last_name_change = new Date().toISOString();
+      }
+
+      if (careerChanged) {
+        updateData.last_career_change = new Date().toISOString();
+      }
+
+      if (semesterChanged) {
+        updateData.last_semester_change = new Date().toISOString();
       }
 
       // Solo actualizar username si no cambió (para no duplicar la operación)
@@ -200,11 +303,23 @@ export function ProfileEditDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-2">
-            <ProfileBasicInfo form={form} />
+            <ProfileBasicInfo
+              form={form}
+              usernameLocked={Boolean(cooldown?.username.locked)}
+              usernameRemainingDays={cooldown?.username.remainingDays ?? 0}
+            />
             
-            <CareerSelect form={form} />
+            <CareerSelect
+              form={form}
+              disabled={Boolean(cooldown?.career.locked)}
+              disabledReason={cooldown?.career.locked ? `Podrás cambiar tu carrera en ${cooldown?.career.remainingDays ?? 0} día(s).` : undefined}
+            />
             
-            <SemesterSelect form={form} />
+            <SemesterSelect
+              form={form}
+              disabled={Boolean(cooldown?.semester.locked)}
+              disabledReason={cooldown?.semester.locked ? `Podrás cambiar tu semestre en ${cooldown?.semester.remainingDays ?? 0} día(s).` : undefined}
+            />
             
             <RelationshipStatusSelect form={form} />
             

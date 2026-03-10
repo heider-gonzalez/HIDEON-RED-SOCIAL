@@ -4,6 +4,8 @@ export interface AutosaveData {
   content: string;
   ideaTitle?: string;
   ideaDescription?: string;
+  ideaGithubUrl?: string;
+  ideaDemoUrl?: string;
   projectTitle?: string;
   projectDescription?: string;
   projectStatus?: 'idea' | 'in_progress' | 'completed';

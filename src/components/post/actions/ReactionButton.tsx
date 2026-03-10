@@ -18,6 +18,7 @@ export function ReactionButton({
 }: ReactionButtonProps) {
   const [animatingReaction, setAnimatingReaction] = useState<ReactionType | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const idleTimerRef = useRef<number | null>(null);
 
   const {
     showReactions,
@@ -43,8 +44,25 @@ export function ReactionButton({
     onReaction(type);
   };
 
+  const clearIdleTimer = () => {
+    if (idleTimerRef.current) {
+      window.clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+  };
+
+  const startIdleTimer = () => {
+    clearIdleTimer();
+    idleTimerRef.current = window.setTimeout(() => {
+      setShowReactions(false);
+      setActiveReaction(null);
+    }, 2500);
+  };
+
   useEffect(() => {
     if (!showReactions) return;
+
+    startIdleTimer();
 
     const handleOutsidePointerDown = (e: PointerEvent) => {
       const root = rootRef.current;
@@ -57,6 +75,7 @@ export function ReactionButton({
     document.addEventListener('pointerdown', handleOutsidePointerDown);
     return () => {
       document.removeEventListener('pointerdown', handleOutsidePointerDown);
+      clearIdleTimer();
     };
   }, [showReactions, setShowReactions, setActiveReaction]);
 
@@ -91,9 +110,11 @@ export function ReactionButton({
             setActiveReaction={setActiveReaction}
             onReactionSelected={handleReactionSelected}
             onPointerLeave={() => {
-              setShowReactions(false);
-              setActiveReaction(null);
+              // No cerrar de inmediato al salir; se cierra por inactividad o click fuera
+              startIdleTimer();
             }}
+            onPointerEnter={() => startIdleTimer()}
+            onPointerMove={() => startIdleTimer()}
           />
         </div>
       )}

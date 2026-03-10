@@ -166,6 +166,8 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [ideaTechInput, setIdeaTechInput] = useState('');
   const [ideaTags, setIdeaTags] = useState<string[]>([]);
   const [ideaTagInput, setIdeaTagInput] = useState('');
+  const [ideaGithubUrl, setIdeaGithubUrl] = useState('');
+  const [ideaDemoUrl, setIdeaDemoUrl] = useState('');
   const [projectTitle, setProjectTitle] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [projectStatus, setProjectStatus] = useState<'idea' | 'in_progress' | 'completed'>('in_progress');
@@ -353,6 +355,8 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     if (autosaveData.projectTeamMembers) setProjectTeamMembers(autosaveData.projectTeamMembers);
     if (autosaveData.projectGithubUrl) setProjectGithubUrl(autosaveData.projectGithubUrl);
     if (autosaveData.projectDemoUrl) setProjectDemoUrl(autosaveData.projectDemoUrl);
+    if (autosaveData.ideaGithubUrl) setIdeaGithubUrl(autosaveData.ideaGithubUrl);
+    if (autosaveData.ideaDemoUrl) setIdeaDemoUrl(autosaveData.ideaDemoUrl);
     if (autosaveData.pollQuestion) setPollQuestion(autosaveData.pollQuestion);
     if (autosaveData.pollOptions) setPollOptions(autosaveData.pollOptions);
     if (autosaveData.eventTitle) setEventTitle(autosaveData.eventTitle);
@@ -392,6 +396,8 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     setIdeaTechInput('');
     setIdeaTags([]);
     setIdeaTagInput('');
+    setIdeaGithubUrl('');
+    setIdeaDemoUrl('');
     setProjectTitle('');
     setProjectDescription('');
     setProjectStatus('in_progress');
@@ -429,6 +435,12 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       content,
       ideaTitle,
       ideaDescription,
+      ideaTechnologies,
+      ideaTechInput,
+      ideaTags,
+      ideaTagInput,
+      ideaGithubUrl,
+      ideaDemoUrl,
       projectTitle,
       projectDescription,
       projectStatus,
@@ -898,6 +910,11 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         postData.post_metadata = {
           ...(postData.post_metadata || {}),
           idea_tags: ideaTags,
+          idea: {
+            ...(postData.post_metadata?.idea || {}),
+            demo_url: ideaDemoUrl.trim() || '',
+            github_url: ideaGithubUrl.trim() || '',
+          },
         };
         postData.project_status = 'idea';
       } else if (selectedPostType === 'proyecto') {
@@ -912,6 +929,14 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           github_url: projectGithubUrl.trim() || null,
           team_members: projectTeamMembers,
           participants: [],
+        };
+        postData.post_metadata = {
+          ...(postData.post_metadata || {}),
+          proyecto: {
+            ...(postData.post_metadata?.proyecto || {}),
+            demo_url: projectDemoUrl.trim() || '',
+            github_url: projectGithubUrl.trim() || '',
+          },
         };
         postData.project_status = projectStatus;
         postData.technologies = projectTechnologies;
@@ -1543,6 +1568,29 @@ Qué buscas ahora:
                 {ideaDescription.length}/2000 caracteres
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block">Enlace demo (opcional)</label>
+                  <input
+                    type="url"
+                    value={ideaDemoUrl}
+                    onChange={(e) => setIdeaDemoUrl(e.target.value)}
+                    placeholder="https://demo.tuapp.com"
+                    className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block">Enlace GitHub (opcional)</label>
+                  <input
+                    type="url"
+                    value={ideaGithubUrl}
+                    onChange={(e) => setIdeaGithubUrl(e.target.value)}
+                    placeholder="https://github.com/usuario/repo"
+                    className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label htmlFor="idea-technologies" className="text-sm font-medium text-gray-700 dark:text-gray-100">Tecnologías</label>
                 <div className="flex gap-2">
@@ -1759,6 +1807,29 @@ Qué buscas ahora:
                 rows={4}
                 className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block">Enlace demo (opcional)</label>
+                  <input
+                    type="url"
+                    value={projectDemoUrl}
+                    onChange={(e) => setProjectDemoUrl(e.target.value)}
+                    placeholder="https://demo.tuapp.com"
+                    className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block">Enlace GitHub (opcional)</label>
+                  <input
+                    type="url"
+                    value={projectGithubUrl}
+                    onChange={(e) => setProjectGithubUrl(e.target.value)}
+                    placeholder="https://github.com/usuario/repo"
+                    className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
 
               {/* Tecnologías (opcional) */}
               <div>

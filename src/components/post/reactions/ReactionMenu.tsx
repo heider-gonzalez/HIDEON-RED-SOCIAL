@@ -10,6 +10,8 @@ interface ReactionMenuProps {
   setActiveReaction: (reaction: ReactionType | null) => void;
   onReactionSelected: (type: ReactionType) => void;
   onPointerLeave: () => void;
+  onPointerMove?: () => void;
+  onPointerEnter?: () => void;
   compact?: boolean; // Nueva prop para versión compacta
 }
 
@@ -19,6 +21,8 @@ export function ReactionMenu({
   setActiveReaction,
   onReactionSelected,
   onPointerLeave,
+  onPointerMove,
+  onPointerEnter,
   compact = false, // Valor por defecto
 }: ReactionMenuProps) {
   if (!show) return null;
@@ -36,6 +40,8 @@ export function ReactionMenu({
         show ? "opacity-100 scale-100" : "opacity-0 scale-95",
       )}
       onPointerLeave={onPointerLeave}
+      onPointerMove={onPointerMove}
+      onPointerEnter={onPointerEnter}
     >
       {reactionTypes.map((type) => {
         const reaction = reactionIcons[type];

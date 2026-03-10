@@ -7,9 +7,15 @@ import * as z from "zod";
 
 interface ProfileBasicInfoProps {
   form: UseFormReturn<z.infer<any>>;
+  usernameLocked?: boolean;
+  usernameRemainingDays?: number;
 }
 
-export function ProfileBasicInfo({ form }: ProfileBasicInfoProps) {
+export function ProfileBasicInfo({
+  form,
+  usernameLocked,
+  usernameRemainingDays,
+}: ProfileBasicInfoProps) {
   return (
     <>
       <FormField
@@ -23,8 +29,14 @@ export function ProfileBasicInfo({ form }: ProfileBasicInfoProps) {
                 id="username" 
                 {...field} 
                 autoComplete="username" 
+                disabled={Boolean(usernameLocked)}
               />
             </FormControl>
+            {Boolean(usernameLocked) && (
+              <div className="text-xs text-muted-foreground">
+                Podrás cambiar tu nombre en {usernameRemainingDays ?? 0} día(s).
+              </div>
+            )}
             <FormMessage />
           </FormItem>
         )}
