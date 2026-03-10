@@ -8,6 +8,7 @@ import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePostComposer } from "@/providers/PostComposerProvider";
 
 interface AuthorPostOptionsMenuProps {
   postId: string;
@@ -22,6 +23,7 @@ export function AuthorPostOptionsMenu({ postId, postType, onEdit, onDelete, canD
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { open: openComposer } = usePostComposer();
 
   const handleDeletePost = async () => {
     if (!canDelete) return;
@@ -106,7 +108,19 @@ export function AuthorPostOptionsMenu({ postId, postType, onEdit, onDelete, canD
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
+          <DropdownMenuItem
+            onClick={() => {
+              if (postType === 'idea') {
+                openComposer({ initialPostType: 'idea', editingPost: { id: postId } });
+                return;
+              }
+              if (postType === 'project' || postType === 'proyecto') {
+                openComposer({ initialPostType: 'proyecto', editingPost: { id: postId } });
+                return;
+              }
+              setEditDialogOpen(true);
+            }}
+          >
             <Edit className="mr-2 h-4 w-4" /> Editar
           </DropdownMenuItem>
           {canDelete && (
@@ -117,20 +131,22 @@ export function AuthorPostOptionsMenu({ postId, postType, onEdit, onDelete, canD
         </DropdownMenuContent>
       </DropdownMenu>
       
-      {/* Show appropriate dialog based on post type */}
-      {postType === 'project' || postType === 'proyecto' ? (
-        <EditProjectDialog
-          projectId={postId}
-          isOpen={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          onSave={(projectData) => handleEditPost(undefined, projectData)}
-        />
-      ) : (
+      {/* Fallback dialogs for post types not handled by the composer */}
+      {postType !== 'idea' && postType !== 'project' && postType !== 'proyecto' && (
         <EditPostDialog
           postId={postId}
           isOpen={editDialogOpen}
           onOpenChange={setEditDialogOpen}
           onSave={(content) => handleEditPost(content)}
+        />
+      )}
+
+      {postType !== 'idea' && (postType === 'project' || postType === 'proyecto') && (
+        <EditProjectDialog
+          projectId={postId}
+          isOpen={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onSave={(projectData) => handleEditPost(undefined, projectData)}
         />
       )}
     </>

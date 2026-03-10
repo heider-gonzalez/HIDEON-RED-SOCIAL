@@ -4,6 +4,10 @@ export interface AutosaveData {
   content: string;
   ideaTitle?: string;
   ideaDescription?: string;
+  ideaTechnologies?: string[];
+  ideaTechInput?: string;
+  ideaTags?: string[];
+  ideaTagInput?: string;
   ideaGithubUrl?: string;
   ideaDemoUrl?: string;
   projectTitle?: string;

@@ -92,6 +92,7 @@ export function SingleComment({
   const reactionSummary = comment.reactions_by_type && Object.keys(comment.reactions_by_type).length > 0 ? (
     <div className="rounded-full border border-border bg-background/90 px-2 py-0.5 shadow-sm">
       <CommentReactionSummary
+        commentId={comment.id}
         reactionsByType={comment.reactions_by_type}
         totalCount={comment.likes_count || 0}
         compact={true}

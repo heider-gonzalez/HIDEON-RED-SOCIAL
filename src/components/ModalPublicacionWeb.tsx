@@ -43,6 +43,7 @@ interface ModalPublicacionWebProps {
   initialMedia?: File | null;
   initialMediaType?: string | null;
   editingProject?: any; // For editing existing projects
+  editingPost?: any; // For editing existing posts (idea/proyecto/etc)
 }
 
  async function sendIdeaPublishedAutoMessage(recipientUserId: string) {
@@ -90,9 +91,14 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   initialMedia = null,
   initialMediaType = null,
   editingProject,
+  editingPost,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const editingEntity = editingPost || editingProject;
+  const editingPostId = (editingEntity as any)?.id as string | undefined;
+  const isEditing = Boolean(editingPostId);
 
   const [userGroups, setUserGroups] = useState<
     Array<{
@@ -141,7 +147,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [audioClipEnd, setAudioClipEnd] = useState(30);
   const [showWaveformEditor, setShowWaveformEditor] = useState(false);
   const [showPostTypeMenu, setShowPostTypeMenu] = useState(false);
-  const [selectedPostType, setSelectedPostType] = useState<PostType>(null);
+  const [selectedPostType, setSelectedPostType] = useState<PostType>(initialPostType ?? null);
   const [privacy, setPrivacy] = useState('Público');
   const [showPrivacyMenu, setShowPrivacyMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -210,6 +216,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
   useEffect(() => {
     setContent(initialContent);
+    if (!isEditing) {
+      setSelectedPostType(initialPostType ?? null);
+    }
     if (initialMedia) {
       setSelectedFiles([initialMedia]);
       setFilePreviews([URL.createObjectURL(initialMedia)]);
@@ -229,7 +238,90 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       setShowMusicSelector(false);
       setShowAudioEditor(false);
     }
-  }, [initialContent, initialMedia, isVisible]);
+  }, [initialContent, initialMedia, isVisible, initialPostType, isEditing]);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    if (!editingPostId) return;
+
+    const loadEditingPost = async () => {
+      try {
+        const { data, error } = await (supabase as any)
+          .from('posts')
+          .select('*')
+          .eq('id', editingPostId)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) return;
+
+        const postType = (data as any).post_type as string | null | undefined;
+        const metadata = ((data as any).post_metadata as any) || {};
+        const ideaData = ((data as any).idea as any) || {};
+
+        if (postType === 'idea') {
+          setSelectedPostType('idea');
+          setContent((data as any).content || '');
+          setIdeaTitle(ideaData.title || metadata.idea?.title || '');
+          setIdeaDescription(ideaData.description || metadata.idea?.description || '');
+          setIdeaTechnologies(
+            Array.isArray(ideaData.resources_needed)
+              ? ideaData.resources_needed
+              : Array.isArray(metadata.idea?.resources_needed)
+                ? metadata.idea.resources_needed
+                : []
+          );
+          setIdeaTags(Array.isArray(metadata.idea_tags) ? metadata.idea_tags : []);
+          setIdeaDemoUrl((metadata.idea?.demo_url as string) || '');
+          setIdeaGithubUrl((metadata.idea?.github_url as string) || '');
+        }
+
+        if (postType === 'project' || postType === 'proyecto') {
+          setSelectedPostType('proyecto');
+          setContent((data as any).content || '');
+
+          const proyecto = metadata.proyecto || metadata.project || {};
+
+          setProjectTitle(ideaData.title || proyecto.title || '');
+          setProjectDescription(ideaData.description || proyecto.description || '');
+          setProjectObjectives(ideaData.expected_impact || proyecto.objectives || '');
+          setProjectStatus(((data as any).project_status as any) || proyecto.status || 'in_progress');
+
+          const techs =
+            Array.isArray((data as any).technologies)
+              ? (data as any).technologies
+              : Array.isArray(ideaData.resources_needed)
+                ? ideaData.resources_needed
+                : Array.isArray(proyecto.technologies)
+                  ? proyecto.technologies
+                  : [];
+          setProjectTechnologies(techs);
+
+          setProjectDemoUrl(((data as any).demo_url as string) || (proyecto.demo_url as string) || '');
+          setProjectGithubUrl((ideaData.github_url as string) || (proyecto.github_url as string) || '');
+        }
+      } catch (e: any) {
+        const msg =
+          (e && typeof e === 'object' && ('message' in e || 'code' in e))
+            ? `${(e as any).message || 'Error'}${(e as any).code ? ` (code ${(e as any).code})` : ''}`
+            : 'Error desconocido';
+        console.error('Error loading post for edit:', {
+          raw: e,
+          message: (e as any)?.message,
+          code: (e as any)?.code,
+          details: (e as any)?.details,
+          hint: (e as any)?.hint,
+        });
+        toast({
+          title: 'Error',
+          description: `No se pudo cargar la publicación para editar. ${msg}`,
+          variant: 'destructive',
+        });
+      }
+    };
+
+    loadEditingPost();
+  }, [isVisible, editingPostId]);
 
   useEffect(() => {
     if (!isVisible && !isOpen) return;
@@ -503,6 +595,10 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   // Check for saved data when modal opens (only once per modal session)
   useEffect(() => {
     if (isVisible && !hasCheckedForDraft) {
+      if (isEditing) {
+        setHasCheckedForDraft(true);
+        return;
+      }
       const saved = loadSavedData();
       if (saved && hasSavedData()) {
         setAutosaveData(saved);
@@ -510,7 +606,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       }
       setHasCheckedForDraft(true);
     }
-  }, [isVisible, selectedPostType, hasCheckedForDraft]);
+  }, [isVisible, selectedPostType, hasCheckedForDraft, isEditing]);
 
   // Reset draft check when modal closes
   useEffect(() => {
@@ -968,7 +1064,6 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         content,
         selectedPostType === 'idea' ? ideaDescription : '',
         selectedPostType === 'proyecto' ? projectDescription : '',
-        selectedPostType === 'evento' ? eventDescription : '',
       ]
         .filter(Boolean)
         .join('\n');
@@ -983,12 +1078,12 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         return;
       }
 
-      if (editingProject) {
-        // Update existing project
+      if (editingPostId) {
+        // Update existing post
         const { data: updatedPost, error: updateError } = await (supabase as any)
           .from('posts')
           .update(postData)
-          .eq('id', editingProject.id)
+          .eq('id', editingPostId)
           .select('id')
           .maybeSingle();
         
@@ -1100,8 +1195,8 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
       onPublish?.(content, selectedPostType, selectedFiles[0] || null);
       toast({ 
-        title: editingProject ? 'Proyecto actualizado' : 'Publicado', 
-        description: editingProject ? 'Tu proyecto se actualizó correctamente' : 'Tu publicación se creó correctamente' 
+        title: isEditing ? (selectedPostType === 'proyecto' ? 'Proyecto actualizado' : 'Publicación actualizada') : 'Publicado',
+        description: isEditing ? 'Tus cambios se guardaron correctamente' : 'Tu publicación se creó correctamente'
       });
       
       // Clear autosave after successful publish
@@ -1273,7 +1368,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   {privacy === 'Público' ? (
                     <span className="flex items-center">
                       <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 2a5 5 0 00-5 5v2a2 5 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
+                        <path d="M10 2a5 5 0 00-5 5v2H4a2 2 0 00-2 2v5a2 2 0 002 2h12a2 2 0 002-2v-5a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zM7 7a3 3 0 016 0v2H7V7z" />
                       </svg>
                     </span>
                   ) : privacy === 'Amigos' ? (
@@ -1301,7 +1396,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                   >
                     <svg className="mr-2 h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 2a5 5 0 00-5 5v2a2 5 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
+                      <path d="M10 2a5 5 0 00-5 5v2H4a2 2 0 00-2 2v5a2 2 0 002 2h12a2 2 0 002-2v-5a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zM7 7a3 3 0 016 0v2H7V7z" />
                     </svg>
                     Público
                   </button>
@@ -1409,9 +1504,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  {editingProject ? 'Actualizando...' : 'Publicando...'}
+                  {isEditing ? 'Actualizando...' : 'Publicando...'}
                 </span>
-              ) : (editingProject ? 'Actualizar' : 'Publicar')}
+              ) : (isEditing ? 'Actualizar' : 'Publicar')}
             </Button>
           </div>
         </div>

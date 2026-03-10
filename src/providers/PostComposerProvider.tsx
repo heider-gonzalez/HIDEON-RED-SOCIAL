@@ -9,6 +9,7 @@ type OpenParams = {
   initialMediaType?: string | null;
   userAvatar?: string;
   editingProject?: any;
+  editingPost?: any;
 };
 
 type PostComposerContextValue = {
@@ -50,6 +51,7 @@ export function PostComposerProvider({ children }: { children: React.ReactNode }
         initialMedia={params.initialMedia ?? null}
         initialMediaType={params.initialMediaType ?? null}
         editingProject={params.editingProject}
+        editingPost={params.editingPost}
       />
     </PostComposerContext.Provider>
   );

@@ -17,21 +17,24 @@ interface Reaction {
 }
 
 interface ReactionsListDialogProps {
-  postId: string;
+  postId?: string;
+  commentId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function ReactionsListDialog({ postId, open, onOpenChange }: ReactionsListDialogProps) {
+export function ReactionsListDialog({ postId, commentId, open, onOpenChange }: ReactionsListDialogProps) {
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | ReactionType>("all");
 
+  const target = postId ? ({ kind: 'post' as const, id: postId }) : commentId ? ({ kind: 'comment' as const, id: commentId }) : null;
+
   useEffect(() => {
-    if (open && postId) {
+    if (open && target?.id) {
       loadReactions();
     }
-  }, [open, postId]);
+  }, [open, target?.id]);
 
   const loadReactions = async () => {
     setLoading(true);
@@ -39,7 +42,7 @@ export function ReactionsListDialog({ postId, open, onOpenChange }: ReactionsLis
       const { data, error } = await supabase
         .from('reactions')
         .select('user_id, reaction_type, created_at')
-        .eq('post_id', postId)
+        .eq(target?.kind === 'comment' ? 'comment_id' : 'post_id', target?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

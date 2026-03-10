@@ -47,11 +47,12 @@ export function CommentReactionsEnhanced({
   }, [handleAuthRequired, commentId, onReaction]);
 
   const cancelCloseReactions = useCallback(() => {
-    // Clear any timeout for closing reactions
+    // No-op: instant close behavior
   }, []);
 
   const scheduleCloseReactions = useCallback(() => {
-    // Schedule closing reactions after delay
+    setShowReactions(false);
+    setActiveReaction(null);
   }, []);
 
   const { 
@@ -112,7 +113,10 @@ export function CommentReactionsEnhanced({
               activeReaction={activeReaction}
               setActiveReaction={setActiveReaction}
               onReactionSelected={handleReactionSelected}
-              onPointerLeave={() => setActiveReaction(null)}
+              onPointerLeave={() => {
+                setShowReactions(false);
+                setActiveReaction(null);
+              }}
               compact={true} // Versión compacta para comentarios
             />
           </div>

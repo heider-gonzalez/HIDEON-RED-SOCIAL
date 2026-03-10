@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { ReactionButtons } from '@/components/post/ReactionButtons';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AcademicBadge } from './AcademicBadge';
 import {
   getSoundEnabled,
@@ -38,10 +38,13 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   const [showImageGallery, setShowImageGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
+  const [showViewers, setShowViewers] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const statusConfig = PROJECT_STATUS_CONFIG[project.status || 'idea'];
+  const cardContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const instanceIdRef = useRef<string>(
     typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function"
@@ -76,6 +79,45 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
       }
     });
   }, []);
+
+  const recordView = useMutation({
+    mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) return;
+      const { error } = await supabase
+        .from('project_views')
+        .upsert({
+          post_id: project.id,
+          viewer_id: user.id,
+        } as any, {
+          onConflict: 'post_id,viewer_id',
+          ignoreDuplicates: true,
+        } as any);
+      if (error && (error as any).code !== '23505') throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-posts'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['project-views-count', project.id] });
+    },
+  });
+
+  useEffect(() => {
+    const el = cardContainerRef.current;
+    if (!el) return;
+    let recorded = false;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        if (recorded) return;
+        recorded = true;
+        recordView.mutate();
+      },
+      { threshold: 0.6 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [project.id]);
 
   const formatTime = (seconds: number) => {
     const s = Math.max(0, Math.floor(seconds || 0));
@@ -158,6 +200,17 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   
   // Usar video_url principal si existe, o el primer video de media_urls
   const primaryVideoUrl = videoUrl || videoUrls[0];
+
+  const { data: viewers = [], isLoading: isLoadingViewers } = useQuery({
+    queryKey: ['project-viewers', project.id, 'dialog'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .rpc('get_project_viewers', { p_post_id: project.id, p_limit: 50 });
+      if (error) throw error;
+      return (data || []) as Array<{ viewer_id: string; username: string; avatar_url: string | null; viewed_at: string }>;
+    },
+    enabled: showViewers,
+  });
   
   // Para imágenes: usar image_url si no hay imágenes en media_urls
   const projectImages = imageUrls.length > 0 
@@ -346,7 +399,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
         onClick={onClick}
       >
         {/* Horizontal Layout: Image Left, Content Right */}
-        <div className="flex flex-col md:flex-row">
+        <div ref={cardContainerRef} className="flex flex-col md:flex-row">
           {/* Project Image/Video - Left Side */}
           <div className="relative md:w-2/5 aspect-[16/9] md:aspect-auto bg-gradient-to-br from-primary/10 via-primary/5 to-background overflow-hidden">
             {primaryVideoUrl ? (
@@ -560,11 +613,18 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
           )}
 
           {/* Views count overlay - Bottom Right */}
-          <div className="absolute bottom-3 right-3 z-30">
-            <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md rounded-full px-3 py-1.5 text-white text-xs font-medium">
+          <div className={`absolute right-3 z-50 ${primaryVideoUrl ? 'bottom-14' : 'bottom-3'}`}>
+            <button
+              type="button"
+              className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md rounded-full px-3 py-1.5 text-white text-xs font-medium hover:bg-black/70 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowViewers(true);
+              }}
+            >
               <Eye size={12} className="opacity-80" />
               <span>{(project.views_count || 0).toLocaleString()}</span>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -742,6 +802,42 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
         </div>
       </div>
     </Card>
+
+    <Dialog open={showViewers} onOpenChange={setShowViewers}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Visto por</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          {isLoadingViewers ? (
+            <div className="text-sm text-muted-foreground">Cargando...</div>
+          ) : viewers.length > 0 ? (
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {viewers.map((viewer) => (
+                <div key={viewer.viewer_id} className="flex items-center gap-2">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={viewer.avatar_url || undefined} />
+                    <AvatarFallback>
+                      {viewer.username?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{viewer.username || 'Usuario'}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {viewer.viewed_at
+                        ? formatDistanceToNow(new Date(viewer.viewed_at), { addSuffix: true, locale: es })
+                        : ''}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">Aún no hay vistas registradas.</div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
 
     {/* Image Gallery Dialog */}
     <Dialog open={showImageGallery} onOpenChange={setShowImageGallery}>
