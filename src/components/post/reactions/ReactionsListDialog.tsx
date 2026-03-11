@@ -39,11 +39,18 @@ export function ReactionsListDialog({ postId, commentId, open, onOpenChange }: R
   const loadReactions = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('reactions')
-        .select('user_id, reaction_type, created_at')
-        .eq(target?.kind === 'comment' ? 'comment_id' : 'post_id', target?.id)
-        .order('created_at', { ascending: false });
+      const isComment = target?.kind === 'comment';
+      const baseQuery = isComment
+        ? supabase
+            .from('comment_reactions')
+            .select('user_id, reaction_type, created_at')
+            .eq('comment_id', target?.id)
+        : supabase
+            .from('reactions')
+            .select('user_id, reaction_type, created_at')
+            .eq('post_id', target?.id);
+
+      const { data, error } = await baseQuery.order('created_at', { ascending: false });
 
       if (error) throw error;
 

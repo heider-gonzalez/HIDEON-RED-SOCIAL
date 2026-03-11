@@ -265,6 +265,9 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                   variant="ghost"
                   size="icon"
                   className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/55 hover:bg-black/80 text-white z-[80] h-11 w-11 rounded-full backdrop-blur"
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
                     goPrev();
@@ -302,6 +305,9 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                   variant="ghost"
                   size="icon"
                   className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/55 hover:bg-black/80 text-white z-[80] h-11 w-11 rounded-full backdrop-blur"
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
                     goNext();
@@ -376,6 +382,9 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                 variant="ghost"
                 size="icon"
                 className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white z-[80]"
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   goPrev();
@@ -415,6 +424,9 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                 variant="ghost"
                 size="icon"
                 className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white z-[80]"
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   goNext();
