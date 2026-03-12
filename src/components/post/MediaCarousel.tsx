@@ -35,6 +35,7 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxStartIndex, setLightboxStartIndex] = useState(0);
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
 
@@ -88,7 +89,7 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
   const lightboxItems = mediaItems;
 
   useEffect(() => {
-    const el = scrollRef.current;
+    const el = containerRef.current;
     if (!el) return;
 
     const obs = new IntersectionObserver(
@@ -409,125 +410,125 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
 
   return (
     <div className={`relative w-full ${className}`}>
-      {mediaItems[currentIndex]?.type === 'video' && isMuted && (
-        <div className="pointer-events-none absolute top-3 left-3 z-10 rounded-full bg-black/40 text-white px-2 py-1 text-xs">
-          🔇
-        </div>
-      )}
-      {!isMobile ? (
-        <div className="relative w-full bg-black" style={{ width: '100%', height: 'min(520px, 72vh)' }}>
-          <div
-            className="relative h-full w-full overflow-hidden"
-            onPointerDown={(e) => {
-              desktopSwipeStartXRef.current = e.clientX;
-              desktopSwipeMovedRef.current = false;
-            }}
-            onPointerMove={(e) => {
-              if (desktopSwipeStartXRef.current === null) return;
-              const dx = e.clientX - desktopSwipeStartXRef.current;
-              if (Math.abs(dx) > 10) desktopSwipeMovedRef.current = true;
-            }}
-            onPointerUp={(e) => {
-              if (desktopSwipeStartXRef.current === null) return;
-              const dx = e.clientX - desktopSwipeStartXRef.current;
-              desktopSwipeStartXRef.current = null;
-              if (!desktopSwipeMovedRef.current) return;
-              if (Math.abs(dx) < DESKTOP_SWIPE_THRESHOLD_PX) return;
-              if (dx < 0) setCurrentIndex((prev) => Math.min(mediaItems.length - 1, prev + 1));
-              else setCurrentIndex((prev) => Math.max(0, prev - 1));
-            }}
-            onPointerCancel={() => {
-              desktopSwipeStartXRef.current = null;
-              desktopSwipeMovedRef.current = false;
-            }}
-          >
+      <div 
+        ref={containerRef}
+        className="relative w-full overflow-hidden rounded-lg bg-black"
+      >
+        {!isMobile ? (
+          <div className="relative w-full bg-black" style={{ width: '100%', height: 'min(520px, 72vh)' }}>
             <div
-              className="flex h-full w-full"
-              style={{
-                transform: `translateX(-${currentIndex * 100}%)`,
-                transition: 'transform 0.3s ease',
+              className="relative h-full w-full overflow-hidden"
+              onPointerDown={(e) => {
+                desktopSwipeStartXRef.current = e.clientX;
+                desktopSwipeMovedRef.current = false;
+              }}
+              onPointerMove={(e) => {
+                if (desktopSwipeStartXRef.current === null) return;
+                const dx = e.clientX - desktopSwipeStartXRef.current;
+                if (Math.abs(dx) > 10) desktopSwipeMovedRef.current = true;
+              }}
+              onPointerUp={(e) => {
+                if (desktopSwipeStartXRef.current === null) return;
+                const dx = e.clientX - desktopSwipeStartXRef.current;
+                desktopSwipeStartXRef.current = null;
+                if (!desktopSwipeMovedRef.current) return;
+                if (Math.abs(dx) < DESKTOP_SWIPE_THRESHOLD_PX) return;
+                if (dx < 0) setCurrentIndex((prev) => Math.min(mediaItems.length - 1, prev + 1));
+                else setCurrentIndex((prev) => Math.max(0, prev - 1));
+              }}
+              onPointerCancel={() => {
+                desktopSwipeStartXRef.current = null;
+                desktopSwipeMovedRef.current = false;
               }}
             >
-              {mediaItems.map((item, idx) => (
-                <div
-                  key={`${item.url}_${idx}`}
-                  className="h-full w-full flex-none flex items-center justify-center"
-                >
-                  <MediaRenderer
-                    url={item.url}
-                    alt={`Media ${idx + 1} de ${mediaItems.length}`}
-                    className="w-full h-full object-contain rounded-none"
-                    stopPropagationOnClick
-                    onClick={() => {
-                      pointerMovedRef.current = false;
-                      openAtIndex(idx);
-                    }}
-                    autoPlay={item.type === 'video'}
-                    muted
-                    loop={item.type === 'video'}
-                    playsInline
-                    videoRef={(el) => {
-                      if (item.type !== 'video') return;
-                      videoRefs.current[idx] = el;
-                      if (el) {
+              <div
+                className="flex h-full w-full"
+                style={{
+                  transform: `translateX(-${currentIndex * 100}%)`,
+                  transition: 'transform 0.3s ease',
+                }}
+              >
+                {mediaItems.map((item, idx) => (
+                  <div
+                    key={`${item.url}_${idx}`}
+                    className="h-full w-full flex-none flex items-center justify-center"
+                  >
+                    <MediaRenderer
+                      url={item.url}
+                      alt={`Media ${idx + 1} de ${mediaItems.length}`}
+                      className="w-full h-full object-contain rounded-none"
+                      stopPropagationOnClick
+                      onClick={() => {
+                        pointerMovedRef.current = false;
+                        openAtIndex(idx);
+                      }}
+                      autoPlayOnView={item.type === 'video'}
+                      pauseOnOutOfView={item.type === 'video'}
+                      muted
+                      loop={item.type === 'video'}
+                      playsInline
+                      videoRef={(el) => {
+                        if (item.type !== 'video') return;
+                        videoRefs.current[idx] = el;
+                        if (el) {
+                          try {
+                            el.setAttribute('webkit-playsinline', 'true');
+                          } catch {
+                            // ignore
+                          }
+                        }
+                      }}
+                      onLoadedMetadata={(e) => {
+                        if (item.type !== 'video') return;
+                        const v = e.currentTarget;
+                        if (!isInView) return;
                         try {
-                          el.setAttribute('webkit-playsinline', 'true');
+                          v.muted = true;
+                          v.play().catch(() => {});
                         } catch {
                           // ignore
                         }
-                      }
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {mediaItems.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors inline-flex items-center justify-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentIndex((prev) => Math.max(0, prev - 1));
                     }}
-                    onLoadedMetadata={(e) => {
-                      if (item.type !== 'video') return;
-                      const v = e.currentTarget;
-                      if (!isInView) return;
-                      try {
-                        v.muted = true;
-                        v.play().catch(() => {});
-                      } catch {
-                        // ignore
-                      }
+                    aria-label="Anterior"
+                    disabled={currentIndex === 0}
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors inline-flex items-center justify-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentIndex((prev) => Math.min(mediaItems.length - 1, prev + 1));
                     }}
-                  />
-                </div>
-              ))}
+                    aria-label="Siguiente"
+                    disabled={currentIndex === mediaItems.length - 1}
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+
+                  <div className="absolute top-3 right-3 z-20 rounded-full bg-black/55 text-white text-xs px-2 py-1 tabular-nums">
+                    {currentIndex + 1}/{mediaItems.length}
+                  </div>
+                </>
+              )}
             </div>
-
-            {mediaItems.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors inline-flex items-center justify-center"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentIndex((prev) => Math.max(0, prev - 1));
-                  }}
-                  aria-label="Anterior"
-                  disabled={currentIndex === 0}
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 z-30 h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors inline-flex items-center justify-center"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentIndex((prev) => Math.min(mediaItems.length - 1, prev + 1));
-                  }}
-                  aria-label="Siguiente"
-                  disabled={currentIndex === mediaItems.length - 1}
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-
-                <div className="absolute top-3 right-3 z-20 rounded-full bg-black/55 text-white text-xs px-2 py-1 tabular-nums">
-                  {currentIndex + 1}/{mediaItems.length}
-                </div>
-              </>
-            )}
           </div>
-        </div>
-      ) : (
+        ) : (
         <div
           ref={scrollRef}
           className="flex w-full overflow-x-auto snap-x snap-mandatory scroll-smooth"
@@ -631,6 +632,7 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
           ))}
         </div>
       )}
+      </div>
 
       {isMobile && mediaItems[currentIndex]?.type === 'video' && (
         <div

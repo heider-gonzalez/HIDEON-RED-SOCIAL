@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { AudioWaveform, Film } from "lucide-react";
+import { MediaRenderer } from "@/components/media/MediaRenderer";
 
 interface MediaDisplayProps {
   url: string;
@@ -78,15 +79,18 @@ export function MediaDisplay({
       
       {isVideo && !hasError && (
         <div className="relative">
-          <video 
-            src={finalUrl} 
-            controls 
-            preload="metadata"
+          <MediaRenderer
+            url={finalUrl}
             className={cn("w-full rounded-md cursor-pointer", className)}
+            autoPlayOnView
+            pauseOnOutOfView
+            customControls
+            muted
+            loop
+            playsInline
+            stopPropagationOnClick={false}
             onClick={handleClick}
-            controlsList="nodownload"
-            onError={handleMediaError}
-            crossOrigin="anonymous"
+            onLoadedMetadata={() => {}}
           />
           {isOpen && <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
             <Film className="h-12 w-12 text-white animate-pulse" />

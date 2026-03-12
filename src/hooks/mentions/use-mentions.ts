@@ -66,7 +66,7 @@ export function useMentions() {
       after
     });
     
-    return `${before}@[${user.username}](${user.id}) ${after}`;
+    return `${before}@${user.username} ${after}`;
   };
 
   return {
