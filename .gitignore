@@ -17,6 +17,7 @@ vite.config.ts.timestamp-*.mjs
 
 .env
 .env.*
+!.env.example
 
 supabase/.temp/
 

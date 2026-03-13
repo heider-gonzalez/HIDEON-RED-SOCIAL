@@ -1,113 +1,121 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.948.0'
+import { getSignedUrl } from 'https://esm.sh/@aws-sdk/s3-request-presigner@3.948.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Max-Age': '86400',
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const formData = await req.formData()
-    const file = formData.get('file') as File
-    const fileName = formData.get('fileName') as string
-
-    if (!file) {
-      return new Response(
-        JSON.stringify({ error: 'No file provided' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    if (!supabaseUrl || !anonKey) {
+      return new Response(JSON.stringify({ error: 'Missing SUPABASE_URL or SUPABASE_ANON_KEY' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    // Get Cloudflare R2 credentials from environment
-    const accountId = Deno.env.get('CLOUDFLARE_R2_ACCOUNT_ID')
-    const accessKeyId = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY')
-    const secretAccessKey = Deno.env.get('CLOUDFLARE_R2_SECRET_KEY')
-    const bucketName = 'archivos-multimedia'
-
-    if (!accountId || !accessKeyId || !secretAccessKey) {
-      console.error('Missing R2 credentials:', { accountId: !!accountId, accessKeyId: !!accessKeyId, secretAccessKey: !!secretAccessKey })
-      return new Response(
-        JSON.stringify({ error: 'R2 credentials not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    // Convert file to ArrayBuffer
-    const fileBuffer = await file.arrayBuffer()
-    
-    // Create the R2 endpoint URL  
-    const r2Endpoint = `https://${accountId}.r2.cloudflarestorage.com`
-    const uploadUrl = `${r2Endpoint}/${bucketName}/${fileName}`
-    
-    // Create timestamp for AWS signature
-    const now = new Date()
-    const timestamp = now.toISOString().replace(/[:\-]|\.\d{3}/g, '')
-
-    console.log('Uploading to R2:', { uploadUrl, fileSize: fileBuffer.byteLength, contentType: file.type })
-
-    // Simple upload to R2 without complex AWS signature
-    // Using basic auth headers that Cloudflare R2 accepts
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': file.type,
-        'X-Amz-Date': timestamp,
-        'X-Amz-Content-Sha256': 'UNSIGNED-PAYLOAD',
-        // Set long-term caching on the object to maximize CDN hits
-        'Cache-Control': 'public, max-age=31536000, immutable',
-        // Basic auth using access key and secret
-        'Authorization': `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${timestamp.split('T')[0]}/auto/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=placeholder`
-      },
-      body: fileBuffer
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
     })
 
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text()
-      console.error('R2 upload failed:', uploadResponse.status, uploadResponse.statusText, errorText)
-      
-      // Fallback: Try simple upload without signature
-      const simpleUploadResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': file.type,
-        },
-        body: fileBuffer
+    const { data: authData, error: authError } = await userClient.auth.getUser()
+    if (authError || !authData?.user?.id) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
-      
-      if (!simpleUploadResponse.ok) {
-        throw new Error(`R2 upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`)
-      }
     }
 
-    // URL TEMPORAL - Usar la URL pública directa de Cloudflare R2
-    // Esto funcionará temporalmente hasta que configures tu dominio personalizado
-    const publicUrl = `https://pub-6404c41a9bda4757a01dabe94c0620a3.r2.dev/${fileName}`
+    const contentType = req.headers.get('content-type') || ''
+    let inputFileName = ''
+    let inputContentType = ''
 
-    console.log('Upload successful:', { publicUrl })
+    if (contentType.includes('application/json')) {
+      const body = (await req.json().catch(() => ({}))) as any
+      inputFileName = String(body?.fileName || '')
+      inputContentType = String(body?.contentType || '')
+    } else {
+      const formData = await req.formData()
+      const fileName = formData.get('fileName') as string
+      const file = formData.get('file') as File | null
+      inputFileName = String(fileName || '')
+      inputContentType = String(file?.type || '')
+    }
 
-    return new Response(
-      JSON.stringify({ url: publicUrl }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=31536000, immutable',
-          'CDN-Cache-Control': 'public, max-age=31536000'
-        } 
-      }
-    )
+    if (!inputFileName || !inputContentType) {
+      return new Response(JSON.stringify({ error: 'Missing fileName or contentType' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
+    const accountId = Deno.env.get('CLOUDFLARE_R2_ACCOUNT_ID') ?? ''
+    const accessKeyId =
+      Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID') ??
+      Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY') ??
+      ''
+    const secretAccessKey =
+      Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY') ??
+      Deno.env.get('CLOUDFLARE_R2_SECRET_KEY') ??
+      ''
+    const bucketName = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME') ?? ''
+    const publicBaseUrl = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL') ?? ''
+
+    if (!accountId || !accessKeyId || !secretAccessKey || !bucketName || !publicBaseUrl) {
+      return new Response(JSON.stringify({ error: 'R2 credentials not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const sanitizedName = inputFileName.replace(/^\/+/, '')
+    const key = `users/${authData.user.id}/${Date.now()}-${sanitizedName}`
+
+    const s3 = new S3Client({
+      region: 'auto',
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    })
+
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      ContentType: inputContentType,
+      CacheControl: 'public, max-age=31536000, immutable',
+    })
+
+    const signedUrl = await getSignedUrl(s3, command, { expiresIn: 60 * 5 })
+    const publicUrl = `${publicBaseUrl.replace(/\/$/, '')}/${key}`
+
+    return new Response(JSON.stringify({ signedUrl, publicUrl, key }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   } catch (error: any) {
     console.error('Upload error:', error)
-    return new Response(
-      JSON.stringify({ error: error.message || 'Error interno del servidor' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: error?.message ?? String(error) }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })
