@@ -89,6 +89,7 @@ function DesktopPostPanel({ post }: { post: Post }) {
 
 export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: MediaLightboxProps) {
   const [index, setIndex] = useState(startIndex);
+  const [isReelLikeVideo, setIsReelLikeVideo] = useState(false);
   const wheelLockRef = useRef<number>(0);
   const pointerStartXRef = useRef<number | null>(null);
   const pointerStartYRef = useRef<number | null>(null);
@@ -106,6 +107,10 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
       setIndex(Math.min(Math.max(startIndex, 0), Math.max(total - 1, 0)));
     }
   }, [isOpen, startIndex, total]);
+
+  useEffect(() => {
+    setIsReelLikeVideo(false);
+  }, [index, current?.url, current?.type]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -287,16 +292,53 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                   decoding="async"
                 />
               ) : (
-                <video
-                  src={current.url}
-                  className="max-h-full max-w-[calc(100vw-400px)] object-contain transition-opacity duration-200"
-                  controls
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                />
+                <div className="h-full w-full flex items-center justify-center">
+                  {isReelLikeVideo ? (
+                    <div className="h-full max-h-full aspect-[9/16] w-auto max-w-[calc(100vw-400px)]">
+                      <video
+                        src={current.url}
+                        className="h-full w-full object-cover transition-opacity duration-200"
+                        controls
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                        onLoadedMetadata={(e) => {
+                          try {
+                            const v = e.currentTarget;
+                            const w = v.videoWidth || 1;
+                            const h = v.videoHeight || 1;
+                            setIsReelLikeVideo(h / w >= 1.25);
+                          } catch {
+                            // ignore
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <video
+                      src={current.url}
+                      className="max-h-full max-w-[calc(100vw-400px)] object-contain transition-opacity duration-200"
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      onLoadedMetadata={(e) => {
+                        try {
+                          const v = e.currentTarget;
+                          const w = v.videoWidth || 1;
+                          const h = v.videoHeight || 1;
+                          setIsReelLikeVideo(h / w >= 1.25);
+                        } catch {
+                          // ignore
+                        }
+                      }}
+                    />
+                  )}
+                </div>
               )}
 
               {total > 1 && (
@@ -405,17 +447,53 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                 decoding="async"
               />
             ) : (
-              <video
-                src={current.url}
-                className="max-h-full max-w-full object-contain"
-                controls
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                onClick={(e) => e.stopPropagation()}
-              />
+              <div className="h-full w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                {isReelLikeVideo ? (
+                  <div className="h-full max-h-full aspect-[9/16] w-auto max-w-full">
+                    <video
+                      src={current.url}
+                      className="h-full w-full object-cover"
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      onLoadedMetadata={(e) => {
+                        try {
+                          const v = e.currentTarget;
+                          const w = v.videoWidth || 1;
+                          const h = v.videoHeight || 1;
+                          setIsReelLikeVideo(h / w >= 1.25);
+                        } catch {
+                          // ignore
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <video
+                    src={current.url}
+                    className="max-h-full max-w-full object-contain"
+                    controls
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    onLoadedMetadata={(e) => {
+                      try {
+                        const v = e.currentTarget;
+                        const w = v.videoWidth || 1;
+                        const h = v.videoHeight || 1;
+                        setIsReelLikeVideo(h / w >= 1.25);
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                  />
+                )}
+              </div>
             )}
 
             {total > 1 && (

@@ -1,18 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
-  const [isDark, setIsDark] = useState(theme === "dark");
+  const { resolvedTheme, setTheme } = useTheme();
+  const [isDark, setIsDark] = useState(resolvedTheme !== "light");
+
+  useEffect(() => {
+    setIsDark(resolvedTheme !== "light");
+  }, [resolvedTheme]);
 
   const toggleTheme = () => {
-    const newTheme = isDark ? "light" : "dark";
-    setIsDark(!isDark);
-    setTheme(newTheme);
+    setTheme(isDark ? "light" : "dark");
   };
 
   return (

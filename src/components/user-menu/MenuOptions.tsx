@@ -15,7 +15,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 
 import { Separator } from "@/components/ui/separator";
 import { Users } from "lucide-react";
@@ -69,12 +69,19 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
   };
 
   const cycleTheme = () => {
-    const current = theme === "dark" || theme === "tech" ? theme : "light";
-    const next = current === "light" ? "dark" : current === "dark" ? "tech" : "light";
+    const current = theme === "dark" || theme === "midnight" ? theme : theme === "system" ? "system" : "light";
+    const next =
+      current === "system"
+        ? "light"
+        : current === "light"
+          ? "dark"
+          : current === "dark"
+            ? "midnight"
+            : "system";
     setTheme(next);
   };
 
-  const themeLabel = theme === "tech" ? "Negro azulado" : theme === "dark" ? "Negro puro" : "Claro";
+  const themeLabel = theme === "midnight" ? "Negro azulado" : theme === "dark" ? "Negro puro" : theme === "system" ? "Sistema" : "Claro";
 
   return (
     <div className="px-2 pb-4 bg-background">
@@ -177,9 +184,16 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
           variant="ghost"
           className="w-full justify-between h-14 px-3 rounded-lg hover:bg-accent"
           onClick={() => {
-            const current = theme === "dark" || theme === "tech" ? theme : "light";
-            const next = current === "light" ? "dark" : current === "dark" ? "tech" : "light";
-            const nextLabel = next === "tech" ? "Negro azulado" : next === "dark" ? "Negro puro" : "Claro";
+            const current = theme === "dark" || theme === "midnight" ? theme : theme === "system" ? "system" : "light";
+            const next =
+              current === "system"
+                ? "light"
+                : current === "light"
+                  ? "dark"
+                  : current === "dark"
+                    ? "midnight"
+                    : "system";
+            const nextLabel = next === "midnight" ? "Negro azulado" : next === "dark" ? "Negro puro" : next === "system" ? "Sistema" : "Claro";
             setTheme(next);
             toast({
               title: "Tema",

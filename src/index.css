@@ -139,7 +139,7 @@
     --facebook-active: 222 47% 16%; /* #1F1F1F */
   }
 
-  .tech {
+  .midnight {
     /* Tech Blue-Black Mode (premium tech) */
     --background: 221 62% 6%; /* #070B14 */
     --foreground: 210 20% 98%;
@@ -185,7 +185,6 @@
     padding-bottom: var(--sab) !important;
     
     /* Esto asegura que el fondo blanco cubra todo el espacio */
-    background-color: #ffffff;
     min-height: 100vh;
   }
   

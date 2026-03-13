@@ -16,6 +16,31 @@
     <!-- Performance optimizations -->
     <link rel="preconnect" href="https://wgbbaxvuuinubkgffpiq.supabase.co">
     <link rel="dns-prefetch" href="https://wgbbaxvuuinubkgffpiq.supabase.co">
+
+    <script>
+      (function () {
+        try {
+          var key = 'hsocial.theme';
+          var stored = localStorage.getItem(key);
+          var systemDark = false;
+          try {
+            systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          } catch (e) {
+            systemDark = false;
+          }
+          var resolved = (stored === 'light' || stored === 'dark' || stored === 'midnight')
+            ? stored
+            : (systemDark ? 'dark' : 'light');
+
+          var root = document.documentElement;
+          root.classList.remove('dark', 'midnight');
+          if (resolved === 'dark') root.classList.add('dark');
+          if (resolved === 'midnight') root.classList.add('midnight');
+        } catch (e) {
+          // ignore
+        }
+      })();
+    </script>
     
     <!-- Optimized CSP for better performance -->
     <!-- TEMPORALMENTE DESACTIVADA PARA DESARROLLO LOCAL -->

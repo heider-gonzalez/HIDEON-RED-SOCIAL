@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -30,7 +29,7 @@ export const HSocialLogo = ({ className = "", showText = true, size = "md", onCl
     lg: "text-2xl",
   };
 
-  const logoBgClass = "bg-white dark:bg-[#121212] [.tech_&]:bg-background";
+  const logoBgClass = "bg-white dark:bg-[#121212] [.midnight_&]:bg-background";
   const logoTextClass = "text-primary";
   const brandWordClass = "text-primary";
 

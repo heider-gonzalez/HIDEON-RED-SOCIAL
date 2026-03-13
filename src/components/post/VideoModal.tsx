@@ -14,6 +14,7 @@ interface VideoModalProps {
 
 export function VideoModal({ isOpen, onClose, videoUrl, altText = "Video" }: VideoModalProps) {
   const [isMuted, setIsMuted] = useState(true);
+  const [isReelLike, setIsReelLike] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
 
@@ -97,16 +98,57 @@ export function VideoModal({ isOpen, onClose, videoUrl, altText = "Video" }: Vid
             if (e.target === e.currentTarget) onClose();
           }}
         >
-          <video 
-            ref={videoRef}
-            src={videoUrl} 
-            controls
-            muted={isMuted}
-            className="max-h-[85vh] max-w-full object-contain"
-            onClick={(e) => e.stopPropagation()}
-          >
-            Tu navegador no soporta el elemento de video.
-          </video>
+          <div className="w-full flex items-center justify-center">
+            {isReelLike ? (
+              <div className="max-h-[85vh] h-[85vh] aspect-[9/16] w-auto">
+                <video 
+                  ref={videoRef}
+                  src={videoUrl} 
+                  controls
+                  muted={isMuted}
+                  className="h-full w-full object-cover"
+                  onClick={(e) => e.stopPropagation()}
+                  preload="metadata"
+                  playsInline
+                  onLoadedMetadata={(e) => {
+                    try {
+                      const v = e.currentTarget;
+                      const w = v.videoWidth || 1;
+                      const h = v.videoHeight || 1;
+                      setIsReelLike(h / w >= 1.25);
+                    } catch {
+                      // ignore
+                    }
+                  }}
+                >
+                  Tu navegador no soporta el elemento de video.
+                </video>
+              </div>
+            ) : (
+              <video 
+                ref={videoRef}
+                src={videoUrl} 
+                controls
+                muted={isMuted}
+                className="max-h-[85vh] max-w-full object-contain"
+                onClick={(e) => e.stopPropagation()}
+                preload="metadata"
+                playsInline
+                onLoadedMetadata={(e) => {
+                  try {
+                    const v = e.currentTarget;
+                    const w = v.videoWidth || 1;
+                    const h = v.videoHeight || 1;
+                    setIsReelLike(h / w >= 1.25);
+                  } catch {
+                    // ignore
+                  }
+                }}
+              >
+                Tu navegador no soporta el elemento de video.
+              </video>
+            )}
+          </div>
 
           <Button
             variant="ghost"

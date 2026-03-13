@@ -12,7 +12,7 @@ import { useBatchFollowingStatus } from "@/hooks/use-batch-following-status";
 import { useDoubleClick } from "@/hooks/use-double-click";
 import { useVolumeControl } from "@/hooks/reels/use-volume-control";
 import { VolumeSlider } from "./VolumeSlider";
-import { normalizePostContent } from "@/utils/post-content";
+import { MentionsText } from "@/components/post/MentionsText";
 import { useReelComments } from "@/hooks/reels/use-reel-comments";
 import { Comments } from "@/components/post/Comments";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
@@ -186,7 +186,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
     onReaction(post.id, 'love');
   };
 
-  const cleanContent = React.useMemo(() => normalizePostContent(post.content), [post.content]);
+  const contentForMentions = post.content || "";
 
   return (
     <div 
@@ -360,10 +360,11 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
               )}
             </div>
 
-            {cleanContent && (
-              <p className="text-sm text-gray-100 whitespace-pre-wrap break-words line-clamp-3">
-                {cleanContent}
-              </p>
+            {contentForMentions && (
+              <MentionsText
+                content={contentForMentions}
+                className="text-sm text-gray-100 whitespace-pre-wrap break-words line-clamp-3"
+              />
             )}
           </div>
         </div>

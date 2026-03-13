@@ -13,7 +13,7 @@ import { VolumeSlider } from "./VolumeSlider";
 import { useReelComments } from "@/hooks/reels/use-reel-comments";
 import { Comments } from "@/components/post/Comments";
 import { useToast } from "@/hooks/use-toast";
-import { normalizePostContent } from "@/utils/post-content";
+import { MentionsText } from "@/components/post/MentionsText";
 
 interface ReelItemProps {
   post: Post;
@@ -35,7 +35,7 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
   const { userReaction, onReaction: handleReaction } = usePostReactions(post.id);
   const { toast } = useToast();
 
-  const cleanContent = React.useMemo(() => normalizePostContent(post.content), [post.content]);
+  const contentForMentions = post.content || "";
 
   const {
     comments,
@@ -215,30 +215,34 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
             </div>
           </div>
         ) : (
-          <video
-            ref={videoRef}
-            src={currentSrc || undefined}
-            className={isVertical ? "w-full h-full object-cover" : "w-full h-full object-contain"}
-            controls={!isVertical}
-            loop
-            playsInline
-            muted={isMuted}
-            onClick={isVertical ? handleVideoClick : undefined}
-            onError={handleVideoError}
-            onLoadedMetadata={() => {
-              try {
-                const v = videoRef.current;
-                if (!v) return;
-                const w = v.videoWidth || 1;
-                const h = v.videoHeight || 1;
-                setIsVertical(h / w >= 1.25);
-              } catch {
-                // ignore
-              }
-            }}
-            onLoadStart={() => {}} // Reduce console spam
-            onCanPlay={() => {}} // Reduce console spam
-          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className={isVertical ? "h-full max-h-[100svh] aspect-[9/16] w-auto" : "h-full w-full"}>
+              <video
+                ref={videoRef}
+                src={currentSrc || undefined}
+                className={isVertical ? "h-full w-full object-cover" : "w-full h-full object-contain"}
+                controls={!isVertical}
+                loop
+                playsInline
+                muted={isMuted}
+                onClick={isVertical ? handleVideoClick : undefined}
+                onError={handleVideoError}
+                onLoadedMetadata={() => {
+                  try {
+                    const v = videoRef.current;
+                    if (!v) return;
+                    const w = v.videoWidth || 1;
+                    const h = v.videoHeight || 1;
+                    setIsVertical(h / w >= 1.25);
+                  } catch {
+                    // ignore
+                  }
+                }}
+                onLoadStart={() => {}} // Reduce console spam
+                onCanPlay={() => {}} // Reduce console spam
+              />
+            </div>
+          </div>
         )}
       </div>
 
@@ -354,10 +358,11 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
               </Button>
             </div>
 
-            {cleanContent && (
-              <p className="text-sm text-white whitespace-pre-wrap break-words line-clamp-2">
-                {cleanContent}
-              </p>
+            {contentForMentions && (
+              <MentionsText
+                content={contentForMentions}
+                className="text-sm text-white whitespace-pre-wrap break-words line-clamp-2"
+              />
             )}
           </div>
         </div>

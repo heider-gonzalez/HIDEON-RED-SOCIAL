@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Moon, Sun, Monitor } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 import { Card } from "@/components/ui/card";
 
 export default function AccessibilitySettings() {
@@ -9,12 +9,19 @@ export default function AccessibilitySettings() {
   const { theme, setTheme } = useTheme();
 
   const cycleTheme = () => {
-    const current = theme === "dark" || theme === "tech" ? theme : "light";
-    const next = current === "light" ? "dark" : current === "dark" ? "tech" : "light";
+    const current = theme === "dark" || theme === "midnight" ? theme : theme === "system" ? "system" : "light";
+    const next =
+      current === "system"
+        ? "light"
+        : current === "light"
+          ? "dark"
+          : current === "dark"
+            ? "midnight"
+            : "system";
     setTheme(next);
   };
 
-  const themeLabel = theme === "tech" ? "Negro azulado" : theme === "dark" ? "Negro puro" : "Claro";
+  const themeLabel = theme === "midnight" ? "Negro azulado" : theme === "dark" ? "Negro puro" : theme === "system" ? "Sistema" : "Claro";
 
   return (
     <div className="container max-w-2xl mx-auto px-4 py-6">
@@ -70,7 +77,7 @@ export default function AccessibilitySettings() {
                 <p className="text-xs text-muted-foreground">Premium tech (iOS/Discord pro)</p>
               </div>
             </div>
-            {theme === "tech" && (
+            {theme === "midnight" && (
               <div className="h-2 w-2 rounded-full bg-primary" />
             )}
           </div>
