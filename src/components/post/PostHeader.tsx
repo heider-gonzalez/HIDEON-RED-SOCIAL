@@ -72,18 +72,7 @@ export function PostHeader({
   const careerToShow = !isIncognito ? (careerFromPost || authorCareer) : null;
 
   const renderProjectTag = () => {
-    const shouldShow =
-      isProjectPost || post.post_type === 'project' || post.post_type === 'proyecto';
-    if (!shouldShow) return null;
-
-    return (
-      <Badge
-        variant="secondary"
-        className="ml-2 flex items-center gap-1 text-xs bg-muted text-foreground"
-      >
-        Proyecto
-      </Badge>
-    );
+    return null;
   };
   
   useEffect(() => {
