@@ -5,71 +5,50 @@ const R2_PUBLIC_URL = (import.meta as any)?.env?.VITE_R2_PUBLIC_URL as string | 
 
 export async function uploadToSupabase(file: File, fileName: string): Promise<string> {
   try {
-    try {
-      const { data, error } = await supabase.functions.invoke('upload-to-r2', {
-        body: {
-          fileName,
-          contentType: file.type,
-        },
-      });
+    const { data, error } = await supabase.functions.invoke('upload-to-r2', {
+      body: {
+        fileName,
+        contentType: file.type,
+      },
+    });
 
-      if (error) {
-        throw error;
-      }
-
-      const signedUrl = (data as any)?.signedUrl as string | undefined;
-      const publicUrlFromFn = (data as any)?.publicUrl as string | undefined;
-      const key = (data as any)?.key as string | undefined;
-
-      if (!signedUrl || (!publicUrlFromFn && !key)) {
-        throw new Error('Missing signedUrl/publicUrl/key');
-      }
-
-      const uploadRes = await fetch(signedUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-          'Cache-Control': 'public, max-age=31536000, immutable',
-        },
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error(`R2 upload failed: ${uploadRes.status} ${uploadRes.statusText}`);
-      }
-
-      if (key && R2_PUBLIC_URL) {
-        return `${String(R2_PUBLIC_URL).replace(/\/$/, '')}/${key}`;
-      }
-
-      if (!publicUrlFromFn) {
-        throw new Error('Missing publicUrl');
-      }
-
-      return publicUrlFromFn;
-    } catch (r2Error) {
-      console.warn('R2 upload failed, falling back to Supabase Storage:', r2Error);
-
-      const filePath = fileName;
-
-      const { error } = await supabase.storage
-        .from('media')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: file.type,
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('media')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
+    if (error) {
+      throw error;
     }
+
+    const signedUrl = (data as any)?.signedUrl as string | undefined;
+    const publicUrlFromFn = (data as any)?.publicUrl as string | undefined;
+    const key = (data as any)?.key as string | undefined;
+
+    if (!signedUrl) {
+      throw new Error('R2 signed URL missing. Check Edge Function upload-to-r2 and its secrets.');
+    }
+
+    const uploadRes = await fetch(signedUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+    });
+
+    if (!uploadRes.ok) {
+      const hint = uploadRes.status === 0
+        ? 'Possible CORS/OPTIONS issue in your R2 bucket policy.'
+        : 'Check your R2 bucket CORS policy includes OPTIONS and allows Content-Type/Cache-Control headers.';
+      throw new Error(`R2 upload failed: ${uploadRes.status} ${uploadRes.statusText}. ${hint}`);
+    }
+
+    if (key && R2_PUBLIC_URL) {
+      return `${String(R2_PUBLIC_URL).replace(/\/$/, '')}/${key}`;
+    }
+
+    if (publicUrlFromFn) {
+      return publicUrlFromFn;
+    }
+
+    throw new Error('R2 upload succeeded but no public URL was provided. Set VITE_R2_PUBLIC_URL or CLOUDFLARE_R2_PUBLIC_URL.');
   } catch (error) {
     console.error('Error uploading to Supabase storage:', error);
     throw error;
