@@ -7,11 +7,7 @@ export function useCommentImage(setCommentImage?: (file: File | null) => void) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Update image preview when image changes
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const applyImageFile = (file: File) => {
     // Check if file is an image
     if (!file.type.startsWith('image/')) {
       toast({
@@ -35,8 +31,34 @@ export function useCommentImage(setCommentImage?: (file: File | null) => void) {
     if (setCommentImage) {
       setCommentImage(file);
     }
-    
+
     setImagePreview(URL.createObjectURL(file));
+  };
+
+  // Update image preview when image changes
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    applyImageFile(file);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    const imgItem = Array.from(items).find((it) => it.type?.startsWith('image/'));
+    if (!imgItem) return;
+
+    const file = imgItem.getAsFile();
+    if (!file) return;
+
+    const ext = file.type === 'image/png' ? 'png' : file.type === 'image/jpeg' ? 'jpg' : 'img';
+    const name = `clipboard-${Date.now()}.${ext}`;
+    const wrapped = new File([file], name, { type: file.type });
+
+    e.preventDefault();
+    applyImageFile(wrapped);
   };
 
   const handleRemoveImage = () => {
@@ -53,6 +75,7 @@ export function useCommentImage(setCommentImage?: (file: File | null) => void) {
     fileInputRef,
     imagePreview,
     handleImageChange,
-    handleRemoveImage
+    handleRemoveImage,
+    handlePaste
   };
 }

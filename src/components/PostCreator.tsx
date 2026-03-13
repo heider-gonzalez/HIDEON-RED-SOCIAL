@@ -319,6 +319,28 @@ export function PostCreator({
     e.target.value = '';
   };
 
+  const addAttachments = (files: File[]) => {
+    if (!files || files.length === 0) return;
+    const newFiles = [...selectedFiles, ...files].slice(0, 10);
+    setSelectedFiles(newFiles);
+
+    const newPreviews: Promise<string>[] = newFiles.map((file) => {
+      return new Promise((resolve) => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+          return;
+        }
+        resolve(URL.createObjectURL(file));
+      });
+    });
+
+    Promise.all(newPreviews).then((previews) => {
+      setFilePreviews(previews);
+    });
+  };
+
   const removeAttachment = (index: number) => {
     const newFiles = selectedFiles.filter((_, i) => i !== index);
     setSelectedFiles(newFiles);
@@ -737,6 +759,7 @@ export function PostCreator({
           setContent={setContent}
           textareaRef={finalTextareaRef}
           contentStyle={contentStyle}
+          onPasteFiles={addAttachments}
         />
       )}
 

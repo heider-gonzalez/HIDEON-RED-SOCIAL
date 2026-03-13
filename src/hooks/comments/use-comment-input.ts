@@ -20,7 +20,8 @@ export function useCommentInput({
     fileInputRef,
     imagePreview,
     handleImageChange,
-    handleRemoveImage
+    handleRemoveImage,
+    handlePaste
   } = useCommentImage(setCommentImage);
   
   // Use the extracted mentions hook
@@ -95,6 +96,7 @@ export function useCommentInput({
     handleSelectMention,
     handleMentionClick: handleMentionClickWrapped,
     handleImageChange,
-    handleRemoveImage
+    handleRemoveImage,
+    handlePaste
   };
 }

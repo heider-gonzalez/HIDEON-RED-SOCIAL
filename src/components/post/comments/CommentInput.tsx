@@ -46,7 +46,8 @@ export function CommentInput({
     handleSelectMention,
     handleMentionClick,
     handleImageChange,
-    handleRemoveImage
+    handleRemoveImage,
+    handlePaste
   } = useCommentInput({
     newComment,
     onNewCommentChange,
@@ -74,6 +75,7 @@ export function CommentInput({
             value={newComment}
             onChange={handleTextAreaChange}
             onKeyDown={handleKeyDownWithSubmit}
+            onPaste={handlePaste}
             placeholder={replyTo ? `Escribe tu respuesta para ${replyTo.username}...` : "Escribe un comentario..."}
           />
           <SubmitButton 

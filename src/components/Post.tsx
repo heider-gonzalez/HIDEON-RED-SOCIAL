@@ -651,7 +651,9 @@ function CollabInlinePostView({ post, kind }: { post: PostType; kind: 'idea' | '
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <Badge className={`text-xs font-medium ${badgeClass}`}>{badgeLabel}</Badge>
+              {!isIdea && (
+                <Badge className={`text-xs font-medium ${badgeClass}`}>{badgeLabel}</Badge>
+              )}
 
               {statusLabel && (
                 <Badge variant="outline" className={statusClass}>

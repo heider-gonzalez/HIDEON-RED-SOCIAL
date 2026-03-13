@@ -15,6 +15,7 @@ interface PostContentInputProps {
   textareaRef: RefObject<HTMLTextAreaElement>;
   contentStyle?: ContentStyle;
   onCursorPositionChange?: (position: number) => void;
+  onPasteFiles?: (files: File[]) => void;
 }
 
 export function PostContentInput({
@@ -22,7 +23,8 @@ export function PostContentInput({
   setContent,
   textareaRef,
   contentStyle,
-  onCursorPositionChange
+  onCursorPositionChange,
+  onPasteFiles
 }: PostContentInputProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -166,6 +168,27 @@ export function PostContentInput({
 
   const textareaStyles = getTextareaStyles();
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    const imageFiles: File[] = [];
+    for (const item of Array.from(items)) {
+      if (!item.type?.startsWith('image/')) continue;
+      const file = item.getAsFile();
+      if (!file) continue;
+      const ext = file.type === 'image/png' ? 'png' : file.type === 'image/jpeg' ? 'jpg' : 'img';
+      const name = `clipboard-${Date.now()}.${ext}`;
+      imageFiles.push(new File([file], name, { type: file.type }));
+    }
+
+    if (imageFiles.length === 0) return;
+    if (!onPasteFiles) return;
+
+    e.preventDefault();
+    onPasteFiles(imageFiles);
+  };
+
   return (
     <div className="space-y-3">
       <div className="relative">
@@ -180,6 +203,7 @@ export function PostContentInput({
           value={content}
           onChange={handleTextAreaChange}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           className={textareaStyles.className}
           style={textareaStyles.style}
         />
