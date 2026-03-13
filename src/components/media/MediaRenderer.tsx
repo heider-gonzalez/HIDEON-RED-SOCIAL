@@ -214,28 +214,6 @@ export function MediaRenderer({
 
         {showCustomControls && (
           <>
-            {isCoarsePointer && (
-              <button
-                type="button"
-                className="absolute top-2 right-2 z-20 h-9 w-9 rounded-full bg-black/45 text-white inline-flex items-center justify-center backdrop-blur-sm"
-                onClick={(e) => {
-                  if (stopPropagationOnClick) e.stopPropagation();
-                  showTapControls();
-                  const v = localVideoRef.current;
-                  if (!v) return;
-                  try {
-                    v.muted = !v.muted;
-                    setIsMutedLocal(Boolean(v.muted));
-                  } catch {
-                    // ignore
-                  }
-                }}
-                aria-label={isMutedLocal ? 'Activar sonido' : 'Silenciar'}
-              >
-                {isMutedLocal ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-              </button>
-            )}
-
           <div
             className={cn(
               "absolute inset-x-0 bottom-0 px-3 pb-3 pt-6 bg-gradient-to-t from-black/70 via-black/30 to-transparent transition-opacity",

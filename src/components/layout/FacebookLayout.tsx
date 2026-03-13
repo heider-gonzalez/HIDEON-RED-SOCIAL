@@ -64,6 +64,8 @@ export function FacebookLayout({
     location.pathname.startsWith("/company") ||
     location.pathname.startsWith("/leaderboard");
 
+  const hideLegalFooter = location.pathname.startsWith("/messages");
+
   useEffect(() => {
     if (!isMobile) return;
     forceUnlockBodyScroll();
@@ -141,7 +143,7 @@ export function FacebookLayout({
             <div className="w-full px-0 mx-auto max-w-full">
               {currentUserId && <NotificationPermissionBanner />}
               {children}
-              <AppLegalFooter />
+              {!hideLegalFooter && <AppLegalFooter />}
             </div>
           </main>
           
@@ -183,7 +185,7 @@ export function FacebookLayout({
                 <div className={isWideCenterPage ? "mx-auto w-full max-w-[1400px]" : "mx-auto w-full max-w-[900px]"}>
                   {currentUserId && <NotificationPermissionBanner />}
                   {children}
-                  <AppLegalFooter />
+                  {!hideLegalFooter && <AppLegalFooter />}
                 </div>
               </div>
             </main>

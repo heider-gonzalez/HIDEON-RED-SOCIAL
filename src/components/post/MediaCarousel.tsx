@@ -634,75 +634,6 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
       )}
       </div>
 
-      {isMobile && mediaItems[currentIndex]?.type === 'video' && (
-        <div
-          className="absolute left-0 right-0 bottom-0 z-30 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-2"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="h-8 w-8 inline-flex items-center justify-center text-white"
-              onClick={(e) => {
-                e.stopPropagation();
-                void togglePlay();
-              }}
-              aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
-            >
-              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-            </button>
-
-            <div className="text-xs text-white tabular-nums min-w-[84px]">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </div>
-
-            <input
-              type="range"
-              min={0}
-              max={duration || 0}
-              step={0.1}
-              value={Math.min(currentTime, duration || 0)}
-              onChange={(e) => {
-                const v = videoRefs.current[currentIndex];
-                if (!v) return;
-                const t = Number(e.target.value);
-                try {
-                  v.currentTime = t;
-                  setCurrentTime(t);
-                } catch {
-                  // ignore
-                }
-              }}
-              className="flex-1 h-1 accent-white"
-            />
-
-            <button
-              type="button"
-              className="h-8 w-8 inline-flex items-center justify-center text-white"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleVideoMute();
-              }}
-              aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
-            >
-              {isMuted || volumeLocal === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-            </button>
-
-            <button
-              type="button"
-              className="h-8 w-8 inline-flex items-center justify-center text-white"
-              onClick={(e) => {
-                e.stopPropagation();
-                openFullscreenActive();
-              }}
-              aria-label="Pantalla completa"
-            >
-              <Maximize className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {isMobile && mediaItems.length > 1 && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/20 px-2 py-1 rounded-full">
           {mediaItems.map((_, idx) => (
@@ -715,20 +646,6 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
             />
           ))}
         </div>
-      )}
-
-      {isMobile && hasAudio && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            void toggleMute();
-          }}
-          className="absolute bottom-3 right-3 z-10 rounded-full bg-black/40 hover:bg-black/55 text-white p-2"
-          aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
-        >
-          {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-        </button>
       )}
 
       <MediaLightbox
