@@ -7,10 +7,10 @@ export async function uploadToSupabase(file: File, fileName: string): Promise<st
   try {
     try {
       const { data, error } = await supabase.functions.invoke('upload-to-r2', {
-        body: {
+        body: JSON.stringify({
           fileName,
           contentType: file.type,
-        },
+        }),
         headers: {
           'Content-Type': 'application/json',
         },
