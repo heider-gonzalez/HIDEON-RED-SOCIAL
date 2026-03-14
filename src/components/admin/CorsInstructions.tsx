@@ -47,9 +47,9 @@ export function CorsInstructions() {
 {`[
   {
     "AllowedOrigins": [
-      "https://preview--hsocial-com-95-43-34-51-11.lovable.app",
+      "https://hsocial-app.onrender.com",
       "https://*.lovable.app",
-      "http://localhost:8080"
+      "http://localhost:8081"
     ],
     "AllowedMethods": ["GET", "HEAD", "OPTIONS"],
     "AllowedHeaders": [

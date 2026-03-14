@@ -11,6 +11,9 @@ export async function uploadToSupabase(file: File, fileName: string): Promise<st
           fileName,
           contentType: file.type,
         },
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (error) {
@@ -42,7 +45,9 @@ export async function uploadToSupabase(file: File, fileName: string): Promise<st
       }
 
       if (key && R2_PUBLIC_URL) {
-        return `${String(R2_PUBLIC_URL).replace(/\/$/, '')}/${key}`;
+        const finalUrl = `${String(R2_PUBLIC_URL).replace(/\/$/, '')}/${key}`;
+        console.log('R2 upload successful, URL:', finalUrl);
+        return finalUrl;
       }
 
       if (publicUrlFromFn) {
