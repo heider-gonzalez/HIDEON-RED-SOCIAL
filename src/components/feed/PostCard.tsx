@@ -2,6 +2,7 @@ import { MessageCircle, Share2, MoreHorizontal, User, Briefcase, School, Chevron
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { LikeButton } from './LikeButton';
 import { InstagramAudioPlayer } from '@/components/media/InstagramAudioPlayer';
 import { useUser } from '@/hooks/use-user';
@@ -68,8 +69,24 @@ export function PostCard({ post }: PostCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
-  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(() => {
+    try {
+      return localStorage.getItem('feed_video_muted') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+  const [volume, setVolume] = useState(() => {
+    try {
+      const saved = localStorage.getItem('feed_video_volume');
+      const n = saved ? Number(saved) : 0.5;
+      return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0.5;
+    } catch {
+      return 0.5;
+    }
+  });
+  const [showVolumeUI, setShowVolumeUI] = useState(false);
+  const userVolumeTouchedRef = useRef(false);
   const [isVerticalVideo, setIsVerticalVideo] = useState(true);
 
   const formatTime = (seconds: number) => {
@@ -114,6 +131,12 @@ export function PostCard({ post }: PostCardProps) {
     try {
       v.muted = !v.muted;
       setIsMuted(v.muted);
+      userVolumeTouchedRef.current = true;
+      try {
+        localStorage.setItem('feed_video_muted', String(v.muted));
+      } catch {
+        // ignore
+      }
     } catch {
       // ignore
     }
@@ -126,6 +149,13 @@ export function PostCard({ post }: PostCardProps) {
     try {
       v.volume = clamped;
       setVolume(clamped);
+      userVolumeTouchedRef.current = true;
+      try {
+        localStorage.setItem('feed_video_volume', String(clamped));
+        if (clamped > 0) localStorage.setItem('feed_video_muted', 'false');
+      } catch {
+        // ignore
+      }
       if (clamped > 0 && v.muted) {
         v.muted = false;
         setIsMuted(false);
@@ -157,8 +187,10 @@ export function PostCard({ post }: PostCardProps) {
           return;
         }
         try {
-          v.muted = true;
-          setIsMuted(true);
+          if (!userVolumeTouchedRef.current) {
+            v.muted = isMuted;
+            v.volume = volume;
+          }
           v.play().catch(() => {});
         } catch {
           // ignore
@@ -168,7 +200,7 @@ export function PostCard({ post }: PostCardProps) {
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [primaryMediaUrl, isVideo]);
+  }, [primaryMediaUrl, isVideo, isMuted, volume]);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -214,6 +246,17 @@ export function PostCard({ post }: PostCardProps) {
       v.removeEventListener('volumechange', onVolumeChange);
     };
   }, [primaryMediaUrl]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      v.volume = volume;
+      v.muted = isMuted;
+    } catch {
+      // ignore
+    }
+  }, [volume, isMuted]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -298,18 +341,22 @@ export function PostCard({ post }: PostCardProps) {
                     ? "w-full max-h-[500px] cursor-pointer object-cover"
                     : "w-full max-h-[500px] cursor-pointer object-contain"
                 }
-                muted
+                muted={isMuted}
                 playsInline
                 loop
                 preload="metadata"
                 onClick={() => {
                   try {
-                    videoRef.current?.pause();
+                    const v = videoRef.current;
+                    if (!v) return;
+                    if (v.paused) {
+                      v.play().catch(() => {});
+                    } else {
+                      v.pause();
+                    }
                   } catch {
                     // ignore
                   }
-                  setLightboxStart(0);
-                  setLightboxOpen(true);
                 }}
               >
                 Tu navegador no soporta el elemento de video.
@@ -357,17 +404,46 @@ export function PostCard({ post }: PostCardProps) {
                     className="flex-1 h-1 accent-white"
                   />
 
-                  <button
-                    type="button"
-                    className="h-8 w-8 inline-flex items-center justify-center text-white"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleMute();
-                    }}
-                    aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
+                  <div
+                    className="relative"
+                    onMouseEnter={() => setShowVolumeUI(true)}
+                    onMouseLeave={() => setShowVolumeUI(false)}
                   >
-                    {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                  </button>
+                    <button
+                      type="button"
+                      className="h-8 w-8 inline-flex items-center justify-center text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMute();
+                      }}
+                      aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
+                    >
+                      {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                    </button>
+
+                    {showVolumeUI && (
+                      <div
+                        className="absolute bottom-10 right-0 z-30 rounded-lg bg-black/70 p-3 backdrop-blur-sm"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex flex-col items-center gap-2 h-28">
+                          <div className="text-[10px] text-white/80 tabular-nums">
+                            {Math.round((isMuted ? 0 : volume) * 100)}%
+                          </div>
+                          <div className="h-full flex items-center">
+                            <Slider
+                              value={[Math.round((isMuted ? 0 : volume) * 100)]}
+                              onValueChange={(v) => changeVolume((v[0] ?? 0) / 100)}
+                              max={100}
+                              step={1}
+                              orientation="vertical"
+                              className="h-24"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   <button
                     type="button"
