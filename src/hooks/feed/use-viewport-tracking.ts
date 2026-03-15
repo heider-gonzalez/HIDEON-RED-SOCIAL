@@ -29,6 +29,7 @@ export function useViewportTracking(
           'view',
           Math.round(totalViewTimeRef.current / 1000) // Convert to seconds
         );
+        totalViewTimeRef.current = 0;
       } catch (error) {
         console.error('Error tracking view:', error);
       }
@@ -56,6 +57,7 @@ export function useViewportTracking(
             totalViewTimeRef.current += viewTime;
             isVisibleRef.current = false;
             startTimeRef.current = null;
+            trackView();
           }
         }
       },

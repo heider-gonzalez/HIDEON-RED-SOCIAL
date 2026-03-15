@@ -53,6 +53,7 @@ export interface Post {
   user_reaction?: string | null;
   comments_count?: number;
   shares_count?: number; // Count of times shared
+  views_count?: number;
   userHasReacted?: boolean; // Add missing property
   content_style?: ContentStyle | null; // Add content style for background/text formatting
   project_status?:

@@ -55,6 +55,7 @@ export function transformPostData(post: any): Post {
     } : undefined,
     comments_count: post.comments?.[0]?.count || 0,
     shares_count: post.post_shares?.[0]?.count || 0,
+    views_count: post.views_count || 0,
     shared_post_id: post.shared_post_id,
     shared_from: post.shared_from,
     visibility: post.visibility,

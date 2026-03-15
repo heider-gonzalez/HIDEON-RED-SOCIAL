@@ -7,6 +7,7 @@ interface PostActivitySummaryProps {
   reactionsByType: Record<string, number>;
   commentsCount: number;
   sharesCount: number;
+  viewsCount?: number;
   onCommentsClick?: () => void;
 }
 
@@ -15,10 +16,11 @@ export function PostActivitySummary({
   reactionsByType,
   commentsCount,
   sharesCount,
+  viewsCount = 0,
   onCommentsClick,
 }: PostActivitySummaryProps) {
   const totalReactions = Object.values(reactionsByType).reduce((sum, count) => sum + count, 0);
-  const hasActivity = totalReactions > 0 || commentsCount > 0 || sharesCount > 0;
+  const hasActivity = totalReactions > 0 || commentsCount > 0 || sharesCount > 0 || viewsCount > 0;
 
   if (!hasActivity) {
     return null;
@@ -45,12 +47,20 @@ export function PostActivitySummary({
               {commentsCount} {commentsCount === 1 ? 'comentario' : 'comentarios'}
             </button>
           )}
-          {commentsCount > 0 && sharesCount > 0 && (
+          {commentsCount > 0 && (sharesCount > 0 || viewsCount > 0) && (
             <span className="mx-1">·</span>
           )}
           {sharesCount > 0 && (
             <span>
               {sharesCount} {sharesCount === 1 ? 'vez compartido' : 'veces compartido'}
+            </span>
+          )}
+          {sharesCount > 0 && viewsCount > 0 && (
+            <span className="mx-1">·</span>
+          )}
+          {viewsCount > 0 && (
+            <span>
+              {viewsCount} {viewsCount === 1 ? 'reproducción' : 'reproducciones'}
             </span>
           )}
         </div>

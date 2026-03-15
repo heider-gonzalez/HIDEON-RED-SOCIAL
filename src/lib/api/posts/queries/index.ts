@@ -6,3 +6,4 @@ export * from './reactions';
 export * from './comments';
 export * from './polls';
 export * from './shares';
+export * from './views';

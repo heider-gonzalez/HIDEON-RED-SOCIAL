@@ -1,6 +1,7 @@
 import React from "react";
 import { Post as PostComponent } from "@/components/Post";
 import type { Post } from "@/types/post";
+import { PostCardWithTracking } from "@/components/feed/PostCardWithTracking";
 
 interface UnifiedPostCardProps {
   post: Post;
@@ -20,9 +21,16 @@ export function UnifiedPostCard({
   // Oportunidades eliminadas
   return (
     <div className="mb-0 w-full">
-      <PostComponent 
-        post={post}
-      />
+      {isInFeed ? (
+        <PostCardWithTracking
+          post={post}
+          isInFeed={isInFeed}
+          trackPostView={trackPostView}
+          trackPostInteraction={trackPostInteraction}
+        />
+      ) : (
+        <PostComponent post={post} />
+      )}
     </div>
   );
 }

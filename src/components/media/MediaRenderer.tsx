@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import type { Ref, SyntheticEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 
 type MediaType = "image" | "video";
 
@@ -75,6 +76,16 @@ export function MediaRenderer({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [isMutedLocal, setIsMutedLocal] = useState(effectiveMuted);
+  const [volumeLocal, setVolumeLocal] = useState(() => {
+    try {
+      const saved = localStorage.getItem('feed_video_volume');
+      const n = saved ? Number(saved) : 0.5;
+      return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0.5;
+    } catch {
+      return 0.5;
+    }
+  });
+  const [showVolumeUI, setShowVolumeUI] = useState(false);
 
   const showTapControls = () => {
     if (!isCoarsePointer) return;
@@ -143,11 +154,15 @@ export function MediaRenderer({
       setDuration(Number.isFinite(el.duration) ? el.duration : 0);
       setCurrentTime(Number.isFinite(el.currentTime) ? el.currentTime : 0);
       setIsMutedLocal(Boolean(el.muted));
+      setVolumeLocal(typeof el.volume === 'number' ? el.volume : 1);
     };
     const onTime = () => setCurrentTime(Number.isFinite(el.currentTime) ? el.currentTime : 0);
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
-    const onVolume = () => setIsMutedLocal(Boolean(el.muted));
+    const onVolume = () => {
+      setIsMutedLocal(Boolean(el.muted));
+      setVolumeLocal(typeof el.volume === 'number' ? el.volume : 1);
+    };
 
     el.addEventListener('loadedmetadata', onLoaded);
     el.addEventListener('timeupdate', onTime);
@@ -164,6 +179,45 @@ export function MediaRenderer({
       el.removeEventListener('volumechange', onVolume);
     };
   }, [isVideo, url]);
+
+  useEffect(() => {
+    const el = localVideoRef.current;
+    if (!el) return;
+    if (!isVideo) return;
+    try {
+      el.volume = volumeLocal;
+      if (volumeLocal > 0 && el.muted && !effectiveMuted) {
+        el.muted = false;
+      }
+    } catch {
+      // ignore
+    }
+  }, [effectiveMuted, isVideo, volumeLocal]);
+
+  const setVolume = (next: number) => {
+    const el = localVideoRef.current;
+    if (!el) return;
+    const clamped = Math.min(1, Math.max(0, next));
+    try {
+      el.volume = clamped;
+      setVolumeLocal(clamped);
+      if (clamped > 0) {
+        el.muted = false;
+        setIsMutedLocal(false);
+      } else {
+        el.muted = true;
+        setIsMutedLocal(true);
+      }
+      try {
+        localStorage.setItem('feed_video_volume', String(clamped));
+        localStorage.setItem('feed_video_muted', String(el.muted));
+      } catch {
+        // ignore
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const s = Math.max(0, Math.floor(seconds || 0));
@@ -269,24 +323,60 @@ export function MediaRenderer({
               />
 
               {!isCoarsePointer && (
-                <button
-                  type="button"
-                  className="h-8 w-8 inline-flex items-center justify-center text-white"
-                  onClick={(e) => {
-                    if (stopPropagationOnClick) e.stopPropagation();
-                    const v = localVideoRef.current;
-                    if (!v) return;
-                    try {
-                      v.muted = !v.muted;
-                      setIsMutedLocal(Boolean(v.muted));
-                    } catch {
-                      // ignore
-                    }
-                  }}
-                  aria-label={isMutedLocal ? 'Activar sonido' : 'Silenciar'}
+                <div
+                  className="relative"
+                  onMouseEnter={() => setShowVolumeUI(true)}
+                  onMouseLeave={() => setShowVolumeUI(false)}
                 >
-                  {isMutedLocal ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                </button>
+                  <button
+                    type="button"
+                    className="h-8 w-8 inline-flex items-center justify-center text-white"
+                    onClick={(e) => {
+                      if (stopPropagationOnClick) e.stopPropagation();
+                      const v = localVideoRef.current;
+                      if (!v) return;
+                      try {
+                        v.muted = !v.muted;
+                        setIsMutedLocal(Boolean(v.muted));
+                        try {
+                          localStorage.setItem('feed_video_muted', String(v.muted));
+                        } catch {
+                          // ignore
+                        }
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                    aria-label={isMutedLocal ? 'Activar sonido' : 'Silenciar'}
+                  >
+                    {isMutedLocal || volumeLocal === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                  </button>
+
+                  {showVolumeUI && (
+                    <div
+                      className="absolute bottom-10 right-0 z-30 rounded-lg bg-black/70 p-3 backdrop-blur-sm"
+                      onClick={(e) => {
+                        if (stopPropagationOnClick) e.stopPropagation();
+                      }}
+                    >
+                      <div className="flex flex-col items-center gap-2 h-28">
+                        <div className="text-[10px] text-white/80 tabular-nums">
+                          {Math.round((isMutedLocal ? 0 : volumeLocal) * 100)}%
+                        </div>
+                        <div className="h-full flex items-center">
+                          <Slider
+                            value={[Math.round((isMutedLocal ? 0 : volumeLocal) * 100)]}
+                            onValueChange={(v) => setVolume((v[0] ?? 0) / 100)}
+                            max={100}
+                            step={1}
+                            orientation="vertical"
+                            className="h-24"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>

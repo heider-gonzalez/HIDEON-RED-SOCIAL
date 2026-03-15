@@ -137,22 +137,18 @@ export function MediaDisplay({
           )}
           
           {isVideo && (
-            <video 
-              ref={(el) => {
-                if (!el) return;
-                try {
-                  el.setAttribute('webkit-playsinline', 'true');
-                } catch {
-                  // ignore
-                }
-              }}
-              src={finalUrl} 
-              controls 
+            <MediaRenderer
+              url={finalUrl}
+              className="w-full"
               autoPlay
+              customControls
+              controls={false}
               muted
               loop
               playsInline
-              className="w-full"
+              stopPropagationOnClick={false}
+              onClick={() => {}}
+              onLoadedMetadata={() => {}}
             />
           )}
         </DialogContent>

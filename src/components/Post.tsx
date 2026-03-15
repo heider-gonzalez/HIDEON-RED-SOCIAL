@@ -366,6 +366,7 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
         reactionsByType={reactionsByType}
         commentsCount={post.comments_count || 0}
         sharesCount={sharesCount}
+        viewsCount={post.views_count || 0}
         onCommentsClick={onCommentsClick}
       />
 

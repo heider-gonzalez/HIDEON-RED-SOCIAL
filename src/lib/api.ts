@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { getMultiplePostSharesCounts } from "@/lib/api/posts/queries/shares";
+import { getMultiplePostViewsCounts } from "@/lib/api/posts/queries/views";
 import { checkColumnExists } from "@/lib/api/posts/retrieve/utils/column-check";
 
 let cachedHasSharedFields: boolean | null = null;
@@ -66,6 +67,10 @@ async function enrichPosts(
 
   const sharesCountsByPostId = uniquePostIds.length
     ? await getMultiplePostSharesCounts(uniquePostIds)
+    : {};
+
+  const viewsCountsByPostId = uniquePostIds.length
+    ? await getMultiplePostViewsCounts(uniquePostIds)
     : {};
 
   // Fetch reactions breakdown for all posts in one query (count + by_type)
@@ -178,6 +183,7 @@ async function enrichPosts(
 
     const pid = String(postWithExtras.id);
     postWithExtras.shares_count = sharesCountsByPostId[pid] || 0;
+    postWithExtras.views_count = viewsCountsByPostId[pid] || 0;
     postWithExtras.reactions_by_type = reactionsByPostId[pid]?.by_type || {};
     postWithExtras.reactions_count = reactionsByPostId[pid]?.count || 0;
     postWithExtras.reactions = {

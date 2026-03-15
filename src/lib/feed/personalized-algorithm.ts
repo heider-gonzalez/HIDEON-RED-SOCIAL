@@ -202,12 +202,11 @@ export class PersonalizedFeedAlgorithm {
    */
   private async calculateTrendingScore(post: Post): Promise<number> {
     try {
-      // Verificar si el post tiene mucha actividad reciente
       const recentActivity = await supabase
         .from('reactions')
         .select('created_at')
         .eq('post_id', post.id)
-        .gte('created_at', new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()); // Last 6 hours
+        .gte('created_at', new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString());
 
       if (!recentActivity.data) return 0;
 
@@ -223,8 +222,7 @@ export class PersonalizedFeedAlgorithm {
    */
   private async getUserInteractionHistory(userId: string): Promise<UserInteractionData[]> {
     try {
-      // Combinamos datos de reacciones, comentarios, y vistas
-      const [reactions, comments, views] = await Promise.all([
+      const [reactions, comments] = await Promise.all([
         supabase
           .from('reactions')
           .select(`
@@ -244,52 +242,39 @@ export class PersonalizedFeedAlgorithm {
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
           .limit(50),
-
-        // Si tienes tabla de views, sino usar profile_views como proxy
-        supabase
-          .from('profile_views')
-          .select('viewed_at, profile_id')
-          .eq('viewer_id', userId)
-          .order('viewed_at', { ascending: false })
-          .limit(100)
       ]);
 
       const interactions: UserInteractionData[] = [];
 
-      // Procesar reacciones
-      reactions.data?.forEach(r => {
-        if (r.posts) {
-          interactions.push({
-            id: `reaction_${r.post_id}`,
-            user_id: userId,
-            post_id: r.post_id,
-            interaction_type: 'like',
-            created_at: r.created_at,
-            author_id: (r.posts as any).user_id,
-            post_type: (r.posts as any).post_type
-          });
-        }
+      (reactions.data as any[] | null | undefined)?.forEach((r: any) => {
+        if (!r?.posts) return;
+        interactions.push({
+          id: `reaction_${r.post_id}`,
+          user_id: userId,
+          post_id: r.post_id,
+          interaction_type: 'like',
+          created_at: r.created_at,
+          author_id: (r.posts as any).user_id,
+          post_type: (r.posts as any).post_type,
+        });
       });
 
-      // Procesar comentarios
-      comments.data?.forEach(c => {
-        if (c.posts) {
-          interactions.push({
-            id: `comment_${c.post_id}`,
-            user_id: userId,
-            post_id: c.post_id,
-            interaction_type: 'comment',
-            created_at: c.created_at,
-            author_id: (c.posts as any).user_id,
-            post_type: (c.posts as any).post_type
-          });
-        }
+      (comments.data as any[] | null | undefined)?.forEach((c: any) => {
+        if (!c?.posts) return;
+        interactions.push({
+          id: `comment_${c.post_id}`,
+          user_id: userId,
+          post_id: c.post_id,
+          interaction_type: 'comment',
+          created_at: c.created_at,
+          author_id: (c.posts as any).user_id,
+          post_type: (c.posts as any).post_type,
+        });
       });
 
-      return interactions.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      return interactions.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-
     } catch (error) {
       console.error('Error fetching user interactions:', error);
       return [];
@@ -304,8 +289,7 @@ export class PersonalizedFeedAlgorithm {
       .filter(i => i.duration_seconds && i.duration_seconds > 0)
       .map(i => i.duration_seconds!);
 
-    if (viewTimes.length === 0) return 5; // Default
-    
+    if (viewTimes.length === 0) return 5;
     return viewTimes.reduce((sum, time) => sum + time, 0) / viewTimes.length;
   }
 
@@ -320,11 +304,10 @@ export class PersonalizedFeedAlgorithm {
 
     for (const { post } of sorted) {
       const authorId = post.user_id || '';
-      
-      // Limitar posts consecutivos del mismo autor
+
       if (usedAuthors.has(authorId)) {
         authorRepeatCount++;
-        if (authorRepeatCount > 2) continue; // Máximo 3 posts del mismo autor consecutivos
+        if (authorRepeatCount > 2) continue;
       } else {
         authorRepeatCount = 0;
         usedAuthors.add(authorId);
@@ -332,7 +315,6 @@ export class PersonalizedFeedAlgorithm {
 
       diversified.push(post);
 
-      // Reset cada ciertos posts para permitir variedad
       if (diversified.length % 10 === 0) {
         usedAuthors.clear();
       }
@@ -346,17 +328,13 @@ export class PersonalizedFeedAlgorithm {
    */
   private applyEngagementStrategy(posts: Post[]): Post[] {
     const result: Post[] = [];
-    
-    // Estrategia: Empezar fuerte, intercalar contenido diverso
     const highEngagement = posts.slice(0, 3);
     const remaining = posts.slice(3);
-    
+
     result.push(...highEngagement);
-    
-    // Intercalar contenido para mantener engagement
+
     for (let i = 0; i < remaining.length; i += 5) {
       const batch = remaining.slice(i, i + 5);
-      // Mezclar el batch para variedad
       result.push(...this.shuffleArray(batch));
     }
 
@@ -379,7 +357,7 @@ export class PersonalizedFeedAlgorithm {
    * Trackea interacción para mejorar el algoritmo
    */
   async trackInteraction(
-    postId: string, 
+    postId: string,
     interactionType: UserInteractionData['interaction_type'],
     durationSeconds?: number
   ) {
@@ -387,9 +365,18 @@ export class PersonalizedFeedAlgorithm {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Engagement rewards disabled
-      console.log('Tracking interaction:', { postId, interactionType, durationSeconds });
+      if (interactionType === 'view') {
+        try {
+          await (supabase as any).rpc('track_post_view', {
+            p_post_id: postId,
+          });
+        } catch {
+          // ignore
+        }
+        return;
+      }
 
+      console.log('Tracking interaction:', { postId, interactionType, durationSeconds });
     } catch (error) {
       console.error('Error tracking interaction:', error);
     }
