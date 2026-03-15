@@ -6,6 +6,7 @@ const R2_PUBLIC_URL = (import.meta as any)?.env?.VITE_R2_PUBLIC_URL as string | 
 export async function uploadToSupabase(file: File, fileName: string): Promise<string> {
   try {
     try {
+      console.log('Iniciando POST real a Edge Function...');
       const { data, error } = await supabase.functions.invoke('upload-to-r2', {
         body: JSON.stringify({
           fileName,
@@ -28,6 +29,7 @@ export async function uploadToSupabase(file: File, fileName: string): Promise<st
         throw new Error('R2 signed URL missing. Check Edge Function upload-to-r2 and its secrets.');
       }
 
+      console.log('Iniciando upload a R2 con signedUrl:', signedUrl);
       const uploadRes = await fetch(signedUrl, {
         method: 'PUT',
         body: file,
@@ -35,6 +37,7 @@ export async function uploadToSupabase(file: File, fileName: string): Promise<st
           'Content-Type': file.type,
           'Cache-Control': 'public, max-age=31536000, immutable',
         },
+        mode: 'cors',
       });
 
       if (!uploadRes.ok) {
