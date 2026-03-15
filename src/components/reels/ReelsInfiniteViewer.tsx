@@ -262,7 +262,7 @@ const ReelItem = memo(function ReelItem({ post, isActive, onReaction, onViewTrac
           </div>
         )}
 
-        {/* Volume Slider */}
+        {/* Volume Slider con barra vertical */}
         <div className="pointer-events-auto">
           <VolumeSlider
             volume={volume}

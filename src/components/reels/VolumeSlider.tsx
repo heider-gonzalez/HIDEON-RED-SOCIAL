@@ -44,31 +44,37 @@ export function VolumeSlider({ volume, isMuted, show, onChange, onMuteToggle }: 
             )}
           </button>
           
-          <button
-            onClick={handleVolumeDown}
-            className="text-white hover:text-gray-300 transition-colors p-1"
-            aria-label="Bajar volumen"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          
-          <div className="w-24">
-            <Slider
-              value={[isMuted ? 0 : volume]}
-              onValueChange={(value) => onChange(value[0])}
-              max={100}
-              step={1}
-              className="cursor-pointer"
-            />
+          {/* Vertical Volume Bar */}
+          <div className="flex flex-col items-center gap-2 h-24">
+            <button
+              onClick={handleVolumeDown}
+              className="text-white hover:text-gray-300 transition-colors p-1"
+              aria-label="Bajar volumen"
+            >
+              <Minus className="h-3 w-3" />
+            </button>
+            
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="w-32">
+                <Slider
+                  value={[isMuted ? 0 : volume]}
+                  onValueChange={(value) => onChange(value[0])}
+                  max={100}
+                  step={1}
+                  className="cursor-pointer"
+                  orientation="vertical"
+                />
+              </div>
+            </div>
+            
+            <button
+              onClick={handleVolumeUp}
+              className="text-white hover:text-gray-300 transition-colors p-1"
+              aria-label="Subir volumen"
+            >
+              <Plus className="h-3 w-3" />
+            </button>
           </div>
-          
-          <button
-            onClick={handleVolumeUp}
-            className="text-white hover:text-gray-300 transition-colors p-1"
-            aria-label="Subir volumen"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
           
           <span className="text-white text-sm font-medium min-w-[3ch] text-right">
             {isMuted ? 0 : volume}%
