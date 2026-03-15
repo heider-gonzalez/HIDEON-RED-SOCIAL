@@ -44,11 +44,10 @@ export function VolumeSlider({ volume, isMuted, show, onChange, onMuteToggle }: 
             )}
           </button>
           
-          {/* Vertical Volume Bar */}
           <div className="flex flex-col items-center gap-2 h-24">
             <button
               onClick={handleVolumeDown}
-              className="text-white hover:text-gray-300 transition-colors p-1"
+              className="text-white hover:text-gray-300 transition-colors p-1 z-10"
               aria-label="Bajar volumen"
             >
               <Minus className="h-3 w-3" />
@@ -69,7 +68,7 @@ export function VolumeSlider({ volume, isMuted, show, onChange, onMuteToggle }: 
             
             <button
               onClick={handleVolumeUp}
-              className="text-white hover:text-gray-300 transition-colors p-1"
+              className="text-white hover:text-gray-300 transition-colors p-1 z-10"
               aria-label="Subir volumen"
             >
               <Plus className="h-3 w-3" />
