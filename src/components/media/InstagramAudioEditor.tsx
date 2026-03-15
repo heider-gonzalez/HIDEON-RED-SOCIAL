@@ -68,6 +68,12 @@ export function InstagramAudioEditor({
     const audio = audioRef.current;
     if (!audio) return;
 
+    const audioSource = track.preview_url || track.file_url;
+    if (!audioSource) return;
+
+    audio.src = audioSource;
+    audio.load();
+
     const setAudioData = () => {
       setDuration(audio.duration);
       setCurrentTime(audio.currentTime);
@@ -88,7 +94,7 @@ export function InstagramAudioEditor({
       audio.removeEventListener('canplay', handleLoaded);
       audio.removeEventListener('loadstart', handleLoadStart);
     };
-  }, [track.file_url]);
+  }, [track.preview_url, track.file_url]);
 
   useEffect(() => {
     if (!duration || !Number.isFinite(duration) || duration <= 0) return;
@@ -125,6 +131,12 @@ export function InstagramAudioEditor({
   const analyzeTrack = async () => {
     setIsAnalyzing(true);
     try {
+      const audioSource = track.preview_url || track.file_url;
+      if (!audioSource) {
+        setIsAnalyzing(false);
+        return;
+      }
+
       const analyzer = new AudioAnalyzer();
       analyzerRef.current = analyzer;
 
@@ -136,7 +148,7 @@ export function InstagramAudioEditor({
         ]);
       };
 
-      await withTimeout(analyzer.loadAudioFile(track.file_url), 8000);
+      await withTimeout(analyzer.loadAudioFile(audioSource), 8000);
       const analysisData = await withTimeout(analyzer.analyzeAudio(), 8000);
       setAnalysis(analysisData);
       setWaveform(analysisData.waveformPoints);
@@ -238,11 +250,13 @@ export function InstagramAudioEditor({
   };
 
   const handleConfirm = () => {
+    const audioSource = track.preview_url || track.file_url;
+
     const audioData = {
       track,
       startTime,
       endTime,
-      audioUrl: track.file_url,
+      audioUrl: audioSource,
       duration: endTime - startTime
     };
 
@@ -292,7 +306,7 @@ export function InstagramAudioEditor({
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <audio
           ref={audioRef}
-          src={track.file_url}
+          src={track.preview_url || track.file_url}
           preload="metadata"
         />
 
