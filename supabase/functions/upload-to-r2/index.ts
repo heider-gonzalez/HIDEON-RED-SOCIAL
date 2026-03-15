@@ -9,14 +9,14 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
-      status: 200, 
-      headers: corsHeaders 
-    })
-  }
-
   try {
+    if (req.method === 'OPTIONS') {
+      return new Response('ok', { 
+        status: 200, 
+        headers: corsHeaders 
+      })
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     if (!supabaseUrl || !anonKey) {
@@ -87,7 +87,6 @@ Deno.serve(async (req) => {
 
     const s3Client = new S3Client({
       region: "auto",
-      apiVersion: 'v3',
       endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       credentials: {
         accessKeyId: R2_ACCESS_KEY_ID!,
@@ -110,7 +109,10 @@ Deno.serve(async (req) => {
     })
   } catch (error: any) {
     console.error('Upload error:', error)
-    return new Response(JSON.stringify({ error: error?.message ?? String(error) }), {
+    return new Response(JSON.stringify({ 
+      error: error?.message ?? String(error),
+      stack: error?.stack 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
