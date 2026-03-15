@@ -481,6 +481,21 @@ export function PostCreator({
         post_type: postType
       };
 
+      if (selectedAudioData?.audioUrl) {
+        postData.audio_url = selectedAudioData.audioUrl;
+        postData.audio_metadata = {
+          source: 'music_library',
+          track_id: selectedAudioData?.track?.id,
+          title: selectedAudioData?.track?.title,
+          artist: selectedAudioData?.track?.artist,
+          album: selectedAudioData?.track?.album || null,
+          cover_art_url: selectedAudioData?.track?.cover_art_url || null,
+          duration: selectedAudioData?.track?.duration,
+          startTime: selectedAudioData?.startTime,
+          endTime: selectedAudioData?.endTime,
+        };
+      }
+
       if (selectedGroupId) {
         postData.group_id = selectedGroupId;
       }
