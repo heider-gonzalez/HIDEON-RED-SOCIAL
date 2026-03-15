@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.948.0?dts'
-import { getSignedUrl } from 'https://esm.sh/@aws-sdk/s3-request-presigner@3.948.0?dts'
+import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.370.0?no-check'
+import { getSignedUrl } from 'https://esm.sh/@aws-sdk/s3-request-presigner@3.370.0?no-check'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -87,6 +87,7 @@ Deno.serve(async (req) => {
 
     const s3Client = new S3Client({
       region: "auto",
+      apiVersion: 'v3',
       endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       credentials: {
         accessKeyId: R2_ACCESS_KEY_ID!,
