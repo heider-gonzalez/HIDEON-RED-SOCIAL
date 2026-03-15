@@ -7,6 +7,12 @@ import App from './App.tsx'
 import './index.css'
 import './styles/mentions.css'
 
+const ENABLE_R2_MIGRATION_TOOLS = String((import.meta as any)?.env?.VITE_ENABLE_R2_MIGRATION_TOOLS || '').toLowerCase() === 'true';
+
+if (ENABLE_R2_MIGRATION_TOOLS && typeof window !== 'undefined') {
+  import('./scripts/migrate-to-r2');
+}
+
 if (typeof window !== 'undefined' && typeof Selection !== 'undefined') {
   const originalGetRangeAt = Selection.prototype.getRangeAt;
   Selection.prototype.getRangeAt = function (index: number) {
