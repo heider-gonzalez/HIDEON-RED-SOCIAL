@@ -5,6 +5,7 @@ import { uploadToSupabase } from "@/lib/storage/cloudflare-r2";
 interface PostToMigrate {
   id: string;
   media_url: string;
+  media_urls?: string[] | null;
   user_id: string;
 }
 
@@ -15,7 +16,7 @@ export async function migrateExistingFiles() {
     // Obtener todos los posts con media_url de Supabase Storage
     const { data: posts, error } = await supabase
       .from('posts')
-      .select('id, media_url, user_id')
+      .select('id, media_url, media_urls, user_id')
       .not('media_url', 'is', null)
       .like('media_url', '%supabase%');
 
@@ -50,12 +51,38 @@ export async function migrateExistingFiles() {
         const file = new File([blob], fileName, { type: blob.type });
         
         // Subir a Supabase Storage
-        const newUrl = await uploadToSupabase(file, `${post.user_id}/${fileName}`);
+        const newUrl = await uploadToSupabase(file, `${post.user_id}/${fileName}`, { allowFallback: false });
+
+        let newUrls: string[] | null | undefined = post.media_urls;
+        if (Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+          const migrated: string[] = [];
+          for (const u of post.media_urls) {
+            try {
+              if (!u || !String(u).includes('supabase')) {
+                migrated.push(u);
+                continue;
+              }
+              const r = await fetch(u);
+              if (!r.ok) {
+                migrated.push(u);
+                continue;
+              }
+              const b = await r.blob();
+              const n = String(u).split('/').pop() || `migrated_${post.id}`;
+              const f = new File([b], n, { type: b.type });
+              const mUrl = await uploadToSupabase(f, `${post.user_id}/${n}`, { allowFallback: false });
+              migrated.push(mUrl);
+            } catch {
+              migrated.push(u);
+            }
+          }
+          newUrls = migrated;
+        }
         
         // Actualizar la URL en la base de datos
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
           .from('posts')
-          .update({ media_url: newUrl })
+          .update({ media_url: newUrl, media_urls: newUrls })
           .eq('id', post.id);
           
         if (updateError) {
@@ -100,7 +127,7 @@ export async function checkMigrationStatus() {
       .from('posts')
       .select('id')
       .not('media_url', 'is', null)
-      .like('media_url', '%r2.dev%');
+      .not('media_url', 'ilike', '%supabase%');
 
     if (supabaseError || r2Error) {
       throw new Error('Error verificando estado de migración');
@@ -161,9 +188,9 @@ export async function migrateProfileImagesToR2() {
           const file = new File([blob], fileName, { type: blob.type });
 
           const newPath = `profiles/${profile.id}/${field}/${fileName}`;
-          const newUrl = await uploadToSupabase(file, newPath);
+          const newUrl = await uploadToSupabase(file, newPath, { allowFallback: false });
 
-          const { error: updateError } = await supabase
+          const { error: updateError } = await (supabase as any)
             .from('profiles')
             .update({ [field]: newUrl, updated_at: new Date().toISOString() })
             .eq('id', profile.id);
