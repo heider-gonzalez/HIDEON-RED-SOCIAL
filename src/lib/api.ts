@@ -215,23 +215,32 @@ export async function getPosts(userId?: string, groupId?: string, companyId?: st
   try {
     const hasSharedFields = await getHasSharedFields();
 
+    const [hasAudioUrl, hasAudioMetadata] = await Promise.all([
+      checkColumnExists('posts', 'audio_url'),
+      checkColumnExists('posts', 'audio_metadata'),
+    ]);
+
+    const selectFields: string[] = [
+      'id',
+      'content',
+      'created_at',
+      'updated_at',
+      'user_id',
+      'media_url',
+      'media_type',
+      hasAudioUrl ? 'audio_url' : '',
+      hasAudioMetadata ? 'audio_metadata' : '',
+      'visibility',
+      'is_pinned',
+      'shared_post_id',
+      'shared_from',
+      'profiles:profiles(id, username, avatar_url, career)',
+      'comments:comments(count)',
+    ].filter(Boolean);
+
     let query: any = supabase
       .from("posts")
-      .select(`
-        id,
-        content,
-        created_at,
-        updated_at,
-        user_id,
-        media_url,
-        media_type,
-        visibility,
-        is_pinned,
-        shared_post_id,
-        shared_from,
-        profiles:profiles(id, username, avatar_url, career),
-        comments:comments(count)
-      `);
+      .select(selectFields.join(','));
 
     if (userId) {
       query = query.eq("user_id", userId);
@@ -335,6 +344,8 @@ export async function getPostsPage(params: {
     hasDemoUrl,
     hasIdea,
     hasPostMetadata,
+    hasAudioUrl,
+    hasAudioMetadata,
   ] = await Promise.all([
     checkColumnExists('posts', 'group_id'),
     checkColumnExists('posts', 'company_id'),
@@ -345,6 +356,8 @@ export async function getPostsPage(params: {
     checkColumnExists('posts', 'demo_url'),
     checkColumnExists('posts', 'idea'),
     checkColumnExists('posts', 'post_metadata'),
+    checkColumnExists('posts', 'audio_url'),
+    checkColumnExists('posts', 'audio_metadata'),
   ]);
 
   const selectFields: string[] = [
@@ -358,6 +371,8 @@ export async function getPostsPage(params: {
     'media_url',
     hasMediaUrls ? 'media_urls' : '',
     'media_type',
+    hasAudioUrl ? 'audio_url' : '',
+    hasAudioMetadata ? 'audio_metadata' : '',
     hasPostType ? 'post_type' : '',
     hasProjectStatus ? 'project_status' : '',
     hasTechnologies ? 'technologies' : '',
