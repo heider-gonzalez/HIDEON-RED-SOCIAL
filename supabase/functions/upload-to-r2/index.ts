@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.370.0?no-check'
-import { getSignedUrl } from 'https://esm.sh/@aws-sdk/s3-request-presigner@3.370.0?no-check'
+import { S3Client, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3?bundle-strategy=node-bundle&target=deno"
+import { getSignedUrl } from "https://esm.sh/@aws-sdk/s3-request-presigner?bundle-strategy=node-bundle&target=deno"
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
