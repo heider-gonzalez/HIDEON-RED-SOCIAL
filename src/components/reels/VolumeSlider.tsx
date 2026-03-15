@@ -1,6 +1,6 @@
 import React from 'react';
 import { Slider } from '@/components/ui/slider';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, Plus, Minus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface VolumeSliderProps {
@@ -12,6 +12,16 @@ interface VolumeSliderProps {
 }
 
 export function VolumeSlider({ volume, isMuted, show, onChange, onMuteToggle }: VolumeSliderProps) {
+  const handleVolumeUp = () => {
+    const newVolume = Math.min(100, volume + 10);
+    onChange(newVolume);
+  };
+
+  const handleVolumeDown = () => {
+    const newVolume = Math.max(0, volume - 10);
+    onChange(newVolume);
+  };
+
   return (
     <AnimatePresence>
       {show && (
@@ -20,21 +30,29 @@ export function VolumeSlider({ volume, isMuted, show, onChange, onMuteToggle }: 
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.2 }}
-          className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-sm rounded-full px-6 py-4 flex items-center gap-4 shadow-lg z-50"
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-sm rounded-full px-4 py-3 flex items-center gap-3 shadow-lg z-50"
         >
           <button
             onClick={onMuteToggle}
-            className="text-white hover:text-gray-300 transition-colors"
+            className="text-white hover:text-gray-300 transition-colors p-2"
             aria-label={isMuted ? "Activar sonido" : "Silenciar"}
           >
             {isMuted ? (
-              <VolumeX className="h-5 w-5" />
+              <VolumeX className="h-4 w-4" />
             ) : (
-              <Volume2 className="h-5 w-5" />
+              <Volume2 className="h-4 w-4" />
             )}
           </button>
           
-          <div className="w-32">
+          <button
+            onClick={handleVolumeDown}
+            className="text-white hover:text-gray-300 transition-colors p-1"
+            aria-label="Bajar volumen"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          
+          <div className="w-24">
             <Slider
               value={[isMuted ? 0 : volume]}
               onValueChange={(value) => onChange(value[0])}
@@ -43,6 +61,14 @@ export function VolumeSlider({ volume, isMuted, show, onChange, onMuteToggle }: 
               className="cursor-pointer"
             />
           </div>
+          
+          <button
+            onClick={handleVolumeUp}
+            className="text-white hover:text-gray-300 transition-colors p-1"
+            aria-label="Subir volumen"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
           
           <span className="text-white text-sm font-medium min-w-[3ch] text-right">
             {isMuted ? 0 : volume}%

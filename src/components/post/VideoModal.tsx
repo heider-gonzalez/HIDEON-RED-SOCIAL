@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { X, Download, Share2, Volume2, VolumeX } from "lucide-react";
+import { X, Download, Share2, Volume2, VolumeX, Plus, Minus } from "lucide-react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ interface VideoModalProps {
 
 export function VideoModal({ isOpen, onClose, videoUrl, altText = "Video" }: VideoModalProps) {
   const [isMuted, setIsMuted] = useState(true);
+  const [volume, setVolume] = useState(50);
   const [isReelLike, setIsReelLike] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
@@ -49,6 +50,26 @@ export function VideoModal({ isOpen, onClose, videoUrl, altText = "Video" }: Vid
     if (videoRef.current) {
       videoRef.current.muted = !videoRef.current.muted;
       setIsMuted(videoRef.current.muted);
+    }
+  };
+
+  const handleVolumeUp = () => {
+    const newVolume = Math.min(100, volume + 10);
+    setVolume(newVolume);
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume / 100;
+      if (newVolume > 0 && isMuted) {
+        videoRef.current.muted = false;
+        setIsMuted(false);
+      }
+    }
+  };
+
+  const handleVolumeDown = () => {
+    const newVolume = Math.max(0, volume - 10);
+    setVolume(newVolume);
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume / 100;
     }
   };
 
@@ -150,18 +171,46 @@ export function VideoModal({ isOpen, onClose, videoUrl, altText = "Video" }: Vid
             )}
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleMute();
-            }}
-            className="absolute bottom-4 right-4 z-20 rounded-full bg-black/50 text-white hover:bg-black/70"
-            aria-label={isMuted ? "Activar sonido" : "Silenciar"}
-          >
-            {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-          </Button>
+          <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleVolumeDown();
+              }}
+              className="rounded-full bg-black/50 text-white hover:bg-black/70"
+              aria-label="Bajar volumen"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleMute();
+              }}
+              className="rounded-full bg-black/50 text-white hover:bg-black/70"
+              aria-label={isMuted ? "Activar sonido" : "Silenciar"}
+            >
+              {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleVolumeUp();
+              }}
+              className="rounded-full bg-black/50 text-white hover:bg-black/70"
+              aria-label="Subir volumen"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
