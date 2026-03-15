@@ -5,6 +5,7 @@ import { MediaLightbox } from "./MediaLightbox";
 import { useFullscreenVideo } from "@/components/video/FullscreenVideoContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MediaRenderer } from "@/components/media/MediaRenderer";
+import { InstagramAudioPlayer } from "@/components/media/InstagramAudioPlayer";
 import {
   getSoundEnabled,
   setNowPlayingVideoId,
@@ -645,6 +646,18 @@ export function MediaCarousel({ mediaItems, className = "", audioUrl, audioMetad
               }
             />
           ))}
+        </div>
+      )}
+
+      {/* 🎵 Audio Player for background music */}
+      {hasAudio && (
+        <div className="absolute bottom-0 left-0 right-0 z-20">
+          <InstagramAudioPlayer
+            audioUrl={audioUrl}
+            audioMetadata={audioMetadata}
+            autoPlay={false}
+            loop={false}
+          />
         </div>
       )}
 
