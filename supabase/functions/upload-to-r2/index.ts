@@ -106,8 +106,10 @@ Deno.serve(async (req) => {
     const sanitizedName = inputFileName.replace(/^\/+/, '')
     const key = `users/${authData.user.id}/${Date.now()}-${sanitizedName}`
 
+    const cleanEndPoint = R2_ENDPOINT!.replace(/^https?:\/\//, '');
+
     const s3Client = new S3Client({
-      endPoint: R2_ENDPOINT!,
+      endPoint: cleanEndPoint,
       region: "auto",
       accessKey: R2_ACCESS_KEY_ID!,
       secretKey: R2_SECRET_ACCESS_KEY!,
