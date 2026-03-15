@@ -34,13 +34,13 @@ type SidebarItem = {
 };
 
 export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
-  useNavigation();
+  const { handleHomeClick } = useNavigation();
   const [myGroups, setMyGroups] = useState<any[]>([]);
   const [recommendedGroups, setRecommendedGroups] = useState<any[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
 
   const menuItems: SidebarItem[] = [
-    { icon: Home, label: "Feed", path: "/home" },
+    { icon: Home, label: "Feed", path: "/home", onClick: handleHomeClick },
     { icon: Lightbulb, label: "Ideas", path: "/ideas" },
     { icon: Briefcase, label: "Proyectos", path: "/projects" },
     { icon: Users, label: "Grupos", path: "/groups" },

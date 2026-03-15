@@ -145,15 +145,6 @@ export class PersonalizedFeedAlgorithm {
       relevanceScore += Math.min(30, authorInteractions * 5);
     }
 
-    // Factor tipo de contenido - preferencias del usuario
-    const contentTypeInteractions = userInteractions.filter(
-      i => i.post_type === post.post_type
-    );
-    
-    if (contentTypeInteractions.length > 0) {
-      relevanceScore += Math.min(20, contentTypeInteractions.length * 2);
-    }
-
     // Factor tiempo de visualización promedio
     const avgViewTime = this.calculateAverageViewTime(userInteractions);
     if (avgViewTime > 10) { // Si ve contenido por más de 10 segundos en promedio

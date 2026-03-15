@@ -39,6 +39,7 @@ export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
   const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuth();
   const isMobile = useIsMobile();
+
   const [pullDistance, setPullDistance] = useState(0);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
@@ -233,12 +234,16 @@ export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
 
   useEffect(() => {
     const handler = () => {
+      queryClient.removeQueries({
+        queryKey: ["posts", userId, groupId, companyId, contentType, "infinite"],
+        exact: true,
+      });
       queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
     };
 
     window.addEventListener('hsocial:home_refresh', handler);
     return () => window.removeEventListener('hsocial:home_refresh', handler);
-  }, [queryClient]);
+  }, [queryClient, userId, groupId, companyId, contentType]);
 
   if (!isAuthenticated) {
     if (isPublicLoading) {

@@ -268,13 +268,65 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
         postData.post_type = "project";
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("posts")
         .insert(postData)
-        .select()
+        .select(`
+          *,
+          profiles:profiles(id, username, avatar_url, career),
+          comments:comments(count)
+        `)
         .single();
 
       if (error) throw error;
+
+      try {
+        const createdPost: any = {
+          ...(data || {}),
+        };
+
+        createdPost.comments_count =
+          (createdPost.comments && Array.isArray(createdPost.comments) && createdPost.comments[0]?.count) ||
+          createdPost.comments_count ||
+          0;
+
+        if (typeof createdPost.reactions_count !== 'number') createdPost.reactions_count = 0;
+        if (typeof createdPost.shares_count !== 'number') createdPost.shares_count = 0;
+        if (typeof createdPost.views_count !== 'number') createdPost.views_count = 0;
+
+        const queryCache = queryClient.getQueryCache();
+        const targets = queryCache.findAll({ queryKey: ["posts"], exact: false });
+
+        targets.forEach((q) => {
+          const key = q.queryKey as any[];
+          if (!Array.isArray(key)) return;
+          if (key[key.length - 1] !== 'infinite') return;
+
+          queryClient.setQueryData(key, (old: any) => {
+            if (!old || !Array.isArray(old.pages)) return old;
+            const pages = [...old.pages];
+            const first = pages[0];
+            if (!first || !Array.isArray(first.posts)) return old;
+
+            const existing = first.posts as any[];
+            const id = String(createdPost?.id || '');
+            if (!id) return old;
+
+            const filtered = existing.filter((p) => String((p as any)?.id || '') !== id);
+            const nextFirst = {
+              ...first,
+              posts: [createdPost, ...filtered],
+            };
+            pages[0] = nextFirst;
+            return {
+              ...old,
+              pages,
+            };
+          });
+        });
+      } catch {
+        // ignore
+      }
 
       // Invalidar múltiples queries para asegurar actualización
       queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
