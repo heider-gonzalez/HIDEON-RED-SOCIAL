@@ -117,12 +117,13 @@ Deno.serve(async (req) => {
       useSSL: true,
     })
 
-    // Generar presigned URL para subida directa desde el frontend
+    console.log('Generating presigned URL for key:', key)
     const signedUrl = await s3Client.getPresignedUrl(key, 'PUT', 300, {
       'Content-Type': inputContentType,
       'Cache-Control': 'public, max-age=31536000, immutable',
     })
     
+    console.log('Generated signed URL:', signedUrl)
     const publicUrl = `${publicBaseUrl.replace(/\/$/, '')}/${key}`
 
     return new Response(JSON.stringify({ signedUrl, publicUrl, key }), {
