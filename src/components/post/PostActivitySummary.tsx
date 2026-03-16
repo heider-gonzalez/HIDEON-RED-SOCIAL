@@ -20,7 +20,7 @@ export function PostActivitySummary({
   onCommentsClick,
 }: PostActivitySummaryProps) {
   const totalReactions = Object.values(reactionsByType).reduce((sum, count) => sum + count, 0);
-  const hasActivity = totalReactions > 0 || commentsCount > 0 || sharesCount > 0 || viewsCount > 0;
+  const hasActivity = totalReactions > 0 || commentsCount > 0 || sharesCount > 0;
 
   if (!hasActivity) {
     return null;
@@ -47,7 +47,7 @@ export function PostActivitySummary({
               {commentsCount} {commentsCount === 1 ? 'comentario' : 'comentarios'}
             </button>
           )}
-          {commentsCount > 0 && (sharesCount > 0 || viewsCount > 0) && (
+          {commentsCount > 0 && sharesCount > 0 && (
             <span className="mx-1">·</span>
           )}
           {sharesCount > 0 && (
@@ -55,13 +55,14 @@ export function PostActivitySummary({
               {sharesCount} {sharesCount === 1 ? 'vez compartido' : 'veces compartido'}
             </span>
           )}
-          {sharesCount > 0 && viewsCount > 0 && (
-            <span className="mx-1">·</span>
-          )}
-          {viewsCount > 0 && (
-            <span>
-              {viewsCount} {viewsCount === 1 ? 'reproducción' : 'reproducciones'}
-            </span>
+          {/* Only show views for video posts or when explicitly meaningful */}
+          {viewsCount > 0 && (post.media_type === 'video' || post.media_urls?.some(url => url.includes('.mp4'))) && (
+            <>
+              {sharesCount > 0 && <span className="mx-1">·</span>}
+              <span>
+                {viewsCount} {viewsCount === 1 ? 'reproducción' : 'reproducciones'}
+              </span>
+            </>
           )}
         </div>
       </div>
