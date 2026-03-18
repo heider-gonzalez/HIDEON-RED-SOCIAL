@@ -19,12 +19,41 @@ export function useUnreadMessages(currentUserId?: string) {
     if (!currentUserId) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('get-unread-messages');
-      if (error) {
-        throw error;
+      // Build Supabase URL dynamically
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wgbbaxvuuinubkgffpiq.supabase.co';
+      const functionUrl = `${supabaseUrl}/functions/v1/get-unread-messages`;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log('🔔 No authenticated user, skipping unread messages fetch');
+        return;
       }
 
-      const items = (data as any)?.unreadMessages;
+      const accessToken = session.access_token;
+      if (!accessToken) {
+        console.log('🔔 No access token, skipping unread messages fetch');
+        return;
+      }
+
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          userId: currentUserId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
+      }
+
+      const result = await response.json();
+      const items = result?.unreadMessages;
       setUnreadMessages(Array.isArray(items) ? items : []);
     } catch (error) {
       console.error('Error fetching unread messages:', error);

@@ -90,7 +90,7 @@ export function useNotificationQueue(options: QueueProcessingOptions = {}) {
         );
         console.log(`🔔 Retrying in ${currentIntervalRef.current / 1000} seconds...`);
       } else {
-        console.log('🔔 Max retries reached, resetting...');
+        console.log('🔔 Max reconnection attempts reached, giving up');
         retryCountRef.current = 0;
         currentIntervalRef.current = interval;
       }
