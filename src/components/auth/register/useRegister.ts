@@ -3,6 +3,41 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getInstitutionByDomain, institutionsBarranquilla } from "@/data/institutions-barranquilla";
 
+// Dominios permitidos para universidades de Barranquilla
+const allowedDomains = [
+  '@mail.unireformada.edu.co',
+  '@itsa.edu.co', 
+  '@mail.uniatlantico.edu.co',
+  '@uninorte.edu.co',
+  '@unisimon.edu.co'
+];
+
+// Función para validar dominio institucional
+const validateInstitutionalEmail = (email: string): { isValid: boolean; domain?: string; university?: string } => {
+  const trimmedEmail = email.trim().toLowerCase();
+  
+  // Verificar si el correo termina en uno de los dominios permitidos
+  const allowedDomain = allowedDomains.find(domain => trimmedEmail.endsWith(domain));
+  
+  if (allowedDomain) {
+    // Extraer nombre de la universidad del dominio
+    const domainParts = allowedDomain.split('.');
+    const universityName = domainParts[0]?.replace('@', '') || '';
+    
+    return {
+      isValid: true,
+      domain: allowedDomain,
+      university: universityName
+    };
+  }
+  
+  return {
+    isValid: false,
+    domain: undefined,
+    university: undefined
+  };
+};
+
 export function useRegister(setLoading: (loading: boolean) => void, sendVerificationEmail: (email: string, username: string) => Promise<any>) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,6 +77,19 @@ export function useRegister(setLoading: (loading: boolean) => void, sendVerifica
       }
 
       const trimmedEmail = email.trim().toLowerCase();
+      
+      // Validar correo institucional
+      const emailValidation = validateInstitutionalEmail(trimmedEmail);
+      
+      if (!emailValidation.isValid) {
+        toast({
+          variant: "destructive",
+          title: "Correo no permitido",
+          description: "Solo se permiten correos institucionales de universidades de Barranquilla",
+        });
+        return;
+      }
+
       const institutionByDomain = getInstitutionByDomain(trimmedEmail);
       const autoVerifyEdu =
         Boolean(institutionByDomain) ||
@@ -129,12 +177,58 @@ export function useRegister(setLoading: (loading: boolean) => void, sendVerifica
             // Best-effort: table/columns might not exist in all environments
           }
         }
-      }
 
-      toast({
-        title: "¡Cuenta creada!",
-        description: "Revisa tu email para verificar tu cuenta. Luego podrás iniciar sesión.",
-      });
+        // Si el correo es institucional, asignar al grupo de la universidad
+        if (emailValidation.isValid && emailValidation.university) {
+          try {
+            // Buscar si ya existe un grupo para esta universidad
+            const { data: existingGroups } = await supabase
+              .from('groups')
+              .select('id')
+              .eq('name', `${emailValidation.university} - Estudiantes`)
+              .maybeSingle();
+
+            if (!existingGroups) {
+              // Crear grupo para la universidad si no existe
+              await supabase
+                .from('groups')
+                .insert({
+                  name: `${emailValidation.university} - Estudiantes`,
+                  description: `Grupo para estudiantes de ${emailValidation.university}`,
+                  type: 'university',
+                  created_by: data.user.id,
+                  is_private: false
+                });
+            }
+
+            // Añadir usuario al grupo de la universidad
+            const { data: groupData } = await supabase
+              .from('groups')
+              .select('id')
+              .eq('name', `${emailValidation.university} - Estudiantes`)
+              .single();
+
+            if (groupData) {
+              await supabase
+                .from('group_members')
+                .insert({
+                  group_id: groupData.id,
+                  user_id: data.user.id,
+                  role: 'member',
+                  joined_at: new Date().toISOString()
+                });
+            }
+          } catch (error) {
+            console.error('Error creating university group:', error);
+            // No mostrar error al usuario, solo log para debugging
+          }
+        }
+
+        toast({
+          title: "¡Cuenta creada!",
+          description: "Revisa tu email para verificar tu cuenta. Luego podrás iniciar sesión.",
+        });
+      }
     } catch (error: any) {
       console.error('Registration error:', error);
       
