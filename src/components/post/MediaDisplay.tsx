@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { getHybridUrl } from "@/lib/hybrid-url";
 import { AudioWaveform, Film } from "lucide-react";
 import { MediaRenderer } from "@/components/media/MediaRenderer";
 
@@ -31,7 +32,7 @@ export function MediaDisplay({
   const [hasError, setHasError] = useState(false);
   
   // Use either the primary props or fallback to the alternate ones
-  const finalUrl = fallbackUrl || url || mediaUrl || '';
+  const finalUrl = getHybridUrl(fallbackUrl || url || mediaUrl || '');
   const finalType = type || mediaType || '';
 
   // Debug logging

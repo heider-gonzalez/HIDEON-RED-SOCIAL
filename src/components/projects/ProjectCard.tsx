@@ -836,7 +836,8 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
             <div className="text-sm text-muted-foreground">Aún no hay vistas registradas.</div>
           )}
         </div>
-      </DialogContent>
+        <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
     </Dialog>
 
     {/* Image Gallery Dialog */}
@@ -920,7 +921,8 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
             </div>
           )}
         </div>
-      </DialogContent>
+        <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
     </Dialog>
     </>
   );

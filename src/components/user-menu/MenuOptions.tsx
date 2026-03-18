@@ -332,7 +332,8 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
               Listo
             </Button>
           </div>
-        </DialogContent>
+          <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
       </Dialog>
 
       <Dialog open={showSettingsPrivacy} onOpenChange={setShowSettingsPrivacy}>
@@ -381,7 +382,8 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
           >
             Cerrar
           </Button>
-        </DialogContent>
+          <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
       </Dialog>
     </div>
   );

@@ -1,8 +1,7 @@
-
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RefObject, useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, RefObject } from "react";
 import { Smile, AtSign } from "lucide-react";
 import { useMentions } from "@/hooks/use-mentions";
 import { MentionSuggestions } from "./MentionSuggestions";
@@ -18,7 +17,7 @@ interface PostContentInputProps {
   onPasteFiles?: (files: File[]) => void;
 }
 
-export function PostContentInput({
+const PostContentInput = React.memo(function PostContentInput({
   content,
   setContent,
   textareaRef,
@@ -249,4 +248,7 @@ export function PostContentInput({
       />
     </div>
   );
-}
+});
+
+export { PostContentInput };
+export default PostContentInput;

@@ -521,7 +521,8 @@ export default function Analytics() {
                   )}
                 </CardContent>
               </Card>
-            </DialogContent>
+              <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
           </Dialog>
         </>
       </div>

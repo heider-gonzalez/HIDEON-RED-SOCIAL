@@ -335,7 +335,8 @@ export function ProfileEditDialog({
             </div>
           </form>
         </Form>
-      </DialogContent>
+        <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
     </Dialog>
   );
 }

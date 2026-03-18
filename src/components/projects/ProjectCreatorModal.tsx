@@ -196,7 +196,8 @@ export function ProjectCreatorModal({ open, onOpenChange }: ProjectCreatorModalP
             )}
           </div>
         </div>
-      </DialogContent>
+        <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
     </Dialog>
   );
 }

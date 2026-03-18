@@ -675,7 +675,8 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
               </div>
             </div>
           </div>
-        </DialogContent>
+          <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
       </Dialog>
 
       {/* Contact Modal */}
@@ -732,7 +733,8 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
               Puedes contactar al creador para colaborar, hacer preguntas o dar feedback sobre el proyecto.
             </p>
           </div>
-        </DialogContent>
+          <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
       </Dialog>
     </>
   );

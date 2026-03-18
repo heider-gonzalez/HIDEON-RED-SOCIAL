@@ -462,7 +462,8 @@ export default function CompanyDetail() {
                 })}
               </div>
             </div>
-          </DialogContent>
+            <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
         </Dialog>
 
         <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
@@ -508,7 +509,8 @@ export default function CompanyDetail() {
                 </Button>
               </div>
             </div>
-          </DialogContent>
+            <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
         </Dialog>
       </div>
     </FullScreenPageLayout>

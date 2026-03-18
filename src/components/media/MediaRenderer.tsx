@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { getHybridUrl } from "@/lib/hybrid-url";
 import type { Ref, SyntheticEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
@@ -49,9 +50,12 @@ export function MediaRenderer({
   controls = false,
   playsInline = true,
 }: MediaRendererProps) {
-  if (!url) return null;
+  // Convertir URL a URL híbrida
+  const hybridUrl = getHybridUrl(url);
+  
+  if (!hybridUrl) return null;
 
-  const type = inferMediaType(url);
+  const type = inferMediaType(hybridUrl);
   const isVideo = type === "video";
 
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -178,7 +182,7 @@ export function MediaRenderer({
       el.removeEventListener('pause', onPause);
       el.removeEventListener('volumechange', onVolume);
     };
-  }, [isVideo, url]);
+  }, [isVideo, hybridUrl]);
 
   useEffect(() => {
     const el = localVideoRef.current;
@@ -250,7 +254,7 @@ export function MediaRenderer({
               (videoRef as any).current = node;
             }
           }}
-          src={url}
+          src={hybridUrl}
           className={cn("w-full h-full object-contain", showCustomControls ? "" : undefined)}
           autoPlay={autoPlayOnView ? false : autoPlay}
           muted={effectiveMuted}
@@ -388,7 +392,7 @@ export function MediaRenderer({
 
   return (
     <img
-      src={url}
+      src={hybridUrl}
       alt={alt}
       className={cn("w-full h-full object-contain", className)}
       loading="lazy"

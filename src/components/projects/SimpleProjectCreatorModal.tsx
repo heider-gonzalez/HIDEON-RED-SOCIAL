@@ -117,7 +117,8 @@ Colaboradores, feedback, validación, difusión, apoyo económico, etc.`}
             </Button>
           </div>
         </div>
-      </DialogContent>
+        <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
     </Dialog>
   );
 }

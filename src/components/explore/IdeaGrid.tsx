@@ -172,7 +172,8 @@ export function IdeaGrid({
           <div className="p-4">
             {selectedPost && <Post post={selectedPost} />}
           </div>
-        </DialogContent>
+          <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
+</DialogContent>
       </Dialog>
     </>
   );
