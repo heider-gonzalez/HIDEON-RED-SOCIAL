@@ -15,25 +15,27 @@ const supabase = createClient(
   supabaseServiceKey
 );
 
-const R2_PUBLIC_URL = process.env.VITE_R2_PUBLIC_URL || 'https://pub-d387767454eb4c528e6574b331e3f5c7.r2.dev';
+const R2_PUBLIC_URL = process.env.VITE_R2_PUBLIC_URL || 'https://pub-11aaf71a35c74d7da48843fdfc2c1e44.r2.dev';
+
+function toR2Url(url) {
+  if (!url || !url.includes('supabase')) return url;
+  return url.replace(/.*\/storage\/v1\/object\/public\/([^\/]+)\/(.+)/, `${R2_PUBLIC_URL}/$1/$2`);
+}
 
 async function updatePosts() {
-  const { data: posts, error } = await supabase.from('posts').select('id, media_url, media_urls').neq('media_url', null);
+  const { data: posts, error } = await supabase.from('posts').select('id, media_url, media_urls, audio_url').or('media_url.not.is.null,media_urls.not.is.null,audio_url.not.is.null');
   if (error) throw error;
 
   for (const post of posts) {
     const updates = {};
     if (post.media_url && post.media_url.includes('supabase')) {
-      // Transform supabase URL to R2 equivalent
-      const r2Url = post.media_url.replace(/.*\/storage\/v1\/object\/public\/([^\/]+)\/(.+)/, `${R2_PUBLIC_URL}/$1/$2`);
-      updates.media_url = r2Url;
+      updates.media_url = toR2Url(post.media_url);
     }
     if (post.media_urls && Array.isArray(post.media_urls)) {
-      updates.media_urls = post.media_urls.map(url =>
-        url.includes('supabase')
-          ? url.replace(/.*\/storage\/v1\/object\/public\/([^\/]+)\/(.+)/, `${R2_PUBLIC_URL}/$1/$2`)
-          : url
-      );
+      updates.media_urls = post.media_urls.map(url => toR2Url(url));
+    }
+    if (post.audio_url && post.audio_url.includes('supabase')) {
+      updates.audio_url = toR2Url(post.audio_url);
     }
     if (Object.keys(updates).length > 0) {
       await supabase.from('posts').update(updates).eq('id', post.id);
@@ -50,7 +52,7 @@ async function updateProfiles() {
     const updates = {};
     ['avatar_url', 'cover_url', 'intro_audio_url'].forEach(field => {
       if (profile[field] && profile[field].includes('supabase')) {
-        updates[field] = profile[field].replace(/.*\/storage\/v1\/object\/public\/([^\/]+)\/(.+)/, `${R2_PUBLIC_URL}/$1/$2`);
+        updates[field] = toR2Url(profile[field]);
       }
     });
     if (Object.keys(updates).length > 0) {

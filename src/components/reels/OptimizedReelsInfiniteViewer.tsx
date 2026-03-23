@@ -13,6 +13,7 @@ import { useDoubleClick } from "@/hooks/use-double-click";
 import { useVolumeControl } from "@/hooks/reels/use-volume-control";
 import { VolumeSlider } from "./VolumeSlider";
 import { MentionsText } from "@/components/post/MentionsText";
+import { getPostVideoUrl } from "@/lib/hybrid-url";
 import { useReelComments } from "@/hooks/reels/use-reel-comments";
 import { Comments } from "@/components/post/Comments";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
@@ -39,7 +40,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   const [isPlaying, setIsPlaying] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [hasError, setHasError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState(post.media_url);
+  const [currentSrc, setCurrentSrc] = useState(() => getPostVideoUrl(post) || post.media_url || '');
   const [isVertical, setIsVertical] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -112,23 +113,17 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
     };
   }, []);
 
-  // Manejar errores de video con fallback automático
+  // Manejar errores de video - sin fallback a Supabase para evitar egreso
   const handleVideoError = useCallback(() => {
-    // Si es un error en URL de Cloudflare R2, intentar con Supabase fallback
-    if (currentSrc?.includes('cloudflare') || currentSrc?.includes('r2.dev')) {
-      const fallbackUrl = currentSrc.replace(/https:\/\/[^\/]+/, 'https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media');
-      setCurrentSrc(fallbackUrl);
-    } else {
-      setHasError(true);
-    }
-  }, [currentSrc]);
+    setHasError(true);
+  }, []);
 
   // Reset error cuando cambia el post
   useEffect(() => {
     setHasError(false);
-    setCurrentSrc(post.media_url);
+    setCurrentSrc(getPostVideoUrl(post) || post.media_url || '');
     setIsVertical(true);
-  }, [post.media_url]);
+  }, [post.media_url, post.media_urls, post.media_type]);
 
   useEffect(() => {
     const v = videoRef.current;

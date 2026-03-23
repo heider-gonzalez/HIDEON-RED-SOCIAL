@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { Post } from "@/types/post";
 import { useFullscreenVideo } from "@/components/video/FullscreenVideoContext";
 import { normalizePostContent } from "@/utils/post-content";
+import { getPostVideoUrl } from "@/lib/hybrid-url";
 
 interface FeedReelsSectionProps {
   posts: Post[];
@@ -50,8 +51,7 @@ export function FeedReelsSection({ posts }: FeedReelsSectionProps) {
         <div className="px-3 py-3 overflow-x-auto">
           <div className="flex gap-3">
             {reels.map((post) => {
-              const urlFromUrls = (post.media_urls && Array.isArray(post.media_urls) ? post.media_urls : []).find((u) => isVideoUrl(String(u))) as string | undefined;
-              const url = urlFromUrls || post.media_url || "";
+              const url = getPostVideoUrl(post) || "";
               if (!url) return null;
 
               return (

@@ -56,6 +56,17 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // No interceptar storage externo (Supabase, R2, iTunes) - evita ERR_CACHE_OPERATION_NOT_SUPPORTED
+  if (
+    url.hostname.includes('supabase.co') ||
+    url.hostname.includes('r2.dev') ||
+    url.hostname.includes('r2.cloudflarestorage.com') ||
+    url.hostname.includes('itunes.apple.com') ||
+    url.hostname.includes('audio-ssl.itunes.apple.com')
+  ) {
+    return;
+  }
+
   // In local development, always bypass the Service Worker for Vite module requests
   // to avoid serving stale bundles from cache.
   if (
@@ -85,7 +96,9 @@ self.addEventListener('fetch', (event) => {
     url.pathname.endsWith('.js') ||
     url.pathname.endsWith('.css')
   ) {
-    event.respondWith(fetch(request));
+    event.respondWith(
+      fetch(request).catch(() => new Response('Network error', { status: 503 }))
+    );
     return;
   }
 

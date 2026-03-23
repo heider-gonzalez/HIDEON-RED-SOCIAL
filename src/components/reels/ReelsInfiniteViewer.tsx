@@ -111,17 +111,10 @@ function ReelsInfiniteViewerComponent({
     };
   }, []);
 
-  // Manejar errores de video con fallback automático
+  // Manejar errores de video - sin fallback a Supabase para evitar egreso
   const handleVideoError = useCallback(() => {
-    // Si es un error en URL de Cloudflare R2, intentar con Supabase fallback
-    if (currentSrc?.includes('cloudflare') || currentSrc?.includes('r2.dev')) {
-      const fallbackUrl = currentSrc.replace(/https:\/\/[^\/]+/, 'https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media');
-      setCurrentSrc(fallbackUrl);
-      console.log('🔄 Fallback to Supabase:', fallbackUrl);
-    } else {
-      setHasError(true);
-      console.log('❌ Video error:', currentSrc);
-    }
+    setHasError(true);
+    console.warn('❌ Video no disponible (R2):', currentSrc);
   }, [currentSrc]);
 
   // Reset error cuando cambia el post

@@ -27,7 +27,7 @@ export function CorsInstructions() {
               </a></li>
               <li>Selecciona tu cuenta</li>
               <li>Ve a la sección "R2 Object Storage"</li>
-              <li>Encuentra tu bucket "archivos-multimedia"</li>
+              <li>Encuentra tu bucket (ej: "hideon-media" o "archivos-multimedia")</li>
             </ol>
           </div>
 
@@ -49,7 +49,8 @@ export function CorsInstructions() {
     "AllowedOrigins": [
       "https://hsocial-app.onrender.com",
       "https://*.lovable.app",
-      "http://localhost:8081"
+      "http://localhost:8081",
+      "http://127.0.0.1:8081"
     ],
     "AllowedMethods": ["GET", "HEAD", "OPTIONS"],
     "AllowedHeaders": [

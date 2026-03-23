@@ -43,38 +43,94 @@ async function listAllFiles(bucket, prefix = '') {
   return files;
 }
 
-async function migrateBucket(bucketName) {
-  console.log(`📦 Migrating bucket: ${bucketName}`);
-  const { data: files, error } = await supabase.storage.from(bucketName).list('', { limit: 10000 });
+/**
+ * Lista recursivamente todos los archivos en un bucket de Supabase.
+ * Supabase list() solo devuelve un nivel; iteramos en subcarpetas.
+ */
+async function listAllInBucket(bucketName, prefix = '') {
+  const allFiles = [];
+  const { data: items, error } = await supabase.storage.from(bucketName).list(prefix, { limit: 1000 });
   if (error) throw error;
+  if (!items || items.length === 0) return allFiles;
 
-  for (const file of files) {
+  for (const item of items) {
+    const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
+    // Probar si es carpeta: listar con trailing slash
+    const { data: subItems } = await supabase.storage.from(bucketName).list(fullPath, { limit: 1 });
+    const isFolder = subItems && subItems.length > 0;
+
+    if (isFolder) {
+      const nested = await listAllInBucket(bucketName, fullPath);
+      allFiles.push(...nested);
+    } else {
+      allFiles.push({ path: fullPath });
+    }
+  }
+  return allFiles;
+}
+
+async function migrateBucket(bucketName) {
+  console.log(`📦 Migrating bucket: ${bucketName} (recursive)...`);
+  const files = await listAllInBucket(bucketName);
+  console.log(`   Found ${files.length} files`);
+
+  for (const { path } of files) {
     try {
-      const { data: fileData, error: downloadError } = await supabase.storage.from(bucketName).download(file.name);
-      if (downloadError) throw downloadError;
+      const { data: fileData, error: downloadError } = await supabase.storage.from(bucketName).download(path);
+      if (downloadError) {
+        console.error(`❌ Download failed ${bucketName}/${path}:`, downloadError.message);
+        continue;
+      }
 
-      // Convert to buffer
       const buffer = await fileData.arrayBuffer();
-      
+      const ext = path.split('.').pop()?.toLowerCase() || '';
+      const mimeMap = {
+        mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime',
+        mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 'audio/mp4',
+        jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp'
+      };
+      const contentType = mimeMap[ext] || 'application/octet-stream';
+
       const uploadCmd = new PutObjectCommand({
         Bucket: BUCKET_NAME,
-        Key: `${bucketName}/${file.name}`,
+        Key: `${bucketName}/${path}`,
         Body: new Uint8Array(buffer),
-        ContentType: file.metadata?.mimetype || 'application/octet-stream',
+        ContentType: contentType,
       });
       await r2.send(uploadCmd);
-      console.log(`✅ Uploaded: ${bucketName}/${file.name}`);
+      console.log(`✅ ${bucketName}/${path}`);
     } catch (err) {
-      console.error(`❌ Failed to upload ${bucketName}/${file.name}:`, err);
+      console.error(`❌ ${bucketName}/${path}:`, err.message);
     }
   }
 }
 
+// Buckets que usa la app (media, post-audio, profiles) + otros que pueden tener contenido de posts
+const BUCKETS_TO_MIGRATE = [
+  'media',       // Videos e imágenes de posts
+  'post-audio',  // Audio de fondo de posts (crítico - suele faltar)
+  'profiles',    // Avatares y portadas
+  'avatars',     // Por si avatar_url apunta aquí
+  'covers',      // Por si cover_url apunta aquí
+  'post-media',  // Alternativa para media de posts
+  'post-videos', // Alternativa para videos
+];
+
 async function main() {
   try {
-    await migrateBucket('media');
-    await migrateBucket('post-audio');
-    await migrateBucket('profiles');
+    for (const bucket of BUCKETS_TO_MIGRATE) {
+      try {
+        const { data: buckets } = await supabase.storage.listBuckets();
+        const exists = buckets?.some(b => b.name === bucket);
+        if (!exists) {
+          console.log(`⏭️  Skipping ${bucket} (bucket not found in Supabase)`);
+          continue;
+        }
+        await migrateBucket(bucket);
+      } catch (err) {
+        console.error(`❌ Error migrating ${bucket}:`, err.message);
+      }
+    }
     console.log('🎉 Migration complete!');
   } catch (err) {
     console.error('❌ Migration failed:', err);

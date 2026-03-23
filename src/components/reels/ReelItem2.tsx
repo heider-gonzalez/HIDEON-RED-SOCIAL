@@ -14,6 +14,7 @@ import { useReelComments } from "@/hooks/reels/use-reel-comments";
 import { Comments } from "@/components/post/Comments";
 import { useToast } from "@/hooks/use-toast";
 import { MentionsText } from "@/components/post/MentionsText";
+import { getPostVideoUrl } from "@/lib/hybrid-url";
 
 interface VolumeSliderProps {
   volume: number;
@@ -36,7 +37,7 @@ const ReelItem2 = memo(function ReelItem2({ post, isActive, onReaction, onViewTr
   const [isPlaying, setIsPlaying] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [hasError, setHasError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState(post.media_url);
+  const [currentSrc, setCurrentSrc] = useState(() => getPostVideoUrl(post) || post.media_url || '');
   const [isVertical, setIsVertical] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -112,25 +113,35 @@ const ReelItem2 = memo(function ReelItem2({ post, isActive, onReaction, onViewTr
 
   // El volumen se maneja en el hook useVolumeControl
 
-  // Manejar errores de video con fallback automático
-  const handleVideoError = useCallback(() => {
-    // Si es un error en URL de Cloudflare R2, intentar con Supabase fallback
-    if (currentSrc?.includes('cloudflare') || currentSrc?.includes('r2.dev')) {
-      const fallbackUrl = currentSrc.replace(/https:\/\/[^\/]+/, 'https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media');
-      setCurrentSrc(fallbackUrl);
-      console.log('🔄 Fallback to Supabase:', fallbackUrl);
-    } else {
-      setHasError(true);
-      console.log('❌ Video error:', currentSrc);
+  // Manejar errores de video - intentar R2 primero, luego fallback a Supabase si es necesario
+  const handleVideoError = useCallback(async () => {
+    console.warn('❌ Video error en R2:', currentSrc);
+    
+    // Si la URL actual es de R2, intentar fallback a Supabase
+    if (currentSrc.includes('r2.dev') || currentSrc.includes('cloudflare')) {
+      console.log('🔄 Intentando fallback a Supabase...');
+      const supabaseUrl = post.media_url?.includes('supabase.co/storage') 
+        ? post.media_url 
+        : `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media/${post.media_url?.split('/').pop()}`;
+      
+      if (supabaseUrl && supabaseUrl !== currentSrc) {
+        setCurrentSrc(supabaseUrl);
+        console.log('✅ Usando fallback Supabase:', supabaseUrl);
+        return;
+      }
     }
-  }, [currentSrc]);
+    
+    // Si ya es Supabase o no hay fallback, marcar como error
+    setHasError(true);
+    console.error('❌ Video no disponible en ninguna fuente:', currentSrc);
+  }, [currentSrc, post.media_url]);
 
   // Reset error cuando cambia el post
   useEffect(() => {
     setHasError(false);
-    setCurrentSrc(post.media_url);
+    setCurrentSrc(getPostVideoUrl(post) || post.media_url || '');
     setIsVertical(true);
-  }, [post.media_url]);
+  }, [post.media_url, post.media_urls, post.media_type]);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -282,7 +293,7 @@ const ReelItem2 = memo(function ReelItem2({ post, isActive, onReaction, onViewTr
         <div className="absolute inset-0 flex items-center justify-center bg-black/80">
           <div className="text-center text-white p-4">
             <div className="text-red-500 text-sm mb-2">❌ Error al cargar video</div>
-            <div className="text-xs text-gray-400">Intentando con fuente alternativa...</div>
+            <div className="text-xs text-gray-400">Comprueba que la migración a R2 esté completa</div>
           </div>
         </div>
       )}

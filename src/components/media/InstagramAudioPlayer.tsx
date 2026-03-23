@@ -13,6 +13,7 @@ import {
   subscribeNowPlayingVideoId,
   subscribeSoundEnabled,
 } from '@/lib/media/global-media';
+import { getHybridUrl } from '@/lib/hybrid-url';
 
 interface InstagramAudioPlayerProps {
   audioUrl?: string;
@@ -237,11 +238,11 @@ export function InstagramAudioPlayer({
       ref={containerRef}
       className={`bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg p-3 ${className}`}
     >
-      {/* Hidden audio element */}
+      {/* Hidden audio element - getHybridUrl convierte Supabase→R2 post-migración */}
       {audioUrl && (
         <audio
           ref={audioRef}
-          src={audioUrl}
+          src={getHybridUrl(audioUrl) || audioUrl}
           loop={loop}
           preload="metadata"
         />

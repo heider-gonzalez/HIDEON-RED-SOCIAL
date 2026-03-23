@@ -90,6 +90,44 @@ export function MediaRenderer({
     }
   });
   const [showVolumeUI, setShowVolumeUI] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const [currentVideoSrc, setCurrentVideoSrc] = useState(hybridUrl);
+
+  // Manejar errores de video con fallback inteligente
+  const handleVideoError = useCallback(async () => {
+    console.warn('❌ Video error en MediaRenderer:', currentVideoSrc);
+    
+    // Si la URL actual es de R2, intentar fallback a Supabase
+    if (currentVideoSrc.includes('r2.dev') || currentVideoSrc.includes('cloudflare')) {
+      console.log('🔄 Intentando fallback a Supabase en MediaRenderer...');
+      
+      // Construir URL de Supabase fallback
+      let supabaseUrl = url;
+      if (!supabaseUrl?.includes('supabase.co/storage')) {
+        // Si la URL original no es de Supabase, intentar construirla
+        const fileName = url?.split('/').pop();
+        if (fileName) {
+          supabaseUrl = `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media/${fileName}`;
+        }
+      }
+      
+      if (supabaseUrl && supabaseUrl !== currentVideoSrc) {
+        setCurrentVideoSrc(supabaseUrl);
+        console.log('✅ Usando fallback Supabase en MediaRenderer:', supabaseUrl);
+        return;
+      }
+    }
+    
+    // Si ya es Supabase o no hay fallback, marcar como error
+    setVideoError(true);
+    console.error('❌ Video no disponible en ninguna fuente en MediaRenderer:', currentVideoSrc);
+  }, [currentVideoSrc, url]);
+
+  // Resetear estado cuando cambia la URL
+  useEffect(() => {
+    setCurrentVideoSrc(hybridUrl);
+    setVideoError(false);
+  }, [hybridUrl]);
 
   const showTapControls = () => {
     if (!isCoarsePointer) return;
@@ -254,7 +292,7 @@ export function MediaRenderer({
               (videoRef as any).current = node;
             }
           }}
-          src={hybridUrl}
+          src={currentVideoSrc}
           className={cn("w-full h-full object-contain", showCustomControls ? "" : undefined)}
           autoPlay={autoPlayOnView ? false : autoPlay}
           muted={effectiveMuted}
@@ -263,6 +301,7 @@ export function MediaRenderer({
           playsInline={playsInline}
           preload="metadata"
           onLoadedMetadata={onLoadedMetadata}
+          onError={handleVideoError}
           onClick={(e) => {
             if (stopPropagationOnClick) e.stopPropagation();
             if (showCustomControls) showTapControls();

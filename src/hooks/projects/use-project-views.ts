@@ -76,7 +76,7 @@ export function useProjectViews(postId: string, ownerId?: string) {
           post_id: postId,
           viewer_id: user.id
         }, {
-          onConflict: 'post_id%2Cviewer_id',
+          onConflict: 'post_id,viewer_id',
           ignoreDuplicates: true
         });
       
