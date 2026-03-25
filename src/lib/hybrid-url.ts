@@ -23,19 +23,15 @@ export function normalizeStorageUrl(url?: string | null): string | null {
 export function getHybridUrl(url?: string | null): string | null {
   if (!url) return null;
 
-  // Si es URL de Supabase Storage, convertir a R2 (post-migración)
-  const normalized = normalizeStorageUrl(url);
-  if (normalized !== url) return normalized;
-  
   // Si ya es una URL completa (contiene http), usarla directamente
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
   
-  // Si es solo un path, construir URL con dominio R2
+  // Si es solo un path, construir URL con dominio Supabase (revertir migración)
   const cleanPath = url.startsWith('/') ? url.slice(1) : url;
   
-  return `${R2_PUBLIC_URL.replace(/\/$/, '')}/${cleanPath}`;
+  return `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media/${cleanPath}`;
 }
 
 // Función mejorada con fallback y logging para debugging
@@ -64,7 +60,7 @@ export function getHybridUrlWithFallback(url?: string | null): string | null {
   return r2Url;
 }
 
-/** Obtiene la URL principal de video de un post (media_urls o media_url) con conversión Supabase→R2 */
+/** Obtiene la URL principal de video de un post (media_urls o media_url) usando Supabase */
 export function getPostVideoUrl(post: {
   media_url?: string | null;
   media_urls?: string[] | null;
@@ -79,7 +75,7 @@ export function getPostVideoUrl(post: {
   const m = post.media_url;
   if (m && (post.media_type?.toLowerCase?.().startsWith?.('video') || isVideo(m)))
     return getHybridUrl(m) || m;
-  return m ? getHybridUrl(m) || m : null;
+  return getHybridUrl(m) || m;
 }
 
 // Función para verificar si una URL es accesible

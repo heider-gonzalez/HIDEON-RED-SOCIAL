@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { reactionIcons, type ReactionType } from "@/components/post/reactions/ReactionIcons";
+import { forwardRef } from "react";
 
 interface CommentActionsProps {
   onEdit: () => void;
@@ -33,7 +34,7 @@ function getTopReactions(reactionsByType?: Record<string, number> | null) {
     .slice(0, 3);
 }
 
-export function CommentActions({
+export const CommentActions = forwardRef<HTMLDivElement, CommentActionsProps>(({
   onEdit,
   onDelete,
   commentId,
@@ -43,7 +44,7 @@ export function CommentActions({
   onReaction,
   canEdit = true,
   canDelete = true,
-}: CommentActionsProps) {
+}, ref) => {
   const topReactions = getTopReactions(reactionsByType);
 
   return (
@@ -140,4 +141,5 @@ export function CommentActions({
       </Tooltip>
     </TooltipProvider>
   );
-}
+});
+CommentActions.displayName = 'CommentActions';

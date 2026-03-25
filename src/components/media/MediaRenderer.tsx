@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { getHybridUrl } from "@/lib/hybrid-url";
 import type { Ref, SyntheticEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 
@@ -93,35 +93,22 @@ export function MediaRenderer({
   const [videoError, setVideoError] = useState(false);
   const [currentVideoSrc, setCurrentVideoSrc] = useState(hybridUrl);
 
-  // Manejar errores de video con fallback inteligente
+  // Manejar errores de video simple (sin fallback ya que las URLs son originales)
   const handleVideoError = useCallback(async () => {
-    console.warn('❌ Video error en MediaRenderer:', currentVideoSrc);
-    
-    // Si la URL actual es de R2, intentar fallback a Supabase
-    if (currentVideoSrc.includes('r2.dev') || currentVideoSrc.includes('cloudflare')) {
-      console.log('🔄 Intentando fallback a Supabase en MediaRenderer...');
-      
-      // Construir URL de Supabase fallback
-      let supabaseUrl = url;
-      if (!supabaseUrl?.includes('supabase.co/storage')) {
-        // Si la URL original no es de Supabase, intentar construirla
-        const fileName = url?.split('/').pop();
-        if (fileName) {
-          supabaseUrl = `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media/${fileName}`;
-        }
-      }
-      
-      if (supabaseUrl && supabaseUrl !== currentVideoSrc) {
-        setCurrentVideoSrc(supabaseUrl);
-        console.log('✅ Usando fallback Supabase en MediaRenderer:', supabaseUrl);
-        return;
-      }
+    // Debug logging solo en desarrollo
+    if (import.meta.env.DEV && !videoError) {
+      console.debug('🔍 Video error en MediaRenderer:', currentVideoSrc);
     }
     
-    // Si ya es Supabase o no hay fallback, marcar como error
-    setVideoError(true);
-    console.error('❌ Video no disponible en ninguna fuente en MediaRenderer:', currentVideoSrc);
-  }, [currentVideoSrc, url]);
+    // Marcar como error (solo una vez)
+    if (!videoError) {
+      setVideoError(true);
+      // Debug logging solo en desarrollo
+      if (import.meta.env.DEV) {
+        console.debug('❌ Video no disponible en MediaRenderer:', currentVideoSrc);
+      }
+    }
+  }, [currentVideoSrc, videoError]);
 
   // Resetear estado cuando cambia la URL
   useEffect(() => {
@@ -292,7 +279,7 @@ export function MediaRenderer({
               (videoRef as any).current = node;
             }
           }}
-          src={currentVideoSrc}
+          src={videoError ? undefined : currentVideoSrc}
           className={cn("w-full h-full object-contain", showCustomControls ? "" : undefined)}
           autoPlay={autoPlayOnView ? false : autoPlay}
           muted={effectiveMuted}
@@ -308,6 +295,17 @@ export function MediaRenderer({
             onClick?.();
           }}
         />
+
+        {/* Fallback UI when video fails to load */}
+        {videoError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+            <div className="text-center p-4">
+              <div className="text-4xl mb-2">🎥</div>
+              <div className="text-sm font-medium">Video no disponible</div>
+              <div className="text-xs mt-1 opacity-75">El video no pudo cargarse</div>
+            </div>
+          </div>
+        )}
 
         {showCustomControls && (
           <>
