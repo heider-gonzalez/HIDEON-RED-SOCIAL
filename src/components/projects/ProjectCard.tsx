@@ -193,7 +193,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   // Usar video_url principal si existe, o el primer video de media_urls
   const primaryVideoUrl = videoUrl || videoUrls[0];
 
-  const { data: viewers, isLoading: isLoadingViewers } = useQuery({
+  const { data: viewers = [], isLoading: isLoadingViewers } = useQuery({
     queryKey: ['project-viewers', project.id],
     queryFn: async () => {
       console.log('Project viewers query disabled temporarily');
