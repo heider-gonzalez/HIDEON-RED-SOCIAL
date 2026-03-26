@@ -15,64 +15,48 @@ export function useReelsFeed() {
     refetch
   } = usePersonalizedFeed();
 
-  // Filtrar solo posts con videos - simplificado para Supabase Storage
+  // Filtrar solo posts con videos - mejorado para Supabase Storage
   const videosPosts = useMemo(() => {
     const realVideos = posts.filter((post: Post) => {
+      // Recolectar todas las URLs de medios
       const urls: string[] = [];
-      if (Array.isArray(post.media_urls)) {
-        for (const u of post.media_urls) {
-          if (typeof u === 'string' && u.trim()) urls.push(u);
-        }
-      }
+      
+      // Añadir media_url si existe
       if (typeof post.media_url === 'string' && post.media_url.trim()) {
         urls.push(post.media_url);
       }
-
-      const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.ogg'];
+      
+      // Añadir media_urls si es array
+      if (Array.isArray(post.media_urls)) {
+        for (const u of post.media_urls) {
+          if (typeof u === 'string' && u.trim()) {
+            urls.push(u);
+          }
+        }
+      }
+      
+      // Añadir demo_url si existe (para proyectos)
+      if (typeof (post as any).demo_url === 'string' && (post as any).demo_url.trim()) {
+        urls.push((post as any).demo_url);
+      }
+      
+      // Verificar si alguna URL es un video
+      const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.ogg', '.3gp', '.flv'];
       const hasVideoUrl = urls.some((url) => {
         const lower = url.toLowerCase();
         return videoExtensions.some((ext) => lower.includes(ext));
       });
-
+      
+      // Verificar media_type
       const mediaType = typeof post.media_type === 'string' ? post.media_type.toLowerCase() : '';
       const hasVideoType = mediaType === 'video' || mediaType.startsWith('video/');
-
-      return hasVideoUrl || hasVideoType;
+      
+      // Verificar post_type para proyectos que puedan tener video
+      const postType = typeof (post as any).post_type === 'string' ? (post as any).post_type.toLowerCase() : '';
+      const isProjectWithVideo = postType === 'project' || postType === 'proyecto';
+      
+      return hasVideoUrl || hasVideoType || isProjectWithVideo;
     });
-
-    // Si no hay videos reales, añadir videos de demo para testing
-    if (realVideos.length === 0 && posts.length === 0) {
-      return [
-        {
-          id: 'demo-1',
-          content: 'Video de demostración 1 - Paisaje natural',
-          user_id: 'demo-user',
-          media_urls: ['https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'],
-          media_type: 'video',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          visibility: 'public' as const,
-          profiles: {
-            username: 'Demo User',
-            avatar_url: null
-          }
-        },
-        {
-          id: 'demo-2', 
-          content: 'Video de demostración 2 - Animación',
-          user_id: 'demo-user',
-          media_urls: ['https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4'],
-          media_type: 'video',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          visibility: 'public' as const,
-          profiles: {
-            username: 'Demo User',
-            avatar_url: null
-          }
-        }
-      ] as Post[];
-    }
     
     return realVideos;
   }, [posts]);

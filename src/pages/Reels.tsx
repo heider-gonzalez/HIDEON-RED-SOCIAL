@@ -74,12 +74,24 @@ export default function Reels() {
         <meta name="description" content="Descubre videos cortos y creativos de la comunidad universitaria" />
       </Helmet>
 
-      <div className="flex justify-center items-center min-h-screen bg-black">
-        <div className="w-full max-w-[1400px]">
-          {reelsContent}
+      <div className="w-full h-screen bg-black overflow-hidden">
+        {/* Header para desktop */}
+        <div className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent p-4">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <h1 className="text-2xl font-bold text-white">Reels</h1>
+            <div className="text-white text-sm">
+              {videosPosts.length > 0 && `${videosPosts.length} videos`}
+            </div>
+          </div>
+        </div>
+
+        {/* Contenido principal */}
+        <div className="w-full h-full flex items-center justify-center pt-16">
+          <div className="w-full max-w-[1400px] h-full flex items-center justify-center">
+            {reelsContent}
+          </div>
         </div>
       </div>
-
     </>
   );
 }

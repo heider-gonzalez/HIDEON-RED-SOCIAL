@@ -138,6 +138,38 @@ function ReelsInfiniteViewerComponent({
     }
   }, [isPlaying]);
 
+  // Navegación con teclado y rueda del mouse
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowUp' && activeIndex > 0) {
+        setActiveIndex(prev => prev - 1);
+      } else if (e.key === 'ArrowDown' && activeIndex < posts.length - 1) {
+        setActiveIndex(prev => prev + 1);
+      } else if (e.key === 'ArrowLeft' && activeIndex > 0) {
+        setActiveIndex(prev => prev - 1);
+      } else if (e.key === 'ArrowRight' && activeIndex < posts.length - 1) {
+        setActiveIndex(prev => prev + 1);
+      }
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (e.deltaY < 0 && activeIndex > 0) {
+        setActiveIndex(prev => prev - 1);
+      } else if (e.deltaY > 0 && activeIndex < posts.length - 1) {
+        setActiveIndex(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    containerRef.current?.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      containerRef.current?.removeEventListener('wheel', handleWheel);
+    };
+  }, [activeIndex, posts.length]);
+
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(currentSrc || '');
@@ -158,19 +190,53 @@ function ReelsInfiniteViewerComponent({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-[100svh] bg-black flex items-center justify-center snap-start"
+      className="relative w-full h-screen bg-black flex items-center justify-center overflow-hidden"
     >
-      {/* Video layer */}
-      {posts.map((post, index) => (
+      {/* Solo mostrar el reel activo */}
+      {posts.length > 0 && (
         <ReelItem2
-          key={post.id}
-          post={post}
-          isActive={index === activeIndex}
+          key={posts[activeIndex]?.id}
+          post={posts[activeIndex]}
+          isActive={true}
           onReaction={onReaction}
           onViewTracked={onViewTracked}
           initialSeek={initialPlayback}
         />
-      ))}
+      )}
+      
+      {/* Navegación lateral para desktop */}
+      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-2 z-30">
+        {posts.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setActiveIndex(index)}
+            className={`w-2 h-2 rounded-full transition-all ${
+              index === activeIndex 
+                ? 'bg-white scale-125' 
+                : 'bg-white/40 hover:bg-white/60'
+            }`}
+            aria-label={`Ir al reel ${index + 1}`}
+          />
+        ))}
+      </div>
+      
+      {/* Controles de navegación */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4 z-30">
+        <button
+          onClick={() => setActiveIndex(prev => Math.max(0, prev - 1))}
+          disabled={activeIndex === 0}
+          className="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/30 transition-colors"
+        >
+          ← Anterior
+        </button>
+        <button
+          onClick={() => setActiveIndex(prev => Math.min(posts.length - 1, prev + 1))}
+          disabled={activeIndex === posts.length - 1}
+          className="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/30 transition-colors"
+        >
+          Siguiente →
+        </button>
+      </div>
     </div>
   );
 }
