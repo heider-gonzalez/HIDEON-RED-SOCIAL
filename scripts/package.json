@@ -1,0 +1,16 @@
+{
+  "name": "migrate-r2-to-supabase",
+  "version": "1.0.0",
+  "description": "Migrate videos from Cloudflare R2 to Supabase",
+  "main": "migrate-r2-to-supabase.js",
+  "scripts": {
+    "migrate": "node migrate-r2-to-supabase.js",
+    "migrate-interactive": "node migrate-interactive.js",
+    "update-urls": "node update-video-urls.js",
+    "full-migration": "node migrate-r2-to-supabase.js && node update-video-urls.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "@aws-sdk/client-s3": "^3.0.0"
+  }
+}
