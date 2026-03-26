@@ -1,21 +1,10 @@
-const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-11aaf71a35c74d7da48843fdfc2c1e44.r2.dev';
-
 /**
- * Convierte URLs de Supabase Storage a R2 (tras migración).
- * Si la app migró a R2, las URLs en DB pueden seguir apuntando a Supabase.
+ * Normaliza URLs de Supabase Storage.
+ * Nota: el proyecto usa Supabase Storage como origen de media.
  */
 export function normalizeStorageUrl(url?: string | null): string | null {
   if (!url) return null;
-  if (!url.includes('supabase.co/storage')) return url;
-  try {
-    const match = url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)/);
-    if (match) {
-      const [, bucket, path] = match;
-      return `${R2_PUBLIC_URL.replace(/\/$/, '')}/${bucket}/${path}`;
-    }
-  } catch {
-    // ignore
-  }
+  // La app ya migró a Supabase Storage. NO convertimos a R2.
   return url;
 }
 
@@ -40,42 +29,50 @@ export function getHybridUrlWithFallback(url?: string | null): string | null {
   
   console.log('🔍 Procesando URL:', url);
   
-  // Si es URL de Supabase Storage, convertir a R2 (post-migración)
-  const normalized = normalizeStorageUrl(url);
-  if (normalized !== url) {
-    console.log('✅ URL normalizada Supabase→R2:', normalized);
-    return normalized;
-  }
-
   // Si ya es una URL completa, usarla directamente
   if (url.startsWith('http://') || url.startsWith('https://')) {
     console.log('✅ URL completa detectada:', url);
     return url;
   }
   
-  // Si es solo un path, construir URL R2
+  // Si es solo un path, construir URL Supabase
   const cleanPath = url.startsWith('/') ? url.slice(1) : url;
-  const r2Url = `${R2_PUBLIC_URL.replace(/\/$/, '')}/${cleanPath}`;
-  console.log('🔄 URL R2 generada:', r2Url);
-  return r2Url;
+  const supabaseUrl = `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media/${cleanPath}`;
+  console.log('🔄 URL Supabase generada:', supabaseUrl);
+  return supabaseUrl;
 }
 
-/** Obtiene la URL principal de video de un post (media_urls o media_url) usando Supabase */
+/** Obtiene la URL principal de video de un post (media_urls, media_url o demo_url).
+ * Importante: debe ser ESTRICTO y solo devolver URLs que parezcan video.
+ */
 export function getPostVideoUrl(post: {
   media_url?: string | null;
   media_urls?: string[] | null;
   media_type?: string | null;
+  demo_url?: string | null;
 }): string | null {
-  const videoExt = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.ogg'];
-  const isVideo = (u: string) =>
-    u && videoExt.some((ext) => String(u).toLowerCase().includes(ext));
+  const videoExt = ['.mp4', '.mov', '.webm', '.m4v', '.ogg', '.3gp', '.mkv', '.avi', '.flv'];
+  const isVideo = (u?: string | null) => {
+    const s = String(u || '').toLowerCase();
+    if (!s) return false;
+    // If it has a known video extension anywhere in the path/query.
+    if (videoExt.some((ext) => s.includes(ext))) return true;
+    // Some Supabase URLs may not include extension; rely on media_type.
+    const mt = String(post.media_type || '').toLowerCase();
+    if (mt === 'video' || mt.startsWith('video/')) return true;
+    return false;
+  };
+
+  const candidates: string[] = [];
   const urls = (post.media_urls && Array.isArray(post.media_urls) ? post.media_urls : []).filter(Boolean) as string[];
-  const fromUrls = urls.find((u) => isVideo(String(u)));
-  if (fromUrls) return getHybridUrl(fromUrls) || fromUrls;
-  const m = post.media_url;
-  if (m && (post.media_type?.toLowerCase?.().startsWith?.('video') || isVideo(m)))
-    return getHybridUrl(m) || m;
-  return getHybridUrl(m) || m;
+  candidates.push(...urls);
+  if (post.media_url) candidates.push(post.media_url);
+  if ((post as any).demo_url) candidates.push((post as any).demo_url);
+
+  const firstVideo = candidates.find((u) => isVideo(u));
+  if (!firstVideo) return null;
+
+  return getHybridUrl(firstVideo) || firstVideo;
 }
 
 // Función para verificar si una URL es accesible

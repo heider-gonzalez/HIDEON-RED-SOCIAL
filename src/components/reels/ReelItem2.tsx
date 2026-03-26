@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useEffect, memo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Play, Pause, Volume2, VolumeX, Heart, MessageCircle, Share2 } from "lucide-react";
@@ -16,48 +16,6 @@ import { useToast } from "@/hooks/use-toast";
 import { MentionsText } from "@/components/post/MentionsText";
 import { getPostVideoUrl } from "@/lib/hybrid-url";
 
-// Función para obtener URLs de video del post
-function getVideoUrls(post: Post): string[] {
-  const urls: string[] = [];
-  
-  // Añadir media_url si existe
-  if (typeof post.media_url === 'string' && post.media_url.trim()) {
-    urls.push(post.media_url);
-  }
-  
-  // Añadir media_urls si es array
-  if (Array.isArray(post.media_urls)) {
-    for (const u of post.media_urls) {
-      if (typeof u === 'string' && u.trim()) {
-        urls.push(u);
-      }
-    }
-  }
-  
-  // Añadir demo_url si existe (para proyectos)
-  if (typeof (post as any).demo_url === 'string' && (post as any).demo_url.trim()) {
-    urls.push((post as any).demo_url);
-  }
-  
-  return urls;
-}
-
-// Función para verificar si una URL es de video
-function isVideoUrl(url: string): boolean {
-  const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.ogg', '.3gp', '.flv'];
-  const lower = url.toLowerCase();
-  return videoExtensions.some((ext) => lower.includes(ext));
-}
-
-// Función para construir URL de Supabase si es solo un path
-function getSupabaseUrl(url: string): string {
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
-  }
-  const cleanPath = url.startsWith('/') ? url.slice(1) : url;
-  return `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media/${cleanPath}`;
-}
-
 interface VolumeSliderProps {
   volume: number;
   isMuted: boolean;
@@ -72,8 +30,8 @@ interface ReelItemProps {
   isActive: boolean;
   onReaction: (postId: string, type: string) => void;
   onViewTracked: (postId: string, duration: number) => void;
-  batchFollowingStatus: any;
-  onBatchFollowingUpdate: any;
+  batchFollowingStatus?: any;
+  onBatchFollowingUpdate?: any;
   initialSeek?: { time: number; muted?: boolean };
 }
 
@@ -87,6 +45,7 @@ const ReelItem2 = memo(function ReelItem2({
   initialSeek
 }: ReelItemProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [hasError, setHasError] = useState(false);
   const [isVertical, setIsVertical] = useState(true);
@@ -106,8 +65,8 @@ const ReelItem2 = memo(function ReelItem2({
     showSliderTemporarily
   } = useVolumeControl(videoRef);
 
-  // Obtener URL del video usando la función existente
-  const currentSrc = getPostVideoUrl(post) || '';
+  // URL estricta: solo devuelve video real (ver hybrid-url.ts)
+  const currentSrc = useMemo(() => getPostVideoUrl(post) || '', [post]);
 
   // Manejo de errores mejorado
   const handleVideoError = useCallback(() => {
@@ -119,7 +78,62 @@ const ReelItem2 = memo(function ReelItem2({
   useEffect(() => {
     setHasError(false);
     setIsVertical(true);
+    setIsReady(false);
+    setIsPlaying(false);
   }, [post.media_url, post.media_urls, post.media_type]);
+
+  // Pausar cuando no está activo
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!isActive) {
+      try {
+        v.pause();
+      } catch {
+        // ignore
+      }
+    }
+  }, [isActive]);
+
+  // Autoplay profesional: intentar reproducir solo cuando está activo y listo.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!isActive) return;
+    if (hasError) return;
+    if (!currentSrc) return;
+
+    let cancelled = false;
+    const tryPlay = async () => {
+      try {
+        // Autoplay policies: primero en mute.
+        v.muted = true;
+        await v.play();
+        if (cancelled) return;
+        setIsPlaying(true);
+        // Si el usuario no está en mute global, luego desmutear.
+        if (!isMuted) {
+          try {
+            v.muted = false;
+          } catch {
+            // ignore
+          }
+        }
+      } catch {
+        // Si autoplay falla, no es error fatal; queda con botón play.
+        if (!cancelled) setIsPlaying(false);
+      }
+    };
+
+    // Espera a que haya data suficiente.
+    if (isReady || v.readyState >= 2) {
+      void tryPlay();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentSrc, hasError, isActive, isMuted, isReady]);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -201,17 +215,46 @@ const ReelItem2 = memo(function ReelItem2({
 
   return (
     <div className="relative w-full h-full bg-black">
+      {!currentSrc && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-8">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🎬</div>
+            <h3 className="text-xl font-semibold mb-2">Este reel no tiene video</h3>
+            <p className="text-gray-400">No se encontró un archivo de video válido para este post.</p>
+          </div>
+        </div>
+      )}
+
       {/* Video */}
       <video
         ref={videoRef}
         src={currentSrc || undefined}
         className="w-full h-full object-cover"
         onError={handleVideoError}
+        onLoadedMetadata={() => {
+          try {
+            const v = videoRef.current;
+            if (!v) return;
+            const w = v.videoWidth || 1;
+            const h = v.videoHeight || 1;
+            setIsVertical(h / w >= 1.25);
+          } catch {
+            // ignore
+          }
+        }}
+        onCanPlay={() => setIsReady(true)}
         loop
         muted={isMuted}
+        preload="metadata"
         playsInline
         onClick={handleDoubleClick}
       />
+
+      {!hasError && !isReady && currentSrc && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+        </div>
+      )}
       
       {/* Error fallback */}
       {hasError && (
@@ -284,16 +327,6 @@ const ReelItem2 = memo(function ReelItem2({
           <Share2 className="h-5 w-5" />
         </Button>
       </div>
-      
-      {/* Error fallback */}
-      {hasError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-          <div className="text-center text-white p-4">
-            <div className="text-red-500 text-sm mb-2">❌ Error al cargar video</div>
-            <div className="text-xs text-gray-400">Comprueba que la migración a R2 esté completa</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 });

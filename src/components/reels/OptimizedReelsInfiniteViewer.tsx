@@ -40,7 +40,8 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   const [isPlaying, setIsPlaying] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [hasError, setHasError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState(() => getPostVideoUrl(post) || post.media_url || '');
+  const [isReady, setIsReady] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState(() => getPostVideoUrl(post) || '');
   const [isVertical, setIsVertical] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -74,27 +75,60 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   });
 
   useEffect(() => {
-    if (isActive && isIntersecting && videoRef.current) {
-      if (startTimeRef.current === null) {
-        const now = Date.now();
-        startTimeRef.current = now;
-        setStartTime(now);
-      }
-      videoRef.current.play().catch(() => {});
-    } else if (videoRef.current && (!isActive || !isIntersecting)) {
-      videoRef.current.pause();
+    if (!isActive || !isIntersecting || !videoRef.current) return;
+    if (!currentSrc || hasError) return;
+    if (isReady === false) return;
+
+    if (startTimeRef.current === null) {
+      const now = Date.now();
+      startTimeRef.current = now;
+      setStartTime(now);
+    }
+
+    // Autoplay policy: play muted first, then unmute if needed.
+    const v = videoRef.current;
+    try {
+      v.muted = true;
+    } catch {
+      // ignore
+    }
+
+    v.play().catch(() => {});
+  }, [isActive, isIntersecting, currentSrc, hasError, isReady]);
+
+  useEffect(() => {
+    if ((videoRef.current && (!isActive || !isIntersecting)) || hasError) {
+      const v = videoRef.current;
+      if (!v) return;
+      v.pause();
 
       // Track view duration
       if (startTimeRef.current) {
         const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
-        if (duration > 1) { // Solo trackear si vio más de 1 segundo
+        if (duration > 1) {
           onViewTracked(post.id, duration);
         }
         startTimeRef.current = null;
         setStartTime(null);
       }
     }
-  }, [isActive, isIntersecting, post.id, onViewTracked]);
+  }, [isActive, isIntersecting, hasError, post.id, onViewTracked]);
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+    if (!isActive) return;
+    if (hasError) return;
+    if (!isReady) return;
+
+    const v = videoRef.current;
+    if (!isMuted) {
+      try {
+        v.muted = false;
+      } catch {
+        // ignore
+      }
+    }
+  }, [isActive, hasError, isMuted, isReady]);
 
   // Sync play/pause state with actual video events
   useEffect(() => {
@@ -121,7 +155,8 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   // Reset error cuando cambia el post
   useEffect(() => {
     setHasError(false);
-    setCurrentSrc(getPostVideoUrl(post) || post.media_url || '');
+    setIsReady(false);
+    setCurrentSrc(getPostVideoUrl(post) || '');
     setIsVertical(true);
   }, [post.media_url, post.media_urls, post.media_type]);
 
@@ -201,7 +236,8 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
                 className="mt-4"
                 onClick={() => {
                   setHasError(false);
-                  setCurrentSrc(post.media_url);
+                  setIsReady(false);
+                  setCurrentSrc(getPostVideoUrl(post) || '');
                 }}
               >
                 Reintentar
@@ -217,6 +253,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
             loop
             playsInline
             muted={isMuted}
+            preload="metadata"
             onClick={isVertical ? handleVideoClick : undefined}
             onError={handleVideoError}
             onLoadedMetadata={() => {
@@ -230,11 +267,17 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
                 // ignore
               }
             }}
-            onLoadStart={() => {}} // Reduce console spam
-            onCanPlay={() => {}} // Reduce console spam
+            onLoadStart={() => setIsReady(false)}
+            onCanPlay={() => setIsReady(true)}
           />
         )}
       </div>
+
+      {!hasError && !isReady && currentSrc && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+        </div>
+      )}
 
       {/* Overlay layer */}
       <div className="absolute inset-0 z-10 pointer-events-none">
