@@ -16,6 +16,48 @@ import { useToast } from "@/hooks/use-toast";
 import { MentionsText } from "@/components/post/MentionsText";
 import { getPostVideoUrl } from "@/lib/hybrid-url";
 
+// Función para obtener URLs de video del post
+function getVideoUrls(post: Post): string[] {
+  const urls: string[] = [];
+  
+  // Añadir media_url si existe
+  if (typeof post.media_url === 'string' && post.media_url.trim()) {
+    urls.push(post.media_url);
+  }
+  
+  // Añadir media_urls si es array
+  if (Array.isArray(post.media_urls)) {
+    for (const u of post.media_urls) {
+      if (typeof u === 'string' && u.trim()) {
+        urls.push(u);
+      }
+    }
+  }
+  
+  // Añadir demo_url si existe (para proyectos)
+  if (typeof (post as any).demo_url === 'string' && (post as any).demo_url.trim()) {
+    urls.push((post as any).demo_url);
+  }
+  
+  return urls;
+}
+
+// Función para verificar si una URL es de video
+function isVideoUrl(url: string): boolean {
+  const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.ogg', '.3gp', '.flv'];
+  const lower = url.toLowerCase();
+  return videoExtensions.some((ext) => lower.includes(ext));
+}
+
+// Función para construir URL de Supabase si es solo un path
+function getSupabaseUrl(url: string): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  const cleanPath = url.startsWith('/') ? url.slice(1) : url;
+  return `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media/${cleanPath}`;
+}
+
 interface VolumeSliderProps {
   volume: number;
   isMuted: boolean;
@@ -30,116 +72,52 @@ interface ReelItemProps {
   isActive: boolean;
   onReaction: (postId: string, type: string) => void;
   onViewTracked: (postId: string, duration: number) => void;
+  batchFollowingStatus: any;
+  onBatchFollowingUpdate: any;
   initialSeek?: { time: number; muted?: boolean };
 }
 
-const ReelItem2 = memo(function ReelItem2({ post, isActive, onReaction, onViewTracked, initialSeek }: ReelItemProps) {
+const ReelItem2 = memo(function ReelItem2({ 
+  post, 
+  isActive, 
+  onReaction, 
+  onViewTracked,
+  batchFollowingStatus,
+  onBatchFollowingUpdate,
+  initialSeek
+}: ReelItemProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [hasError, setHasError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState(() => getPostVideoUrl(post) || post.media_url || '');
   const [isVertical, setIsVertical] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   const { userReaction, onReaction: handleReaction } = usePostReactions(post.id);
   const { toast } = useToast();
 
-  const contentForMentions = post.content || "";
-
   const {
-    comments,
-    newComment,
-    setNewComment,
-    replyTo,
-    commentImage,
-    setCommentImage,
-    showComments,
-    setShowComments,
-    handleSubmitComment,
-    handleCommentLike,
-    handleReply,
-    loadReplies,
-    handleDeleteComment,
-    handleCancelReply
-  } = useReelComments(post.id);
+    volume,
+    isMuted,
+    toggleMute,
+    changeVolume,
+    showSlider,
+    showSliderTemporarily
+  } = useVolumeControl(videoRef);
 
-  // Control de volumen mejorado
-  const { volume, isMuted, showSlider, toggleMute, changeVolume, showSliderTemporarily } = useVolumeControl(videoRef);
+  // Obtener URL del video usando la función existente
+  const currentSrc = getPostVideoUrl(post) || '';
 
-  // Auto-play cuando está visible
-  const { isIntersecting } = useIntersectionObserver(containerRef, {
-    threshold: 0.7, // 70% visible para activar
-  });
-
-  useEffect(() => {
-    if (isActive && isIntersecting && videoRef.current) {
-      setStartTime(Date.now());
-      videoRef.current.play().catch((err) => {
-        if (err.name !== 'AbortError') {
-          console.error('Video play error:', err);
-        }
-      });
-    } else if (videoRef.current && (!isActive || !isIntersecting)) {
-      videoRef.current.pause();
-
-      // Track view duration
-      if (startTime) {
-        const duration = Math.floor((Date.now() - startTime) / 1000);
-        if (duration > 1) { // Solo trackear si vio más de 1 segundo
-          onViewTracked(post.id, duration);
-        }
-        setStartTime(null);
-      }
-    }
-  }, [isActive, isIntersecting, post.id, startTime, onViewTracked]);
-
-  // Sync play/pause state with actual video events
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-
-    v.addEventListener('play', onPlay);
-    v.addEventListener('pause', onPause);
-
-    return () => {
-      v.removeEventListener('play', onPlay);
-      v.removeEventListener('pause', onPause);
-    };
-  }, []);
-
-  // El volumen se maneja en el hook useVolumeControl
-
-  // Manejar errores de video - intentar R2 primero, luego fallback a Supabase si es necesario
-  const handleVideoError = useCallback(async () => {
-    console.warn('❌ Video error en R2:', currentSrc);
-    
-    // Si la URL actual es de R2, intentar fallback a Supabase
-    if (currentSrc.includes('r2.dev') || currentSrc.includes('cloudflare')) {
-      console.log('🔄 Intentando fallback a Supabase...');
-      const supabaseUrl = post.media_url?.includes('supabase.co/storage') 
-        ? post.media_url 
-        : `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media/${post.media_url?.split('/').pop()}`;
-      
-      if (supabaseUrl && supabaseUrl !== currentSrc) {
-        setCurrentSrc(supabaseUrl);
-        console.log('✅ Usando fallback Supabase:', supabaseUrl);
-        return;
-      }
-    }
-    
-    // Si ya es Supabase o no hay fallback, marcar como error
+  // Manejo de errores mejorado
+  const handleVideoError = useCallback(() => {
+    console.warn('❌ Error en video:', currentSrc);
     setHasError(true);
-    console.error('❌ Video no disponible en ninguna fuente:', currentSrc);
-  }, [currentSrc, post.media_url]);
+  }, [currentSrc]);
 
-  // Reset error cuando cambia el post
+  // Reset cuando cambia el post
   useEffect(() => {
     setHasError(false);
-    setCurrentSrc(getPostVideoUrl(post) || post.media_url || '');
     setIsVertical(true);
   }, [post.media_url, post.media_urls, post.media_type]);
 
@@ -223,16 +201,30 @@ const ReelItem2 = memo(function ReelItem2({ post, isActive, onReaction, onViewTr
 
   return (
     <div className="relative w-full h-full bg-black">
+      {/* Video */}
       <video
         ref={videoRef}
-        src={currentSrc}
-        className="w-full h-full object-contain"
+        src={currentSrc || undefined}
+        className="w-full h-full object-cover"
         onError={handleVideoError}
         loop
         muted={isMuted}
         playsInline
         onClick={handleDoubleClick}
       />
+      
+      {/* Error fallback */}
+      {hasError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-8">
+          <div className="text-center">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h3 className="text-xl font-semibold mb-2">Video no disponible</h3>
+            <p className="text-gray-400 mb-4">
+              No se pudo cargar este video
+            </p>
+          </div>
+        </div>
+      )}
       
       {/* Controles de volumen */}
       {showSlider && (
