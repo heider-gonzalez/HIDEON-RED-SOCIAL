@@ -60,8 +60,8 @@ function createNotificationSubscriptionManager() {
       pendingSubscription = new Promise<string>((resolve, reject) => {
         const timeout = setTimeout(() => {
           safeRemove();
-          reject(new Error("Subscription timeout after 120 seconds"));
-        }, 120000);
+          reject(new Error("Subscription timeout after 300 seconds"));
+        }, 300000);
 
         currentChannel.subscribe((status: string) => {
           if (import.meta.env.DEV && lastNotifStatus !== status) {

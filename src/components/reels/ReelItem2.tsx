@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Play, Volume2, VolumeX, Heart, MessageCircle, Share2 } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Heart, MessageCircle, Share2 } from "lucide-react";
 import { Post } from "@/types/post";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -185,19 +185,24 @@ const ReelItem2 = memo(function ReelItem2({ post, isActive, onReaction, onViewTr
     }
   }, [isPlaying]);
 
-  const handleDoubleClick = useDoubleClick(() => {
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play().catch((err) => {
-          if (err.name !== 'AbortError') {
-            console.error('Video play error:', err);
-          }
-        });
-      } else {
-        videoRef.current.pause();
+  const handleDoubleClick = useDoubleClick(
+    () => {
+      // Single click - do nothing or toggle play/pause
+    },
+    () => {
+      if (videoRef.current) {
+        if (videoRef.current.paused) {
+          videoRef.current.play().catch((err) => {
+            if (err.name !== 'AbortError') {
+              console.error('Video play error:', err);
+            }
+          });
+        } else {
+          videoRef.current.pause();
+        }
       }
     }
-  });
+  );
 
   const handleShare = async () => {
     try {
@@ -234,9 +239,9 @@ const ReelItem2 = memo(function ReelItem2({ post, isActive, onReaction, onViewTr
         <VolumeSlider
           volume={volume}
           isMuted={isMuted}
-          onToggleMute={toggleMute}
-          onChangeVolume={changeVolume}
-          showTemporarily={showSliderTemporarily}
+          show={showSlider}
+          onChange={changeVolume}
+          onMuteToggle={toggleMute}
         />
       )}
       
@@ -264,15 +269,15 @@ const ReelItem2 = memo(function ReelItem2({ post, isActive, onReaction, onViewTr
           variant="ghost"
           size="icon"
           onClick={() => handleReaction(post.id, 'love')}
-          className={`text-white hover:bg-white/20 ${userReaction?.type === 'love' ? 'text-red-500' : ''}`}
+          className={`text-white hover:bg-white/20 ${userReaction === 'love' ? 'text-red-500' : ''}`}
         >
-          <Heart className={`h-5 w-5 ${userReaction?.type === 'love' ? 'fill-current' : ''}`} />
+          <Heart className={`h-5 w-5 ${userReaction === 'love' ? 'fill-current' : ''}`} />
         </Button>
         
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => handleReaction(post.id, 'comment')}
+          onClick={() => handleReaction(post.id, 'awesome')}
           className="text-white hover:bg-white/20"
         >
           <MessageCircle className="h-5 w-5" />
@@ -281,7 +286,7 @@ const ReelItem2 = memo(function ReelItem2({ post, isActive, onReaction, onViewTr
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => handleReaction(post.id, 'share')}
+          onClick={handleShare}
           className="text-white hover:bg-white/20"
         >
           <Share2 className="h-5 w-5" />

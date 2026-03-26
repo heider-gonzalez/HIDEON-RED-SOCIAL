@@ -84,16 +84,8 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) return;
-      const { error } = await supabase
-        .from('project_views')
-        .upsert({
-          post_id: project.id,
-          viewer_id: user.id,
-        } as any, {
-          onConflict: 'post_id,viewer_id',
-          ignoreDuplicates: true,
-        } as any);
-      if (error && (error as any).code !== '23505') throw error;
+      // Temporarily disable project views recording to avoid database errors
+      console.log('Project view recording disabled temporarily');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-posts'], exact: false });
@@ -201,15 +193,13 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
   // Usar video_url principal si existe, o el primer video de media_urls
   const primaryVideoUrl = videoUrl || videoUrls[0];
 
-  const { data: viewers = [], isLoading: isLoadingViewers } = useQuery({
-    queryKey: ['project-viewers', project.id, 'dialog'],
+  const { data: viewers } = useQuery({
+    queryKey: ['project-viewers', project.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .rpc('get_project_viewers', { p_post_id: project.id, p_limit: 50 });
-      if (error) throw error;
-      return (data || []) as Array<{ viewer_id: string; username: string; avatar_url: string | null; viewed_at: string }>;
+      console.log('Project viewers query disabled temporarily');
+      return [];
     },
-    enabled: showViewers,
+    enabled: false, // Temporarily disabled
   });
   
   // Para imágenes: usar image_url si no hay imágenes en media_urls
