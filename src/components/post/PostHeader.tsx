@@ -66,6 +66,7 @@ export function PostHeader({
     anonymous_author_number: number;
   } | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   const isIncognito = post.visibility === 'incognito';
 
@@ -420,10 +421,30 @@ export function PostHeader({
         postId={post.id}
         isOpen={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        onSave={(newContent) => {
-          // Aquí podrías agregar lógica para actualizar el post
-          console.log('Post edited:', newContent);
-          setEditDialogOpen(false);
+        onSave={async (updatedPost) => {
+          try {
+            setIsLoading(true);
+            const { error } = await (supabase as any)
+              .from('posts')
+              .update(updatedPost)
+              .eq('id', post.id);
+            
+            if (error) {
+              console.error('Error updating post:', error);
+              // Aquí podrías mostrar un toast de error
+            } else {
+              console.log('Post actualizado exitosamente:', updatedPost);
+              // Aquí podrías mostrar un toast de éxito
+              // Opcional: recargar los datos o actualizar el estado local
+              if (onDelete) {
+                onDelete(); // Forzar recarga del componente
+              }
+            }
+          } catch (error) {
+            console.error('Error saving post:', error);
+          } finally {
+            setIsLoading(false);
+          }
         }}
       />
     </div>
