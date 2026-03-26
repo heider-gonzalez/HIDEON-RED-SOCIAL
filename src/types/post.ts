@@ -70,6 +70,7 @@ export interface Post {
     | null; // Ideas → Projects flow
   technologies?: string[] | null; // Technologies used in the project
   demo_url?: string | null;
+  github_url?: string | null;
 
   is_demo?: boolean;
   demo_category?: string | null;

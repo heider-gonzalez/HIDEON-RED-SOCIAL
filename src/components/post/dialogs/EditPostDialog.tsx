@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Upload, Image, Video, Music, FileText, Link } from "lucide-react";
+import { X, Plus, Upload, Image, Video, Music, FileText, Link, Github } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Post } from "@/types/post";
 
@@ -38,6 +38,7 @@ export function EditPostDialog({ postId, isOpen, onOpenChange, onSave }: EditPos
   const [demoCategory, setDemoCategory] = useState("");
   const [demoSource, setDemoSource] = useState("");
   const [demoReadonly, setDemoReadonly] = useState(false);
+  const [githubUrl, setGithubUrl] = useState("");
 
   useEffect(() => {
     if (isOpen && postId) {
@@ -66,6 +67,7 @@ export function EditPostDialog({ postId, isOpen, onOpenChange, onSave }: EditPos
             setDemoCategory(data.demo_category || "");
             setDemoSource(data.demo_source || "");
             setDemoReadonly(data.demo_readonly || false);
+            setGithubUrl(data.github_url || "");
             setAuthorProfile(data.profiles);
             console.log('Post cargado para edición:', data);
           }
@@ -129,6 +131,7 @@ export function EditPostDialog({ postId, isOpen, onOpenChange, onSave }: EditPos
       demo_category: demoCategory.trim() || null,
       demo_source: demoSource.trim() || null,
       demo_readonly: demoReadonly,
+      github_url: githubUrl.trim() || null,
       updated_at: new Date().toISOString()
     };
 
@@ -255,6 +258,23 @@ export function EditPostDialog({ postId, isOpen, onOpenChange, onSave }: EditPos
                 value={demoUrl}
                 onChange={(e) => setDemoUrl(e.target.value)}
                 placeholder="https://ejemplo.com/demo"
+                disabled={isLoading}
+              />
+            </div>
+          )}
+
+          {/* GitHub URL (for projects) */}
+          {postType === 'project' && (
+            <div className="space-y-2">
+              <Label htmlFor="githubUrl">
+                <Github className="h-4 w-4 inline mr-2" />
+                Repositorio GitHub
+              </Label>
+              <Input
+                id="githubUrl"
+                value={githubUrl}
+                onChange={(e) => setGithubUrl(e.target.value)}
+                placeholder="https://github.com/usuario/repo"
                 disabled={isLoading}
               />
             </div>
