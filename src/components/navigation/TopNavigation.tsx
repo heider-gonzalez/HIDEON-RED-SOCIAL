@@ -130,84 +130,50 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
     }
   };
 
-  // Mobile navigation (Facebook Lite-style top bar)
+  // Mobile navigation (con barra inferior estilo redes sociales)
   if (isMobile) {
     return (
       <nav className={cn(
         "bg-background/95 backdrop-blur border-b border-border/30 fixed top-0 left-0 right-0 z-[70] shadow-none"
       )}>
-        <div className="flex flex-col">
-          <div className="flex items-center justify-between h-14 px-4">
-            <HSocialLogo
-              size="lg"
-              showText={true}
-              variant="brand"
-              onClick={() => navigate(isAuthenticated ? "/home" : "/")}
+        <div className="flex items-center justify-between h-14 px-4">
+          {/* Logo a la izquierda */}
+          <HSocialLogo
+            size="lg"
+            showText={true}
+            variant="brand"
+            onClick={() => navigate(isAuthenticated ? "/home" : "/")}
+          />
+          
+          {/* Acciones a la derecha */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
+              onClick={() => openComposer({ userAvatar: userProfile?.avatar_url || user?.user_metadata?.avatar_url })}
+              aria-label="Crear"
+            >
+              <Plus className="h-5 w-5" strokeWidth={1.5} />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
+              onClick={() => setShowFullScreenSearch(true)}
+              aria-label="Buscar"
+            >
+              <Search className="h-5 w-5" strokeWidth={1.5} />
+            </Button>
+
+            <UserMenu
+              triggerClassName="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
+              iconClassName="h-5 w-5"
             />
-            
-            {/* Search + Actions - Right */}
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
-                onClick={() => openComposer({ userAvatar: userProfile?.avatar_url || user?.user_metadata?.avatar_url })}
-                aria-label="Crear"
-              >
-                <Plus className="h-5 w-5" strokeWidth={1.5} />
-              </Button>
-
-              {/* Search button (abre buscador de pantalla completa) */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
-                onClick={() => setShowFullScreenSearch(true)}
-                aria-label="Buscar"
-              >
-                <Search className="h-5 w-5" strokeWidth={1.5} />
-              </Button>
-
-              <UserMenu
-                triggerClassName="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
-                iconClassName="h-5 w-5"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center h-12 px-2">
-            {centerNavItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "relative flex-1 flex items-center justify-center h-full rounded-lg transition-colors",
-                  item.isActive ? "text-primary" : "text-muted-foreground hover:bg-muted/60"
-                )}
-                aria-label={item.label}
-              >
-                <span
-                  className={cn(
-                    item.path === "/explore" && !item.isActive && "explore-attention"
-                  )}
-                >
-                  <item.icon className="h-5 w-5" strokeWidth={item.isActive ? 2 : 1.5} />
-                </span>
-                {item.badge && item.badge > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute top-1 right-3 h-4 min-w-4 px-1 rounded-full p-0 flex items-center justify-center text-[10px]"
-                  >
-                    {item.badge > 9 ? '9+' : item.badge}
-                  </Badge>
-                )}
-                {item.isActive && (
-                  <span className="absolute bottom-0 left-3 right-3 h-1 bg-primary rounded-t-full" />
-                )}
-              </Link>
-            ))}
           </div>
         </div>
+        
         {/* Full Screen Search for Mobile */}
         <FullScreenSearch 
           isOpen={showFullScreenSearch} 

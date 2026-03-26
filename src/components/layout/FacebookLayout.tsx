@@ -4,6 +4,7 @@ import { TopNavigation } from '@/components/navigation/TopNavigation';
 import { LeftSidebar } from './LeftSidebar';
 import { RightSidebar } from './RightSidebar';
 import { ChatSystem } from './ChatSystem';
+import { MobileBottomNavigation } from '@/components/navigation/MobileBottomNavigation';
 
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ChatSystemProvider } from '@/hooks/use-chat-system';
@@ -137,7 +138,7 @@ export function FacebookLayout({
           )}
           
           <main
-            className={`flex-1 min-h-0 w-full bg-background ${!hideNavigation ? 'pt-[96px] pb-0' : 'py-4 pb-0'} overflow-y-auto overscroll-contain`}
+            className={`flex-1 min-h-0 w-full bg-background ${!hideNavigation ? 'pt-[56px] pb-[64px]' : 'py-4 pb-[64px]'} overflow-y-auto overscroll-contain`}
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div className="w-full px-0 mx-auto max-w-full">
@@ -146,6 +147,16 @@ export function FacebookLayout({
               {!hideLegalFooter && <AppLegalFooter />}
             </div>
           </main>
+          
+          {/* Barra de navegación inferior para móvil */}
+          {!hideNavigation && currentUserId && (
+            <MobileBottomNavigation
+              currentUserId={currentUserId}
+              unreadNotifications={unreadNotifications}
+              newPosts={newPosts}
+              pendingRequestsCount={pendingRequestsCount}
+            />
+          )}
           
           {currentUserId && <ChatSystem />}
         </div>
