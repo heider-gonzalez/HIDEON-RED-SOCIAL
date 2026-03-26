@@ -70,19 +70,17 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
   };
 
   const cycleTheme = () => {
-    const current = theme === "dark" || theme === "midnight" ? theme : theme === "system" ? "system" : "light";
+    const current = theme === "dark" ? theme : theme === "system" ? "system" : "light";
     const next =
       current === "system"
         ? "light"
         : current === "light"
           ? "dark"
-          : current === "dark"
-            ? "midnight"
-            : "system";
+          : "system";
     setTheme(next);
   };
 
-  const themeLabel = theme === "midnight" ? "Negro azulado" : theme === "dark" ? "Negro puro" : theme === "system" ? "Sistema" : "Claro";
+  const themeLabel = theme === "dark" ? "Negro puro" : theme === "system" ? "Sistema" : "Claro";
 
   return (
     <div className="px-2 pb-4 bg-background">
@@ -185,16 +183,14 @@ export function MenuOptions({ userId, onClose, onCopyProfileLink }: MenuOptionsP
           variant="ghost"
           className="w-full justify-between h-14 px-3 rounded-lg hover:bg-accent"
           onClick={() => {
-            const current = theme === "dark" || theme === "midnight" ? theme : theme === "system" ? "system" : "light";
+            const current = theme === "dark" ? theme : theme === "system" ? "system" : "light";
             const next =
               current === "system"
                 ? "light"
                 : current === "light"
                   ? "dark"
-                  : current === "dark"
-                    ? "midnight"
-                    : "system";
-            const nextLabel = next === "midnight" ? "Negro azulado" : next === "dark" ? "Negro puro" : next === "system" ? "Sistema" : "Claro";
+                  : "system";
+            const nextLabel = next === "dark" ? "Negro puro" : next === "system" ? "Sistema" : "Claro";
             setTheme(next);
             toast({
               title: "Tema",

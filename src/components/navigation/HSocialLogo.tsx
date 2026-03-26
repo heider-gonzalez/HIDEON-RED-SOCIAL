@@ -29,7 +29,7 @@ export const HSocialLogo = ({ className = "", showText = true, size = "md", onCl
     lg: "text-2xl",
   };
 
-  const logoBgClass = "bg-white dark:bg-[#121212] [.midnight_&]:bg-background";
+  const logoBgClass = "bg-white dark:bg-[#121212]";
   const logoTextClass = "text-primary";
   const brandWordClass = "text-primary";
 

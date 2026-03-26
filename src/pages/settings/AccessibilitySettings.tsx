@@ -9,19 +9,17 @@ export default function AccessibilitySettings() {
   const { theme, setTheme } = useTheme();
 
   const cycleTheme = () => {
-    const current = theme === "dark" || theme === "midnight" ? theme : theme === "system" ? "system" : "light";
+    const current = theme === "dark" ? theme : theme === "system" ? "system" : "light";
     const next =
       current === "system"
         ? "light"
         : current === "light"
           ? "dark"
-          : current === "dark"
-            ? "midnight"
-            : "system";
+          : "system";
     setTheme(next);
   };
 
-  const themeLabel = theme === "midnight" ? "Negro azulado" : theme === "dark" ? "Negro puro" : theme === "system" ? "Sistema" : "Claro";
+  const themeLabel = theme === "dark" ? "Negro puro" : theme === "system" ? "Sistema" : "Claro";
 
   return (
     <div className="container max-w-2xl mx-auto px-4 py-6">
@@ -69,19 +67,6 @@ export default function AccessibilitySettings() {
             )}
           </div>
 
-          <div className="flex items-center justify-between py-3 border-b">
-            <div className="flex items-center gap-3">
-              <Monitor className="h-5 w-5" />
-              <div>
-                <p className="font-medium">Negro azulado</p>
-                <p className="text-xs text-muted-foreground">Premium tech (iOS/Discord pro)</p>
-              </div>
-            </div>
-            {theme === "midnight" && (
-              <div className="h-2 w-2 rounded-full bg-primary" />
-            )}
-          </div>
-          
           <div className="flex items-center justify-between pt-4">
             <div className="flex items-center gap-2">
               <span className="font-medium">Actual:</span>

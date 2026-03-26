@@ -1,8 +1,8 @@
 
 import * as React from "react";
 
-export type ThemeMode = "light" | "dark" | "midnight" | "system";
-export type ResolvedTheme = "light" | "dark" | "midnight";
+export type ThemeMode = "light" | "dark" | "system";
+export type ResolvedTheme = "light" | "dark";
 
 const THEME_STORAGE_KEY = "hsocial.theme";
 const THEME_CHANGE_EVENT = "hsocial:theme-change";
@@ -20,7 +20,7 @@ function readStoredTheme(): ThemeMode {
   if (typeof window === "undefined") return "system";
   try {
     const raw = window.localStorage.getItem(THEME_STORAGE_KEY);
-    if (raw === "light" || raw === "dark" || raw === "midnight") return raw;
+    if (raw === "light" || raw === "dark") return raw;
     return "system";
   } catch {
     return "system";
@@ -28,7 +28,6 @@ function readStoredTheme(): ThemeMode {
 }
 
 function resolveTheme(mode: ThemeMode): ResolvedTheme {
-  if (mode === "midnight") return "midnight";
   if (mode === "dark") return "dark";
   if (mode === "light") return "light";
   return getSystemTheme();
@@ -37,9 +36,8 @@ function resolveTheme(mode: ThemeMode): ResolvedTheme {
 function applyThemeClass(resolved: ResolvedTheme) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  root.classList.remove("dark", "midnight");
+  root.classList.remove("dark");
   if (resolved === "dark") root.classList.add("dark");
-  if (resolved === "midnight") root.classList.add("midnight");
 }
 
 export function setTheme(mode: ThemeMode) {
