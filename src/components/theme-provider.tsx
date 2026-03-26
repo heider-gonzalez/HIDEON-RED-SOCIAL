@@ -36,8 +36,31 @@ function resolveTheme(mode: ThemeMode): ResolvedTheme {
 function applyThemeClass(resolved: ResolvedTheme) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
+
+  // Evitar animaciones/flash feo durante el cambio de tema
+  try {
+    root.classList.add("theme-changing");
+  } catch {
+    // ignore
+  }
+
   root.classList.remove("dark");
   if (resolved === "dark") root.classList.add("dark");
+
+  // Remover el flag después del próximo frame (suficiente para que Tailwind aplique variables)
+  try {
+    window.requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        try {
+          root.classList.remove("theme-changing");
+        } catch {
+          // ignore
+        }
+      }, 50);
+    });
+  } catch {
+    // ignore
+  }
 }
 
 export function setTheme(mode: ThemeMode) {

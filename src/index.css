@@ -53,6 +53,14 @@
     --facebook-active: 210 20% 94%; /* #E4E6EA */
   }
 
+  /* Evita animaciones feas al alternar tema claro/oscuro */
+  .theme-changing *,
+  .theme-changing *::before,
+  .theme-changing *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
   body {
     padding-top: var(--safe-area-inset-top);
     padding-bottom: var(--safe-area-inset-bottom);

@@ -294,10 +294,14 @@ const ReelItem2 = memo(function ReelItem2({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => showSliderTemporarily()}
+          onClick={() => {
+            toggleMute();
+            showSliderTemporarily();
+          }}
           className="text-white hover:bg-white/20"
+          aria-label={isMuted ? "Activar sonido" : "Silenciar"}
         >
-          <Volume2 className="h-5 w-5" />
+          {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </Button>
         
         <Button

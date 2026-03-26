@@ -1,5 +1,4 @@
 import React from 'react';
-import { ReelsSidebar } from './ReelsSidebar';
 import { useMobileDetection } from '@/hooks/use-mobile-detection';
 
 interface ReelsDesktopLayoutProps {
@@ -14,16 +13,12 @@ export function ReelsDesktopLayout({ children }: ReelsDesktopLayoutProps) {
     return <>{children}</>;
   }
 
-  // Desktop: Layout con sidebar
+  // Desktop: escenario centrado (la app ya tiene sidebar global)
   return (
-    <div className="flex w-full min-h-screen bg-background">
-      <ReelsSidebar />
-      
-      <main className="flex-1 flex items-center justify-center bg-black">
-        <div className="w-full max-w-[1400px] h-screen">
-          {children}
-        </div>
-      </main>
-    </div>
+    <main className="w-full h-screen bg-black flex items-center justify-center">
+      <div className="w-full max-w-[1400px] h-screen">
+        {children}
+      </div>
+    </main>
   );
 }
