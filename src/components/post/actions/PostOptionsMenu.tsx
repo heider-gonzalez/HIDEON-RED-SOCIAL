@@ -14,9 +14,11 @@ import { InterestMenuItems } from "./menu-items/InterestMenuItems";
 import { VisibilityMenuItems } from "./menu-items/VisibilityMenuItems";
 import { ReportMenuItem } from "./menu-items/ReportMenuItem";
 import { DeleteMenuItem } from "./menu-items/DeleteMenuItem";
+import { EditMenuItem } from "./menu-items/EditMenuItem";
 import { SavePostMenuItem } from "./menu-items/SavePostMenuItem";
 import { CopyLinkMenuItem } from "./menu-items/CopyLinkMenuItem";
 import { ReportDialog } from "./ReportDialog";
+import { useSuperuser } from "@/hooks/use-superuser";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PostOptionsMenuProps {
@@ -27,6 +29,7 @@ interface PostOptionsMenuProps {
   isAuthor?: boolean;
   canDelete?: boolean;
   onDelete?: () => void;
+  onEdit?: () => void;
 }
 
 export function PostOptionsMenu({ 
@@ -36,10 +39,12 @@ export function PostOptionsMenu({
   onHideToggle,
   isAuthor = false,
   canDelete = false,
-  onDelete
+  onDelete,
+  onEdit
 }: PostOptionsMenuProps) {
   const [reportOpen, setReportOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { isSuperuser } = useSuperuser();
 
   useEffect(() => {
     let mounted = true;
@@ -111,6 +116,13 @@ export function PostOptionsMenu({
           onHidePost={handleHidePost}
           onHideUser={handleHideUser}
         />
+        
+        <DropdownMenuSeparator />
+        
+        {/* Show edit option for authors or superusers */}
+        {(isAuthor || isSuperuser) && onEdit && (
+          <EditMenuItem onEdit={onEdit} />
+        )}
         
         {canDelete && onDelete && (
           <DeleteMenuItem onDelete={onDelete} />

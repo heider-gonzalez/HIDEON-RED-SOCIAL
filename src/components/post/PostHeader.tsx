@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PostOptionsMenu } from "./actions/PostOptionsMenu";
 import { AuthorPostOptionsMenu } from "./actions/AuthorPostOptionsMenu";
 import { IncognitoAuthorOptionsMenu } from "./actions/IncognitoAuthorOptionsMenu";
+import { EditPostDialog } from "./dialogs/EditPostDialog";
 
 interface PostHeaderProps {
   post: Post;
@@ -64,6 +65,7 @@ export function PostHeader({
     anonymous_author_name: string;
     anonymous_author_number: number;
   } | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   const isIncognito = post.visibility === 'incognito';
 
@@ -376,6 +378,7 @@ export function PostHeader({
           isHidden={isHidden}
           canDelete={canDelete}
           onDelete={onDelete}
+          onEdit={() => setEditDialogOpen(true)}
         />
       );
     }
@@ -411,6 +414,18 @@ export function PostHeader({
       
       {/* Options menu with save, interest, etc. */}
       {renderOptionsMenu()}
+      
+      {/* Edit Post Dialog */}
+      <EditPostDialog
+        postId={post.id}
+        isOpen={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSave={(newContent) => {
+          // Aquí podrías agregar lógica para actualizar el post
+          console.log('Post edited:', newContent);
+          setEditDialogOpen(false);
+        }}
+      />
     </div>
   );
 }
