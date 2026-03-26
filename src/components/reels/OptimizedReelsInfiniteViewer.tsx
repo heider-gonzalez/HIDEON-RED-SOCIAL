@@ -248,7 +248,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
           <video
             ref={videoRef}
             src={currentSrc || undefined}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain bg-black"
             controls={false}
             loop
             playsInline

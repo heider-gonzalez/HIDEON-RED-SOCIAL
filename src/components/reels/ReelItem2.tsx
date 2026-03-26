@@ -229,8 +229,13 @@ const ReelItem2 = memo(function ReelItem2({
       <video
         ref={videoRef}
         src={currentSrc || undefined}
-        className="w-full h-full object-cover"
-        onError={handleVideoError}
+        className="w-full h-full object-contain bg-black"
+        controls={false}
+        loop
+        muted={isMuted}
+        preload="metadata"
+        playsInline
+        onClick={handleDoubleClick}
         onLoadedMetadata={() => {
           try {
             const v = videoRef.current;
@@ -242,12 +247,8 @@ const ReelItem2 = memo(function ReelItem2({
             // ignore
           }
         }}
+        onLoadStart={() => setIsReady(false)}
         onCanPlay={() => setIsReady(true)}
-        loop
-        muted={isMuted}
-        preload="metadata"
-        playsInline
-        onClick={handleDoubleClick}
       />
 
       {!hasError && !isReady && currentSrc && (
