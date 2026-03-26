@@ -252,7 +252,10 @@ const ReelItem2 = memo(function ReelItem2({
 
       {!hasError && !isReady && currentSrc && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          <div className="relative">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            <div className="absolute inset-0 rounded-full shimmer" />
+          </div>
         </div>
       )}
       
@@ -286,7 +289,7 @@ const ReelItem2 = memo(function ReelItem2({
           variant="ghost"
           size="icon"
           onClick={togglePlay}
-          className="text-white hover:bg-white/20"
+          className="text-white hover:bg-white/20 transition-all duration-200 hover:scale-110 active:scale-95"
         >
           {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
         </Button>
@@ -298,7 +301,7 @@ const ReelItem2 = memo(function ReelItem2({
             toggleMute();
             showSliderTemporarily();
           }}
-          className="text-white hover:bg-white/20"
+          className="text-white hover:bg-white/20 transition-all duration-200 hover:scale-110 active:scale-95"
           aria-label={isMuted ? "Activar sonido" : "Silenciar"}
         >
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
@@ -308,27 +311,31 @@ const ReelItem2 = memo(function ReelItem2({
           variant="ghost"
           size="icon"
           onClick={() => handleReaction(post.id, 'love')}
-          className={`text-white hover:bg-white/20 ${userReaction === 'love' ? 'text-red-500' : ''}`}
+          className={`text-white hover:bg-white/20 transition-all duration-200 hover:scale-110 active:scale-95 ${
+            userReaction === 'love' ? 'text-red-500' : ''
+          }`}
         >
-          <Heart className={`h-5 w-5 ${userReaction === 'love' ? 'fill-current' : ''}`} />
+          <Heart className={`h-5 w-5 transition-transform duration-200 ${
+            userReaction === 'love' ? 'fill-current scale-125' : 'hover:scale-110'
+          }`} />
         </Button>
         
         <Button
           variant="ghost"
           size="icon"
           onClick={() => handleReaction(post.id, 'awesome')}
-          className="text-white hover:bg-white/20"
+          className="text-white hover:bg-white/20 transition-all duration-200 hover:scale-110 active:scale-95"
         >
-          <MessageCircle className="h-5 w-5" />
+          <MessageCircle className="h-5 w-5 hover:scale-110 transition-transform duration-200" />
         </Button>
         
         <Button
           variant="ghost"
           size="icon"
           onClick={handleShare}
-          className="text-white hover:bg-white/20"
+          className="text-white hover:bg-white/20 transition-all duration-200 hover:scale-110 active:scale-95"
         >
-          <Share2 className="h-5 w-5" />
+          <Share2 className="h-5 w-5 hover:rotate-12 transition-transform duration-200" />
         </Button>
       </div>
     </div>
