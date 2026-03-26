@@ -186,7 +186,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-[100svh] bg-black flex items-center justify-center snap-start"
+      className="relative w-full h-screen bg-black flex items-center justify-center snap-start overflow-hidden"
     >
       {/* Video layer */}
       <div className="absolute inset-0 z-0">
@@ -212,8 +212,8 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
           <video
             ref={videoRef}
             src={currentSrc || undefined}
-            className={isVertical ? "w-full h-full object-cover" : "w-full h-full object-contain"}
-            controls={!isVertical}
+            className="w-full h-full object-cover"
+            controls={false}
             loop
             playsInline
             muted={isMuted}
@@ -244,10 +244,10 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
             <Button
               variant="ghost"
               size="icon"
-              className="bg-black/50 text-white hover:bg-black/70 h-16 w-16 pointer-events-auto"
+              className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 h-20 w-20 pointer-events-auto border border-white/30 rounded-full"
               onClick={togglePlay}
             >
-              <Play className="h-8 w-8" />
+              <Play className="h-10 w-10 ml-1" />
             </Button>
           </div>
         )}
@@ -264,7 +264,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
         </div>
 
         {/* Right actions */}
-        <div className="absolute right-3 bottom-24 flex flex-col gap-6 items-center pointer-events-auto z-20">
+        <div className="absolute right-4 bottom-20 flex flex-col gap-4 items-center pointer-events-auto z-20">
           <Button
             variant="ghost"
             size="icon"
@@ -273,51 +273,51 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
               toggleMute();
               showSliderTemporarily();
             }}
-            className="h-11 w-11 rounded-full bg-black/50 text-white hover:bg-black/70"
+            className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/20"
             aria-label={isMuted ? "Activar sonido" : "Silenciar"}
           >
-            {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
           </Button>
 
           <div className="flex flex-col items-center">
             <Button
               variant="ghost"
               size="icon"
-              className={`h-12 w-12 rounded-full ${
-                userReaction === 'love'
-                  ? 'bg-transparent text-red-500'
-                  : 'bg-transparent text-white hover:bg-white/10'
-              }`}
               onClick={handleLike}
+              className={`h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/20 ${
+                userReaction === 'love'
+                  ? 'text-red-500'
+                  : ''
+              }`}
             >
-              <Heart className={`h-7 w-7 ${userReaction === 'love' ? 'fill-current' : ''}`} />
+              <Heart className={`h-6 w-6 ${userReaction === 'love' ? 'fill-current' : ''}`} />
             </Button>
-            <span className="text-white text-xs mt-1">{post.reactions_count || 0}</span>
+            <span className="text-white text-xs mt-1 font-medium">{(post as any).views_count || 0}</span>
           </div>
 
           <div className="flex flex-col items-center">
             <Button
               variant="ghost"
               size="icon"
-              className="h-12 w-12 rounded-full bg-transparent text-white hover:bg-white/10"
               onClick={() => {
                 setShowComments(true);
                 onReaction(post.id, 'comment');
               }}
+              className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/20"
             >
-              <MessageCircle className="h-7 w-7" />
+              <MessageCircle className="h-6 w-6" />
             </Button>
-            <span className="text-white text-xs mt-1">{post.comments_count || 0}</span>
+            <span className="text-white text-xs mt-1 font-medium">{(post as any).comments_count || 0}</span>
           </div>
 
           <div className="flex flex-col items-center">
             <Button
               variant="ghost"
               size="icon"
-              className="h-12 w-12 rounded-full bg-transparent text-white hover:bg-white/10"
               onClick={() => onReaction(post.id, 'share')}
+              className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/20"
             >
-              <Share2 className="h-7 w-7" />
+              <Share2 className="h-6 w-6" />
             </Button>
           </div>
         </div>
@@ -476,24 +476,28 @@ export const OptimizedReelsInfiniteViewer = memo(function OptimizedReelsInfinite
   return (
     <div 
       ref={containerRef}
-      className="w-full h-screen overflow-y-auto snap-y snap-mandatory scrollbar-hide"
+      className="w-full h-screen overflow-y-auto snap-y snap-mandatory scrollbar-hide bg-black"
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
     >
       {posts.map((post, index) => (
-        <OptimizedReelItem
+        <div
           key={post.id}
-          post={post}
-          isActive={index === currentIndex}
-          onReaction={onReaction}
-          onViewTracked={onViewTracked}
-          batchFollowingStatus={post.user_id ? getFollowingStatus(post.user_id) : undefined}
-          onBatchFollowingUpdate={updateFollowingStatus}
-          initialSeek={
-            initialPlayback && initialPlayback.postId === post.id
-              ? { time: initialPlayback.time, muted: initialPlayback.muted }
-              : undefined
-          }
-        />
+          className="w-full h-screen flex items-center justify-center snap-start bg-black"
+        >
+          <OptimizedReelItem
+            post={post}
+            isActive={index === currentIndex}
+            onReaction={onReaction}
+            onViewTracked={onViewTracked}
+            batchFollowingStatus={post.user_id ? getFollowingStatus(post.user_id) : undefined}
+            onBatchFollowingUpdate={updateFollowingStatus}
+            initialSeek={
+              initialPlayback && initialPlayback.postId === post.id
+                ? { time: initialPlayback.time, muted: initialPlayback.muted }
+                : undefined
+            }
+          />
+        </div>
       ))}
     </div>
   );
