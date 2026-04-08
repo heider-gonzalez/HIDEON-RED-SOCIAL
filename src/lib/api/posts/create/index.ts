@@ -6,8 +6,6 @@ import type { CreatePostParams, CreatePostResponse, PollData, IdeaData, Marketpl
 
 // Process poll data into the format expected by the database
 function processPollData(pollData: PollData) {
-  console.log("Processing poll data:", pollData);
-  
   const processedPoll = {
     question: pollData.question,
     options: pollData.options.map((option, index) => ({
@@ -20,7 +18,6 @@ function processPollData(pollData: PollData) {
     user_vote: null
   };
   
-  console.log("Processed poll data:", processedPoll);
   return processedPoll;
 }
 
@@ -55,8 +52,6 @@ export async function createPost({
   visibility = "public"
 }: CreatePostParams): Promise<CreatePostResponse> {
   try {
-    console.log("✅ Creating post with data:", { content, pollData, ideaData, marketplaceData, visibility });
-    
     // Enhanced authentication check
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError) {
@@ -72,8 +67,6 @@ export async function createPost({
     if (!content?.trim() && !file && !pollData && !ideaData && !marketplaceData) {
       throw new Error("El post debe tener contenido, archivo o datos especiales");
     }
-
-    console.log("✅ User authenticated:", user.id);
 
     let mediaUrl = null;
     let mediaType: 'image' | 'video' | 'audio' | null = null;
@@ -91,7 +84,6 @@ export async function createPost({
     // Process poll data
     let processedPollData = null;
     if (pollData) {
-      console.log("Processing poll data...");
       processedPollData = processPollData(pollData);
     }
 
@@ -120,8 +112,6 @@ export async function createPost({
 
     // Handle incognito posts differently
     if (visibility === 'incognito') {
-      console.log("Creating incognito post...");
-      
       // For incognito posts, we need to create an entry in the incognito_posts table
       const { data: post, error: postError } = await supabase
         .from('posts')
@@ -145,13 +135,8 @@ export async function createPost({
       }
 
       // Incognito mode disabled (table removed)
-      console.log("Incognito mode is disabled");
-
-      console.log("Incognito post created successfully:", post);
       return { success: true, post };
     } else {
-      console.log("Creating regular post...");
-      
       // Regular post creation
       const { data: post, error: postError } = await supabase
         .from('posts')
@@ -174,7 +159,6 @@ export async function createPost({
         throw postError;
       }
 
-      console.log("✅ Regular post created successfully:", post);
       return { success: true, post };
     }
   } catch (error) {
