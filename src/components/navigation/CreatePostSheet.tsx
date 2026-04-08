@@ -31,6 +31,12 @@ import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { v4 as uuidv4 } from "uuid";
+import type { Post } from "@/types/post";
+import {
+  addOptimisticPostToAllInfiniteFeeds,
+  replaceOptimisticPostInAllInfiniteFeeds,
+} from "@/lib/feed/optimistic-posts";
 
 interface CreatePostSheetProps {
   open: boolean;
@@ -209,8 +215,49 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
     if ((!content.trim() && !selectedFile) || !user?.id) return;
     
     setIsSubmitting(true);
+
+    let optimisticTx: ReturnType<typeof addOptimisticPostToAllInfiniteFeeds> | null = null;
+    const optimisticId = `optimistic-${uuidv4()}`;
+    const nowIso = new Date().toISOString();
     
     try {
+      const optimisticPost: any = {
+        id: optimisticId,
+        user_id: user.id,
+        content: content.trim() || null,
+        visibility,
+        post_type: activeTab === 'idea' ? 'idea' : activeTab === 'project' ? 'project' : 'regular',
+        created_at: nowIso,
+        updated_at: nowIso,
+        reactions: [],
+        reactions_count: 0,
+        comments_count: 0,
+        shares_count: 0,
+        views_count: 0,
+        userHasReacted: false,
+        profiles: userProfile
+          ? {
+              id: user.id,
+              username: userProfile.username || 'Usuario',
+              avatar_url: userProfile.avatar_url || null,
+            }
+          : {
+              id: user.id,
+              username: 'Usuario',
+              avatar_url: null,
+            },
+      };
+
+      if (activeTab === 'idea') {
+        optimisticPost.idea = {
+          title: content.split('\n')[0] || 'Nueva Idea',
+          description: content,
+          participants: [],
+        };
+      }
+
+      optimisticTx = addOptimisticPostToAllInfiniteFeeds(queryClient, optimisticPost as Post);
+
       let mediaUrl = null;
       let mediaType: 'image' | 'video' | 'audio' | null = null;
 
@@ -355,6 +402,11 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating post:', error);
+      try {
+        optimisticTx?.rollback();
+      } catch {
+        // ignore
+      }
       toast({
         title: "Error",
         description: "No pudimos publicarlo. Intenta de nuevo en un momento.",

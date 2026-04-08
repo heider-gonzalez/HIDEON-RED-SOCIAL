@@ -29,6 +29,10 @@ import { useDraft } from "@/hooks/use-draft";
 import { useAutoResize } from "@/hooks/use-auto-resize";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCreateIdea } from "@/hooks/ideas/use-create-idea";
+import {
+  addOptimisticPostToAllInfiniteFeeds,
+  replaceOptimisticPostInAllInfiniteFeeds,
+} from "@/lib/feed/optimistic-posts";
 
 export interface Idea {
   title: string;
@@ -84,7 +88,7 @@ interface PostCreatorProps {
  async function sendIdeaPublishedAutoMessage(recipientUserId: string) {
    try {
      if (!recipientUserId) return;
-     const { error } = await supabase.rpc('send_idea_published_dm', {
+     const { error } = await (supabase.rpc as any)('send_idea_published_dm', {
        recipient_user_id: recipientUserId,
      });
      if (error) {
@@ -223,7 +227,7 @@ export function PostCreator({
           return;
         }
 
-        const { data, error } = await supabase.rpc('get_user_groups', {
+        const { data, error } = await (supabase.rpc as any)('get_user_groups', {
           user_id_param: user.id,
         });
         if (error) throw error;
@@ -369,6 +373,9 @@ export function PostCreator({
   };
 
   const handleSubmit = async () => {
+    let optimisticTx: ReturnType<typeof addOptimisticPostToAllInfiniteFeeds> | null = null;
+    let optimisticId = '';
+    let optimisticPost: any = null;
     try {
       console.log('🚀 Starting post creation...', { postType, isFormValid: isFormValid() });
       
@@ -422,6 +429,87 @@ export function PostCreator({
         mobileToasts.validationError("Completa los campos obligatorios del proyecto (título y descripción)");
         return;
       }
+
+      optimisticId = `optimistic-${uuidv4()}`;
+      const nowIso = new Date().toISOString();
+
+      const optimisticMediaUrls = (() => {
+        if (selectedFiles.length === 0) return null;
+        const urls: string[] = [];
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const preview = filePreviews[i];
+          if (typeof preview === 'string' && preview.length > 0) {
+            urls.push(preview);
+          } else {
+            try {
+              urls.push(URL.createObjectURL(selectedFiles[i]));
+            } catch {
+              // ignore
+            }
+          }
+        }
+        return urls.length > 0 ? urls : null;
+      })();
+
+      optimisticPost = {
+        id: optimisticId,
+        user_id: session.user.id,
+        content: content.trim() || null,
+        visibility: visibility === 'incognito' ? 'private' : visibility,
+        post_type: postType,
+        media_url: optimisticMediaUrls?.[0] ?? null,
+        media_type: selectedFiles[0] ? getMediaType(selectedFiles[0]) : null,
+        media_urls: optimisticMediaUrls,
+        created_at: nowIso,
+        updated_at: nowIso,
+        reactions: [],
+        reactions_count: 0,
+        comments_count: 0,
+        shares_count: 0,
+        views_count: 0,
+        userHasReacted: false,
+        profiles: {
+          id: session.user.id,
+          username:
+            session.user.user_metadata?.name ||
+            session.user.user_metadata?.full_name ||
+            session.user.email?.split('@')[0] ||
+            'Usuario',
+          avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null,
+        },
+      };
+
+      if (postType === 'idea' && idea.title.trim()) {
+        optimisticPost.idea = {
+          title: idea.title,
+          description: idea.description,
+          required_skills: idea.required_skills,
+          max_participants: idea.max_participants,
+          deadline: idea.deadline || null,
+          contact_link: idea.contact_link || null,
+        };
+        optimisticPost.project_status = 'idea';
+      }
+
+      if (postType === 'proyecto' && proyecto.title.trim()) {
+        optimisticPost.post_metadata = {
+          ...optimisticPost.post_metadata,
+          proyecto: {
+            title: proyecto.title,
+            description: proyecto.description,
+            required_skills: proyecto.required_skills,
+            status: proyecto.status,
+            contact_link: proyecto.contact_link || '',
+            demo_url: proyecto.demo_url || '',
+            github_url: proyecto.github_url || '',
+            impact: proyecto.impact || '',
+            stack: Array.isArray(proyecto.stack) ? proyecto.stack : [],
+            max_participants: proyecto.max_participants,
+          },
+        };
+      }
+
+      optimisticTx = addOptimisticPostToAllInfiniteFeeds(queryClient, optimisticPost);
 
       setIsUploading(true);
       
@@ -540,8 +628,28 @@ export function PostCreator({
       }
       
       if (postType === "idea") {
-        const newPost = await createIdeaMutation.mutateAsync({ postData });
+        const newPost = (await createIdeaMutation.mutateAsync({ postData })) as any;
         console.log('Post created successfully:', newPost);
+
+      try {
+        if (newPost && typeof newPost === 'object' && newPost?.id) {
+          const mergedPost: any = {
+            ...newPost,
+            profiles: (newPost as any)?.profiles || optimisticPost?.profiles,
+            reactions: (newPost as any)?.reactions || [],
+            reactions_count: typeof (newPost as any)?.reactions_count === 'number' ? (newPost as any).reactions_count : 0,
+            comments_count: typeof (newPost as any)?.comments_count === 'number' ? (newPost as any).comments_count : 0,
+            shares_count: typeof (newPost as any)?.shares_count === 'number' ? (newPost as any).shares_count : 0,
+            views_count: typeof (newPost as any)?.views_count === 'number' ? (newPost as any).views_count : 0,
+            userHasReacted: Boolean((newPost as any)?.userHasReacted),
+            user_reaction: (newPost as any)?.user_reaction ?? null,
+            media_urls: (newPost as any)?.media_urls ?? optimisticPost?.media_urls ?? null,
+          };
+          replaceOptimisticPostInAllInfiniteFeeds(queryClient, optimisticId, mergedPost);
+        }
+      } catch {
+        // ignore
+      }
 
         sendIdeaPublishedAutoMessage(session.user.id);
 
@@ -608,19 +716,33 @@ export function PostCreator({
 
       console.log('Post created successfully:', newPost);
 
-       if (postType === 'idea') {
-         sendIdeaPublishedAutoMessage(session.user.id);
-       }
+      try {
+        if (newPost && typeof newPost === 'object' && (newPost as any)?.id) {
+          const mergedPost: any = {
+            ...(newPost as any),
+            profiles: (newPost as any)?.profiles || optimisticPost?.profiles,
+            reactions: (newPost as any)?.reactions || [],
+            reactions_count: typeof (newPost as any)?.reactions_count === 'number' ? (newPost as any).reactions_count : 0,
+            comments_count: typeof (newPost as any)?.comments_count === 'number' ? (newPost as any).comments_count : 0,
+            shares_count: typeof (newPost as any)?.shares_count === 'number' ? (newPost as any).shares_count : 0,
+            views_count: typeof (newPost as any)?.views_count === 'number' ? (newPost as any).views_count : 0,
+            userHasReacted: Boolean((newPost as any)?.userHasReacted),
+            user_reaction: (newPost as any)?.user_reaction ?? null,
+            media_urls: (newPost as any)?.media_urls ?? optimisticPost?.media_urls ?? null,
+          };
+          replaceOptimisticPostInAllInfiniteFeeds(queryClient, optimisticId, mergedPost);
+        }
+      } catch {
+        // ignore
+      }
+
+      // At this point postType is narrowed to non-idea (idea branch returned above)
       
       // Invalidate queries to update feed immediately
       queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["personalized-feed"] });
       queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
       queryClient.invalidateQueries({ queryKey: ["project-posts"] });
-
-      if (postType === "idea") {
-        queryClient.invalidateQueries({ queryKey: ["ideas"] });
-      }
 
       // Some infinite queries won't refetch immediately on invalidate; force a refetch
       queryClient.refetchQueries({ queryKey: ["posts"], exact: false });
@@ -715,6 +837,13 @@ export function PostCreator({
       }
       
       mobileToasts.error(errorMessage);
+
+      try {
+        // Best-effort rollback optimistic post
+        optimisticTx?.rollback();
+      } catch {
+        // ignore
+      }
     } finally {
       setIsUploading(false);
     }

@@ -286,6 +286,14 @@ export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
     );
   }
 
+  if (isLoading) {
+    return <FeedSkeleton />;
+  }
+
+  if (!posts || (Array.isArray(posts) && posts.length === 0)) {
+    return <EmptyFeed />;
+  }
+
   return (
     <div
       className="feed-container mx-auto w-full max-w-[800px] px-3 sm:px-5 py-2"

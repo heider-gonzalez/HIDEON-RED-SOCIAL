@@ -28,8 +28,6 @@ const [showFallback, setShowFallback] = useState(false);
   }, [loading]);
 
   useEffect(() => {
-    console.log('🛡️ AuthGuard state:', { loading, isAuthenticated, path: location.pathname });
-
     if (loading || isAuthenticated || location.pathname === '/auth') return;
 
     let cancelled = false;
@@ -98,7 +96,14 @@ const [showFallback, setShowFallback] = useState(false);
   }
 
   if (!isAuthenticated && !loading && !revalidating && location.pathname !== '/auth') {
-    return null; // Will redirect in useEffect
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p>Redirigiendo...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
