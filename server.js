@@ -9,8 +9,18 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 10000;
 
-// Serve static files from the dist directory
-app.use(express.static(path.join(__dirname, 'dist')));
+// Serve static files from the dist directory with cache headers
+app.use('/assets', express.static(path.join(__dirname, 'dist', 'assets'), {
+  maxAge: '1y',
+  immutable: true,
+  etag: true
+}));
+
+// Serve other static files (favicon, manifest, etc.) with normal caching
+app.use(express.static(path.join(__dirname, 'dist'), {
+  maxAge: '1h',
+  etag: true
+}));
 
 function httpGet(urlString) {
   return new Promise((resolve, reject) => {
@@ -104,16 +114,17 @@ app.get('/api/itunes/top', async (req, res) => {
 
 // Handle client-side routing - serve index.html for all non-API, non-static routes
 app.get('*', (req, res) => {
-  // Don't handle static files
-  if (req.path.includes('.')) {
-    return res.status(404).json({ error: 'File not found' });
-  }
-  
   // Don't handle API routes
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
 
+  // Serve index.html with no-cache headers
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
