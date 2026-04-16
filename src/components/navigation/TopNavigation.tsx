@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigation } from "./use-navigation";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
-import { useEffect, useState } from "react";
+import { useState, useEffect, useReducer } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -23,6 +23,26 @@ interface TopNavigationProps {
   pendingRequestsCount: number;
 }
 
+type TopNavigationState = {
+  isAuthenticated: boolean;
+  userProfile: any;
+};
+
+type TopNavigationAction =
+  | { type: 'SET_AUTHENTICATED'; payload: boolean }
+  | { type: 'SET_USER_PROFILE'; payload: any };
+
+function topNavigationReducer(state: TopNavigationState, action: TopNavigationAction): TopNavigationState {
+  switch (action.type) {
+    case 'SET_AUTHENTICATED':
+      return { ...state, isAuthenticated: action.payload };
+    case 'SET_USER_PROFILE':
+      return { ...state, userProfile: action.payload };
+    default:
+      return state;
+  }
+}
+
 export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
   void pendingRequestsCount;
   const {
@@ -33,10 +53,14 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
   } = useNavigation();
   
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [showFullScreenSearch, setShowFullScreenSearch] = useState(false);
   const isMobile = useIsMobile();
+  const [state, dispatch] = useReducer(topNavigationReducer, {
+    isAuthenticated: false,
+    userProfile: null,
+  });
+
+  const { isAuthenticated, userProfile } = state;
+  const [showFullScreenSearch, setShowFullScreenSearch] = useState(false);
   const { user } = useUser();
 
   const { open: openComposer } = usePostComposer();
@@ -58,8 +82,9 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthenticated(!!session);
+      const isAuthenticated = !!session;
       
+      let userProfile = null;
       if (session?.user) {
         // Get user profile
         const { data } = await supabase
@@ -67,32 +92,37 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
           .select('username, avatar_url')
           .eq('id', session.user.id)
           .single();
-        setUserProfile(data);
+        userProfile = data;
       }
+      
+      // Consolidate state updates
+      dispatch({ type: 'SET_AUTHENTICATED', payload: isAuthenticated });
+      dispatch({ type: 'SET_USER_PROFILE', payload: userProfile });
     };
     
     checkAuth();
     
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session);
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const isAuthenticated = !!session;
+      
+      let userProfile = null;
       if (session?.user) {
         // Get user profile on auth change
-        const getProfile = async () => {
-          const { data } = await supabase
-            .from('profiles')
-            .select('username, avatar_url')
-            .eq('id', session.user.id)
-            .single();
-          setUserProfile(data);
-        };
-        getProfile();
-      } else {
-        setUserProfile(null);
+        const { data } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', session.user.id)
+          .single();
+        userProfile = data;
       }
+      
+      // Consolidate state updates
+      dispatch({ type: 'SET_AUTHENTICATED', payload: isAuthenticated });
+      dispatch({ type: 'SET_USER_PROFILE', payload: userProfile });
     });
-    
+
     return () => {
-      if (authListener) authListener.subscription.unsubscribe();
+      authListener.subscription.unsubscribe();
     };
   }, []);
 
@@ -200,56 +230,9 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
           />
         </div>
 
-        <div className="flex items-center flex-1 min-w-0">
-          <div className="w-full flex items-center gap-6">
-            <div className="flex-1 max-w-[520px]">
-              <FriendSearch />
-            </div>
-
-            <div className="flex items-center justify-center flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                {desktopCenterNavItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={cn(
-                      "flex items-center justify-center h-12 w-32 rounded-xl transition-colors duration-200 relative group",
-                      item.isActive ? "bg-muted/60" : "hover:bg-muted/50"
-                    )}
-                  >
-                    {(() => {
-                      const style = getCenterIconStyle(item.path);
-                      const bubbleClassName = cn(
-                        "h-10 w-10 rounded-full flex items-center justify-center transition-colors ring-1 ring-border/30",
-                        item.isActive ? style.activeBg : style.bg
-                      );
-                      const iconClassName = cn(
-                        "h-[22px] w-[22px] transition-colors",
-                        item.isActive ? style.activeFg : style.fg
-                      );
-                      return (
-                        <span className={bubbleClassName}>
-                          <span className={cn(item.path === "/explore" && !item.isActive && "explore-attention")}>
-                            <item.icon className={iconClassName} strokeWidth={item.isActive ? 1.8 : 1.4} />
-                          </span>
-                        </span>
-                      );
-                    })()}
-                    {item.badge && item.badge > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="absolute -top-1 -right-1 h-4 w-4 rounded-full p-0 flex items-center justify-center text-[10px]"
-                      >
-                        {item.badge}
-                      </Badge>
-                    )}
-                    {item.isActive && (
-                      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-primary rounded-t-full" />
-                    )}
-                  </Link>
-                ))}
-              </div>
-            </div>
+        <div className="flex items-center justify-center flex-1 min-w-0">
+          <div className="w-full max-w-[680px] mx-auto flex items-center justify-center">
+            <FriendSearch />
           </div>
         </div>
 

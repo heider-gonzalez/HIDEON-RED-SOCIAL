@@ -198,7 +198,7 @@ const PostContentInput = React.memo(function PostContentInput({
         
         <Textarea
           ref={textareaRef}
-          placeholder={contentStyle?.isTextOnly ? "Escribe algo inspirador..." : "¿Qué estás pensando?"}
+          placeholder={contentStyle?.isTextOnly ? "Escribe algo inspirador..." : "¿Qué idea tienes en mente?"}
           value={content}
           onChange={handleTextAreaChange}
           onKeyDown={handleKeyDown}

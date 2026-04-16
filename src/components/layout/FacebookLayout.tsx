@@ -89,26 +89,26 @@ export function FacebookLayout({
   }, []);
 
   // Load notifications and new posts (friends/requests not used)
+  const loadCounts = async () => {
+    try {
+      // Consolidate state updates
+      setPendingRequestsCount(0);
+      setUnreadNotifications(0); // Simplified for now
+      setNewPosts(0);
+    } catch (error) {
+      console.error('Error loading counts:', error);
+    }
+  };
+
   useEffect(() => {
     if (!currentUserId) return;
     
-    const loadCounts = async () => {
-      try {
-        // Friends/requests disabled (Instagram-style followers)
-        setPendingRequestsCount(0);
-
-        // Load unread notifications
-        setUnreadNotifications(0); // Simplified for now
-
-        // For new posts, we'll keep it simple for now
-        setNewPosts(0);
-      } catch (error) {
-        console.error('Error loading counts:', error);
-      }
-    };
-    
     loadCounts();
+  }, [currentUserId]);
 
+  useEffect(() => {
+    if (!currentUserId) return;
+    
     const notificationsChannel = supabase
       .channel('notifications_changes')
       .on('postgres_changes', {
@@ -179,7 +179,7 @@ export function FacebookLayout({
         <div className="pt-16 h-svh w-full">
           <div
             className="grid h-[calc(100svh-4rem)] w-full overflow-hidden"
-            style={{ gridTemplateColumns: "260px 1fr 300px" }}
+            style={{ gridTemplateColumns: "300px 1fr 300px" }}
           >
             {/* Left Sidebar */}
             <aside className="hidden lg:block h-full">

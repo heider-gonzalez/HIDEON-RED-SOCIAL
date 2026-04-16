@@ -41,8 +41,8 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
 
   return (
     <TooltipProvider>
-      <div className="mx-auto w-full max-w-[680px] px-2 lg:px-0">
-        <Card className="mb-3 rounded-xl border border-border/60 bg-card shadow-sm relative">
+      <div className="mx-auto w-full max-w-[680px]">
+        <Card className="mb-3 overflow-hidden w-full rounded-16px border border-border/30 bg-card shadow-md transition-colors duration-200 ease-out hover:bg-muted/[0.18] dark:border-white/10 relative">
           {isNewUser && (
             <div className="absolute -top-2 -right-2 z-10">
               <Tooltip>

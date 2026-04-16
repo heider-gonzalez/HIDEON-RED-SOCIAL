@@ -23,7 +23,7 @@ export function PostCreatorContent({
   removeAllAttachments,
 }: PostCreatorContentProps) {
   return (
-    <Card className="p-3 sm:p-4 space-y-3 sm:space-y-4 max-w-full overflow-hidden">
+    <Card className="overflow-hidden w-full rounded-2xl border border-border/30 bg-card shadow-none transition-colors duration-200 ease-out hover:bg-muted/[0.18] dark:border-white/10 p-3 sm:p-4 space-y-3 sm:space-y-4 max-w-full">
       {/* Regular post content */}
       {state.postType === 'regular' && (
         <>
@@ -66,7 +66,7 @@ export function PostCreatorContent({
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {state.selectedFiles.map((file, index) => (
-              <div key={`${file.name}-${index}`} className="relative">
+              <div key={`${file.name}-${file.size}-${file.type}`} className="relative">
                 {file.type.startsWith('image/') ? (
                   <img
                     src={state.filePreviews[index] || ''}
@@ -74,7 +74,7 @@ export function PostCreatorContent({
                     className="w-full h-24 object-cover rounded-md"
                   />
                 ) : file.type.startsWith('video/') ? (
-                  <div className="relative w-full h-24 bg-black rounded-md overflow-hidden">
+                  <div className="relative w-full h-24 bg-gray-950 rounded-md overflow-hidden">
                     <video
                       src={state.filePreviews[index] || ''}
                       className="w-full h-full object-cover"

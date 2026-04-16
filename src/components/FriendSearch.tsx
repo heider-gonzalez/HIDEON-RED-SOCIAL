@@ -93,18 +93,25 @@ export function FriendSearch() {
                   searchUsers((e.target as HTMLInputElement).value);
                 }
               }}
-              className="pl-10 pr-4 rounded-full border-gray-200 dark:border-gray-700 h-11 shadow-sm w-full text-sm"
+              className="pl-10 pr-4 rounded-2xl border border-border/30 bg-card shadow-md w-full text-sm"
             />
           </div>
         </div>
       {searchResults.length > 0 && (
-        <Card className="absolute w-full mt-1 p-2 z-50 shadow-lg">
+        <Card className="absolute w-full mt-1 p-2 z-50 shadow-md rounded-2xl border border-border/30 bg-card">
           <div className="space-y-2">
             {searchResults.map((user) => (
               <div 
                 key={user.id} 
+                role="button"
+                tabIndex={0}
                 className="flex items-center p-2 rounded-lg hover:bg-accent cursor-pointer"
                 onClick={() => handleUserClick(user.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleUserClick(user.id);
+                  }
+                }}
               >
                 <div className="flex items-center gap-3">
                   <Avatar>

@@ -9,7 +9,6 @@ import {
   PlaySquare,
   TrendingUp,
   Users,
-  Settings,
   HelpCircle,
 } from "lucide-react";
 
@@ -17,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useNavigation } from "@/components/navigation/use-navigation";
 import { cn } from "@/lib/utils";
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useEffect, useReducer } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LeftSidebarProps {
@@ -33,11 +32,39 @@ type SidebarItem = {
   dot?: boolean;
 };
 
+type LeftSidebarState = {
+  myGroups: any[];
+  recommendedGroups: any[];
+  groupsLoading: boolean;
+};
+
+type LeftSidebarAction =
+  | { type: 'SET_MY_GROUPS'; payload: any[] }
+  | { type: 'SET_RECOMMENDED_GROUPS'; payload: any[] }
+  | { type: 'SET_GROUPS_LOADING'; payload: boolean };
+
+function leftSidebarReducer(state: LeftSidebarState, action: LeftSidebarAction): LeftSidebarState {
+  switch (action.type) {
+    case 'SET_MY_GROUPS':
+      return { ...state, myGroups: action.payload };
+    case 'SET_RECOMMENDED_GROUPS':
+      return { ...state, recommendedGroups: action.payload };
+    case 'SET_GROUPS_LOADING':
+      return { ...state, groupsLoading: action.payload };
+    default:
+      return state;
+  }
+}
+
 export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   const { handleHomeClick } = useNavigation();
-  const [myGroups, setMyGroups] = useState<any[]>([]);
-  const [recommendedGroups, setRecommendedGroups] = useState<any[]>([]);
-  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [state, dispatch] = useReducer(leftSidebarReducer, {
+    myGroups: [],
+    recommendedGroups: [],
+    groupsLoading: false,
+  });
+
+  const { myGroups, recommendedGroups, groupsLoading } = state;
 
   const menuItems: SidebarItem[] = [
     { icon: Home, label: "Feed", path: "/home", onClick: handleHomeClick },
@@ -54,7 +81,6 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   ];
 
   const bottomItems: SidebarItem[] = [
-    { icon: Settings, label: "Configuración", path: "/settings" },
     { icon: HelpCircle, label: "Ayuda", path: "/help" },
   ];
 
@@ -62,7 +88,7 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
     let cancelled = false;
 
     const loadGroups = async () => {
-      setGroupsLoading(true);
+      dispatch({ type: 'SET_GROUPS_LOADING', payload: true });
       try {
         const { data: userData } = await supabase.auth.getUser();
         const userId = userData?.user?.id;
@@ -80,16 +106,19 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
 
         const mineRows = (mine?.data ?? []) as any[];
         const publicRows = (publicGroups?.data ?? []) as any[];
-        setMyGroups(mineRows.slice(0, 6));
-        const mineIds = new Set(mineRows.map((g) => String(g?.id)).filter(Boolean));
+        const mineIds = new Set(mineRows.flatMap((g) => String(g?.id) ? [String(g?.id)] : []));
         const recs = publicRows.filter((g) => !mineIds.has(String(g?.id))).slice(0, 6);
-        setRecommendedGroups(recs);
+        
+        // Consolidate state updates
+        dispatch({ type: 'SET_MY_GROUPS', payload: mineRows.slice(0, 6) });
+        dispatch({ type: 'SET_RECOMMENDED_GROUPS', payload: recs });
       } catch {
         if (cancelled) return;
-        setMyGroups([]);
-        setRecommendedGroups([]);
+        // Consolidate state updates
+        dispatch({ type: 'SET_MY_GROUPS', payload: [] });
+        dispatch({ type: 'SET_RECOMMENDED_GROUPS', payload: [] });
       } finally {
-        if (!cancelled) setGroupsLoading(false);
+        if (!cancelled) dispatch({ type: 'SET_GROUPS_LOADING', payload: false });
       }
     };
 
@@ -100,7 +129,7 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   }, [currentUserId]);
 
   return (
-    <aside className="h-full bg-background/70 backdrop-blur">
+    <aside className="h-full w-[300px] bg-background/70 backdrop-blur flex flex-col">
       <div className="px-3 pt-4 pb-2">
         <Link to="/home" className="flex items-center gap-3 px-2 pb-4">
         </Link>
@@ -148,7 +177,7 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
         <Separator className="my-3 opacity-0" />
 
         <div className="px-3 py-2">
-          <p className="text-xs font-medium text-muted-foreground">ACCIONES RÁPIDAS</p>
+          <p className="text-xs font-medium text-foreground/70">ACCIONES RÁPIDAS</p>
         </div>
 
         {quickActions.map((item) => (
@@ -297,6 +326,17 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
           </Fragment>
         ))}
       </nav>
+
+      {/* Footer */}
+      <div className="px-3 pb-4 mt-auto">
+        <div className="text-xs text-muted-foreground text-center">
+          <Link to="/privacy" className="hover:underline">Privacidad</Link>
+          <span className="mx-1">·</span>
+          <Link to="/terms" className="hover:underline">Términos</Link>
+          <span className="mx-1">·</span>
+          <span>HIDEON 2026</span>
+        </div>
+      </div>
     </aside>
   );
 }

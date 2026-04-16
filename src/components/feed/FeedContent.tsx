@@ -65,7 +65,7 @@ export const FeedContent = memo(function FeedContent({
   }, [allPosts, isMobile, trackPostInteraction, trackPostView]);
 
   return (
-    <div className="space-y-8 w-full">
+    <div className="space-y-8 w-full max-w-[680px] mx-auto">
       {feedNodes}
     </div>
   );
