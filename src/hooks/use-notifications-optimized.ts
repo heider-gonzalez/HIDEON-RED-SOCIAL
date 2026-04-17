@@ -11,6 +11,7 @@ import {
 import { useRealtimeManager } from "./use-realtime-manager";
 import { formatNotificationMessage } from "@/lib/notifications/format-message";
 import { notificationCache, cacheUtils, useSuperCache } from "./use-super-cache";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 const INSTANT_CACHE_TTL = 30 * 1000; // 30 seconds for instant feel
 const PRELOAD_LIMIT = 50; // Preload first 50 notifications
@@ -39,9 +40,10 @@ export const useNotificationsOptimized = () => {
     const cached = get(cacheKey);
     
     if (cached) {
-      setNotifications(cached);
-      setUnreadCount(cached.filter(n => !n.read).length);
-      return cached;
+      const cachedArray = cached as NotificationWithSender[];
+      setNotifications(cachedArray);
+      setUnreadCount(cachedArray.filter(n => !n.read).length);
+      return cachedArray;
     }
     
     return null;
@@ -51,7 +53,7 @@ export const useNotificationsOptimized = () => {
     setIsLoading(true);
     
     try {
-      const { data: { user } } = await (await import("@/integrations/supabase/client")).supabase.auth.getUser();
+      const user = requireAuthUser();
       if (!user || !isMountedRef.current) return;
 
       userIdRef.current = user.id;
@@ -177,7 +179,7 @@ export const useNotificationsOptimized = () => {
         // Update cache
         if (userIdRef.current) {
           const cacheKey = cacheUtils.notificationKey(userIdRef.current);
-          const cached = get(cacheKey);
+          const cached = get(cacheKey) as NotificationWithSender[];
           if (cached) {
             const updatedCache = cached.filter(n => n.id !== notificationId);
             set(cacheKey, updatedCache, INSTANT_CACHE_TTL);
@@ -218,7 +220,7 @@ export const useNotificationsOptimized = () => {
       // Update cache instantly
       if (userIdRef.current) {
         const cacheKey = cacheUtils.notificationKey(userIdRef.current);
-        const cached = get(cacheKey);
+        const cached = get(cacheKey) as NotificationWithSender[];
         if (cached) {
           const updatedCache = cached.map(notification => 
             notificationIds 
@@ -264,7 +266,7 @@ export const useNotificationsOptimized = () => {
       // Update cache instantly
       if (userIdRef.current) {
         const cacheKey = cacheUtils.notificationKey(userIdRef.current);
-        const cached = get(cacheKey);
+        const cached = get(cacheKey) as NotificationWithSender[];
         if (cached) {
           const updatedCache = cached.filter(n => n.id !== notificationId);
           set(cacheKey, updatedCache, INSTANT_CACHE_TTL);
@@ -346,7 +348,7 @@ export const useNotificationsOptimized = () => {
         
         // Update cache with new data
         const cacheKey = cacheUtils.notificationKey(userIdRef.current!);
-        const cached = get(cacheKey);
+        const cached = get(cacheKey) as NotificationWithSender[];
         if (cached) {
           const updatedCache = [...cached, ...filtered];
           set(cacheKey, updatedCache, INSTANT_CACHE_TTL);
@@ -371,7 +373,7 @@ export const useNotificationsOptimized = () => {
     markAllAsRead: () => markAsRead(),
     getCachedCount: () => {
       if (!userIdRef.current) return 0;
-      const cached = get(cacheUtils.notificationKey(userIdRef.current));
+      const cached = get(cacheUtils.notificationKey(userIdRef.current)) as NotificationWithSender[];
       return cached ? cached.filter(n => !n.read).length : 0;
     }
   };
@@ -384,12 +386,12 @@ export const useNotificationBadge = () => {
 
   useEffect(() => {
     const updateCount = async () => {
-      const { data: { user } } = await (await import("@/integrations/supabase/client")).supabase.auth.getUser();
+      const user = requireAuthUser();
       if (!user) return;
 
       const cached = get(cacheUtils.notificationKey(user.id));
       if (cached) {
-        setCount(cached.filter(n => !n.read).length);
+        setCount((cached as any[]).filter(n => !n.read).length);
       }
     };
 

@@ -1,14 +1,14 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { ReactionType } from "@/types/database/social.types";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function addReaction(postId: string, reactionType: ReactionType = 'love') {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
+    const user = requireAuthUser();
 
     // Check if reaction exists
-    const { data: existingReaction, error: checkError } = await supabase
+    const { data: existingReaction, error: checkError } = await (supabase as any)
       .from("reactions")
       .select("id, reaction_type")
       .eq("post_id", postId)
@@ -19,7 +19,7 @@ export async function addReaction(postId: string, reactionType: ReactionType = '
 
     // If user already reacted with the same type, remove it (toggle behavior)
     if (existingReaction && existingReaction.reaction_type === reactionType) {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await (supabase as any)
         .from("reactions")
         .delete()
         .eq("id", existingReaction.id);
@@ -30,9 +30,9 @@ export async function addReaction(postId: string, reactionType: ReactionType = '
     
     // If user reacted with a different type, update the reaction type
     else if (existingReaction) {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from("reactions")
-        .update({ reaction_type: reactionType })
+        .update({ reaction_type: reactionType } as any)
         .eq("id", existingReaction.id);
 
       if (updateError) throw updateError;
@@ -40,35 +40,35 @@ export async function addReaction(postId: string, reactionType: ReactionType = '
     }
 
     // Add new reaction
-    const { error: insertError } = await supabase
+    const { error: insertError } = await (supabase as any)
       .from("reactions")
       .insert({
         post_id: postId,
         user_id: user.id,
         reaction_type: reactionType
-      });
+      } as any);
 
     if (insertError) throw insertError;
 
     // Get post author to send notification
-    const { data: post } = await supabase
+    const { data: post } = await (supabase as any)
       .from("posts")
       .select("user_id")
       .eq("id", postId)
       .single();
 
     // Create notification for post author (don't notify yourself)
-    if (post && post.user_id !== user.id) {
-      await supabase
+    if (post && (post as any).user_id !== user.id) {
+      await (supabase as any)
         .from("notifications")
         .insert({
           type: "post_like",
           sender_id: user.id,
-          receiver_id: post.user_id,
+          receiver_id: (post as any).user_id,
           post_id: postId,
           message: "reaccionó a tu publicación",
           read: false
-        });
+        } as any);
     }
 
     return { success: true, action: "added" };

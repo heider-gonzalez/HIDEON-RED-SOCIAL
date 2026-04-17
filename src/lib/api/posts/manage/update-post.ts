@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Visibility } from "../types";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 interface UpdatePostParams {
   postId: string;
@@ -13,9 +14,9 @@ export async function updatePostVisibility(postId: string, visibility: Visibilit
     // Make sure visibility is one of the allowed values to satisfy TypeScript
     const safeVisibility = visibility === 'incognito' ? 'private' : visibility;
     
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('posts')
-      .update({ visibility: safeVisibility })
+      .update({ visibility: safeVisibility } as any)
       .eq('id', postId);
     
     if (error) throw error;
@@ -28,8 +29,7 @@ export async function updatePostVisibility(postId: string, visibility: Visibilit
 
 export async function updatePost({ postId, content, visibility }: UpdatePostParams) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("User not authenticated");
+    const user = requireAuthUser();
 
     // Build update object
     const updateData: any = {};
@@ -40,9 +40,9 @@ export async function updatePost({ postId, content, visibility }: UpdatePostPara
       updateData.visibility = visibility === 'incognito' ? 'private' : visibility;
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('posts')
-      .update(updateData)
+      .update(updateData as any)
       .eq('id', postId)
       .eq('user_id', user.id);
     

@@ -1,14 +1,15 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { FriendSuggestion } from "./types";
+import { getAuthUser } from "@/lib/auth/auth-store";
 
 export async function getFriendSuggestions() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     if (!user) return [];
 
     // Use the new university-enhanced suggestions function
-    const { data, error } = await supabase.rpc('get_university_friend_suggestions', {
+    const { data, error } = await (supabase.rpc as any)('get_university_friend_suggestions', {
       user_id_param: user.id,
       limit_param: 20
     });

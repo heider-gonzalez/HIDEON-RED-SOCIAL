@@ -1,13 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Friend } from "./types";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function getFriends() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Usuario no autenticado");
+    const user = requireAuthUser();
 
     // Get accepted friendships
-    const { data: friendships, error: followingError } = await supabase
+    const { data: friendships, error: followingError } = await (supabase as any)
       .from('friendships')
       .select('id, friend_id')
       .eq('user_id', user.id)
@@ -16,8 +16,8 @@ export async function getFriends() {
     if (followingError) throw followingError;
 
     // Fetch profiles separately
-    const friendsArray = await Promise.all((friendships || []).map(async (friendship) => {
-      const { data: profile } = await supabase
+    const friendsArray = await Promise.all(((friendships || []) as any[]).map(async (friendship: any) => {
+      const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('id, username, avatar_url')
         .eq('id', friendship.friend_id)

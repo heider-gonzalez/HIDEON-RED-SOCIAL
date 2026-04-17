@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { uploadMediaFile, getMediaType } from "../storage";
 import { processPostData, processMediaData } from "./data-processors";
 import type { CreatePostParams, CreatePostResponse, PollData, IdeaData, MarketplaceData } from "../types";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 // Process poll data into the format expected by the database
 function processPollData(pollData: PollData) {
@@ -53,15 +54,7 @@ export async function createPost({
 }: CreatePostParams): Promise<CreatePostResponse> {
   try {
     // Enhanced authentication check
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError) {
-      console.error("❌ Auth error:", authError);
-      throw new Error("Error de autenticación");
-    }
-    if (!user) {
-      console.error("❌ No authenticated user");
-      throw new Error("Usuario no autenticado");
-    }
+    const user = requireAuthUser();
 
     // Validate input data
     if (!content?.trim() && !file && !pollData && !ideaData && !marketplaceData) {
@@ -113,7 +106,7 @@ export async function createPost({
     // Handle incognito posts differently
     if (visibility === 'incognito') {
       // For incognito posts, we need to create an entry in the incognito_posts table
-      const { data: post, error: postError } = await supabase
+      const { data: post, error: postError } = await (supabase as any)
         .from('posts')
         .insert({
           content: content || null,
@@ -125,7 +118,7 @@ export async function createPost({
           idea: processedIdeaData,
           marketplace: processedMarketplaceData,
           post_type: postType
-        })
+        } as any)
         .select()
         .single();
 
@@ -138,7 +131,7 @@ export async function createPost({
       return { success: true, post };
     } else {
       // Regular post creation
-      const { data: post, error: postError } = await supabase
+      const { data: post, error: postError } = await (supabase as any)
         .from('posts')
         .insert({
           content: content || null,
@@ -150,7 +143,7 @@ export async function createPost({
           idea: processedIdeaData,
           marketplace: processedMarketplaceData,
           post_type: postType
-        })
+        } as any)
         .select()
         .single();
 

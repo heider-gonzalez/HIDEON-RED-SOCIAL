@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getAuthSnapshot } from '@/lib/auth/auth-store';
 
 // Comprehensive type-safe supabase helpers
 export const db = {
@@ -22,8 +23,14 @@ export const db = {
   
   // Safe auth access
   auth: {
-    getUser: () => supabase.auth.getUser(),
-    getSession: () => supabase.auth.getSession(),
+    getUser: async () => {
+      const { user } = getAuthSnapshot();
+      return { data: { user }, error: null } as any;
+    },
+    getSession: async () => {
+      const { session } = getAuthSnapshot();
+      return { data: { session }, error: null } as any;
+    },
     signOut: () => supabase.auth.signOut(),
     onAuthStateChange: (callback: any) => supabase.auth.onAuthStateChange(callback)
   },

@@ -1,8 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthUser, requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function deletePost(postId: string) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuario no autenticado');
+  const user = requireAuthUser();
 
   const { data: post, error: fetchError } = await supabase
     .from('posts')
@@ -53,9 +53,7 @@ export async function updatePostVisibility(postId: string, visibility: 'public' 
 
 export async function hidePost(postId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) throw new Error('Usuario no autenticado');
+    const user = requireAuthUser();
     
     const { data: existingHiddenPost, error: checkError } = await (supabase as any)
       .from('hidden_posts')
@@ -92,9 +90,7 @@ export async function hidePost(postId: string) {
 
 export async function unhidePost(postId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) throw new Error('Usuario no autenticado');
+    const user = requireAuthUser();
     
     const { error } = await (supabase as any)
       .from('hidden_posts')
@@ -114,8 +110,7 @@ export async function unhidePost(postId: string) {
 
 export async function getHiddenPosts() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const user = getAuthUser();
     if (!user) return [];
     
     const { data, error } = await (supabase as any)
@@ -136,8 +131,7 @@ export async function getHiddenPosts() {
 }
 
 export async function setPostInterest(postId: string, interestLevel: 'interested' | 'not_interested') {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuario no autenticado');
+  const user = requireAuthUser();
   
   const { data: existingInterest } = await (supabase as any)
     .from('post_interests')
@@ -168,8 +162,7 @@ export async function setPostInterest(postId: string, interestLevel: 'interested
 
 export async function updatePost(params: { postId: string; content?: string; visibility?: 'public' | 'friends' | 'private', projectData?: any }) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("User not authenticated");
+    const user = requireAuthUser();
 
     // First, get the current post to preserve important fields
     const { data: currentPost, error: fetchError } = await (supabase as any)

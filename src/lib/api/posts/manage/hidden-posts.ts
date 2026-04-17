@@ -1,18 +1,19 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthUser, requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function getHiddenPosts() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     if (!user) return [];
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("hidden_posts")
       .select("post_id")
       .eq("user_id", user.id);
 
     if (error) throw error;
-    return data.map(item => item.post_id);
+    return (data as any[]).map((item: any) => item.post_id);
   } catch (error) {
     console.error("Error fetching hidden posts:", error);
     return [];
@@ -21,12 +22,11 @@ export async function getHiddenPosts() {
 
 export async function hidePost(postId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
+    const user = requireAuthUser();
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("hidden_posts")
-      .insert({ user_id: user.id, post_id: postId });
+      .insert({ user_id: user.id, post_id: postId } as any);
 
     if (error) throw error;
 
@@ -39,10 +39,9 @@ export async function hidePost(postId: string) {
 
 export async function unhidePost(postId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
+    const user = requireAuthUser();
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("hidden_posts")
       .delete()
       .eq("user_id", user.id)

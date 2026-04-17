@@ -1,13 +1,13 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function deletePost(postId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
+    const user = requireAuthUser();
 
     // Get post to check ownership
-    const { data: post, error: fetchError } = await supabase
+    const { data: post, error: fetchError } = await (supabase as any)
       .from("posts")
       .select("user_id, media_url")
       .eq("id", postId)
@@ -30,7 +30,7 @@ export async function deletePost(postId: string) {
     }
 
     // Delete post
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await (supabase as any)
       .from("posts")
       .delete()
       .eq("id", postId);

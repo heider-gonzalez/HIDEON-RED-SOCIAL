@@ -1,18 +1,16 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function acceptFriendRequest(requestId: string, senderId: string) {
   try {
     // Get the current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
+    const user = requireAuthUser();
 
     // Update friendships record to accepted
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('friendships')
-      .update({ status: 'accepted' })
+      .update({ status: 'accepted' } as any)
       .eq('id', requestId)
       .eq('friend_id', user.id); // Ensure the current user is the recipient
 
@@ -22,30 +20,30 @@ export async function acceptFriendRequest(requestId: string, senderId: string) {
     }
 
     // Create or update the bidirectional relationship
-    const { error: friendshipError } = await supabase
+    const { error: friendshipError } = await (supabase as any)
       .from('friendships')
       .upsert({
         user_id: user.id,
         friend_id: senderId,
         status: 'accepted'
-      }, { 
+      } as any, { 
         onConflict: 'user_id,friend_id',
         ignoreDuplicates: false 
-      });
+      } as any);
 
     if (friendshipError) {
       console.error("Error creating reverse friendship:", friendshipError);
     }
 
     // Create notification for accepted request
-    const { error: notificationError } = await supabase
+    const { error: notificationError } = await (supabase as any)
       .from('notifications')
       .insert({
         type: 'friend_accepted',
         sender_id: user.id,
         receiver_id: senderId,
         message: 'Ha aceptado tu solicitud de amistad'
-      });
+      } as any);
 
     if (notificationError) {
       console.error("Error creating notification:", notificationError);
@@ -61,14 +59,11 @@ export async function acceptFriendRequest(requestId: string, senderId: string) {
 export async function rejectFriendRequest(requestId: string) {
   try {
     // Get the current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
+    const user = requireAuthUser();
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('friendships')
-      .update({ status: 'rejected' })
+      .update({ status: 'rejected' } as any)
       .eq('id', requestId)
       .eq('friend_id', user.id); // Ensure the current user is the recipient
 
@@ -83,12 +78,9 @@ export async function rejectFriendRequest(requestId: string) {
 export async function cancelFriendRequest(requestId: string) {
   try {
     // Get the current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
+    const user = requireAuthUser();
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('friendships')
       .delete()
       .eq('id', requestId)
@@ -104,11 +96,10 @@ export async function cancelFriendRequest(requestId: string) {
 
 export async function sendFriendRequest(friendId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Usuario no autenticado");
+    const user = requireAuthUser();
 
     // Check if a friendship already exists in any direction
-    const { data: existingFriendship, error: checkError } = await supabase
+    const { data: existingFriendship, error: checkError } = await (supabase as any)
       .from('friendships')
       .select('id, status')
       .or(`user_id.eq.${user.id}.and.friend_id.eq.${friendId},user_id.eq.${friendId}.and.friend_id.eq.${user.id}`)
@@ -125,27 +116,27 @@ export async function sendFriendRequest(friendId: string) {
     }
 
     // Create new friendship request
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('friendships')
       .insert({
         user_id: user.id,
         friend_id: friendId,
         status: 'pending'
-      })
+      } as any)
       .select('id')
       .single();
 
     if (error) throw error;
 
     // Create notification for friend request
-    const { error: notificationError } = await supabase
+    const { error: notificationError } = await (supabase as any)
       .from('notifications')
       .insert({
         type: 'friend_request',
         sender_id: user.id,
         receiver_id: friendId,
         message: 'Te ha enviado una solicitud de amistad'
-      });
+      } as any);
 
     if (notificationError) {
       console.error("Error creating notification:", notificationError);
@@ -169,11 +160,10 @@ export async function sendFriendRequest(friendId: string) {
 
 export async function unfollowUser(friendId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Usuario no autenticado");
+    const user = requireAuthUser();
 
     // Delete any friendship between these users
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('friendships')
       .delete()
       .or(`user_id.eq.${user.id}.and.friend_id.eq.${friendId},user_id.eq.${friendId}.and.friend_id.eq.${user.id}`);

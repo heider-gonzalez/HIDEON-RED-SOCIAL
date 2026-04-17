@@ -162,6 +162,8 @@ export const sendTypingEvent = (
     event: isTyping ? 'typing_start' : 'typing_stop',
     payload: { userId }
   });
+
+  supabase.removeChannel(channel);
 };
 
 // Typing indicator management

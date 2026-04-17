@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { uploadWithOptimization } from "@/lib/storage/cloudflare-r2";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function uploadProfileImage(file: File, type: 'avatar' | 'cover') {
   try {
@@ -14,8 +15,7 @@ export async function uploadProfileImage(file: File, type: 'avatar' | 'cover') {
       throw new Error("Solo se permiten archivos de imagen");
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user found");
+    const user = requireAuthUser();
 
     // Crear nombre único para el archivo
     const fileExt = file.name.split('.').pop();
@@ -30,12 +30,12 @@ export async function uploadProfileImage(file: File, type: 'avatar' | 'cover') {
       ? { avatar_url: publicUrl }
       : { cover_url: publicUrl };
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await (supabase as any)
       .from('profiles')
       .update({
         ...updateData,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq('id', user.id);
 
     if (updateError) throw updateError;

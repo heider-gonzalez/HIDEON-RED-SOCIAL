@@ -4,6 +4,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { performanceMonitor } from '@/utils/performance-monitor';
 import { useToast } from '@/hooks/use-toast';
+import { setAuthSnapshot } from '@/lib/auth/auth-store';
 
 function clearSupabaseAuthStorage() {
   try {
@@ -104,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         setSession(session);
         setUser(session?.user ?? null);
+        setAuthSnapshot({ session, user: session?.user ?? null });
         userIdRef.current = session?.user?.id ?? null;
         
         // Handle profile creation for new users
@@ -158,6 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isNetworkError(error)) {
           setSession(null);
           setUser(null);
+          setAuthSnapshot({ session: null, user: null });
           userIdRef.current = null;
           setLoading(false);
           toast({
@@ -183,6 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (debug) console.log('🔐 AuthProvider: Initial session check:', { hasSession: !!session, userEmail: session?.user?.email });
       setSession(session);
       setUser(session?.user ?? null);
+      setAuthSnapshot({ session, user: session?.user ?? null });
       userIdRef.current = session?.user?.id ?? null;
       setLoading(false);
     });

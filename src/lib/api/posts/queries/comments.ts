@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthSnapshot, requireAuthUser } from "@/lib/auth/auth-store";
 
 type CommentsCursor = {
   createdAt: string;
@@ -32,8 +33,8 @@ export async function fetchPostCommentsPage(
 ) {
   try {
     const limit = options?.limit ?? 20;
-    const { data: sessionData } = await supabase.auth.getSession();
-    const hasSession = !!sessionData.session;
+    const { session, user } = getAuthSnapshot();
+    const hasSession = !!session;
 
     // Guest mode: use RPC to avoid RLS issues with profiles/comments
     if (!hasSession) {
@@ -63,8 +64,7 @@ export async function fetchPostCommentsPage(
       };
     }
 
-    const { data: auth } = await supabase.auth.getUser();
-    const currentUserId = (auth as any)?.user?.id || null;
+    const currentUserId = user?.id || null;
 
     // Fetch ONLY root comments (lazy replies) + explicit columns to avoid over-fetching
     let query = (supabase as any)
@@ -205,14 +205,13 @@ export async function fetchCommentReplies(
 ) {
   const limit = options?.limit ?? 20;
 
-  const { data: sessionData } = await supabase.auth.getSession();
-  const hasSession = !!sessionData.session;
+  const { session, user } = getAuthSnapshot();
+  const hasSession = !!session;
   if (!hasSession) {
     return [] as any[];
   }
 
-  const { data: auth } = await supabase.auth.getUser();
-  const currentUserId = (auth as any)?.user?.id || null;
+  const currentUserId = user?.id || null;
 
   const { data: replies, error } = await (supabase as any)
     .from("comments")
@@ -288,8 +287,7 @@ export async function fetchCommentReplies(
 
 export async function createComment(postId: string, content: string, parentId?: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("User not authenticated");
+    const user = requireAuthUser();
 
     const { data, error } = await (supabase as any)
       .from("comments")

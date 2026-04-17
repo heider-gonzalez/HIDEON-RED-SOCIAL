@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ReactionType } from "@/types/database/social.types";
 import { normalizeReactionType } from "@/components/post/reactions/ReactionIcons";
+import { getAuthUser } from "@/lib/auth/auth-store";
 
 interface ReactionResult {
   success: boolean;
@@ -46,7 +47,7 @@ async function toggleCommentReactionDirect(
   reactionType: ReactionType
 ): Promise<ReactionResult> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     if (!user) {
       return { success: false, error: 'Usuario no autenticado' };
     }
@@ -112,7 +113,7 @@ export async function getUserPostReaction(postId: string): Promise<ReactionType 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(String(postId || ''))) return null;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     if (!user) return null;
 
     const { data, error } = await (supabase as any)
@@ -138,7 +139,7 @@ export async function getUserPostReaction(postId: string): Promise<ReactionType 
 
 export async function getUserCommentReaction(commentId: string): Promise<ReactionType | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     if (!user) return null;
 
     const { data, error } = await (supabase as any)

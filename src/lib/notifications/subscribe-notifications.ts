@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { NotificationWithSender, NotificationType } from "@/types/notifications";
 import { formatNotificationMessage } from "./format-message";
+import { getAuthUser } from "@/lib/auth/auth-store";
 
 function safePlayNotificationSound() {
   try {
@@ -118,7 +119,7 @@ export function subscribeToNotifications(
 
   const subscriptionPromise = subscriptionManager.getOrCreateChannel(channelName, (channel: any) => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = getAuthUser();
       const filter = user?.id ? `receiver_id=eq.${user.id}` : undefined;
 
       channel.on(

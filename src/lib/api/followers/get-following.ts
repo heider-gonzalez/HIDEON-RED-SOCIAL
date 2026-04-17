@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthUser } from "@/lib/auth/auth-store";
 
 export interface Following {
   id: string;
@@ -9,12 +10,12 @@ export interface Following {
 
 export async function getFollowing(userId?: string): Promise<Following[]> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     const targetUserId = userId || user?.id;
     
     if (!targetUserId) throw new Error("Usuario no autenticado");
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('followers')
       .select(`
         created_at,
@@ -28,12 +29,13 @@ export async function getFollowing(userId?: string): Promise<Following[]> {
 
     if (error) throw error;
 
-    return (data || []).map(item => ({
+    return ((data || []) as any[]).map((item: any) => ({
       id: item.profiles.id,
       username: item.profiles.username || 'Usuario',
       avatar_url: item.profiles.avatar_url,
       created_at: item.created_at
     }));
+
   } catch (error: any) {
     console.error('Error getting following:', error);
     return [];

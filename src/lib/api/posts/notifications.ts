@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthUser } from "@/lib/auth/auth-store";
 
 export async function sendMentionNotifications(
   content: string,
@@ -8,8 +9,8 @@ export async function sendMentionNotifications(
   senderId?: string
 ) {
   if (!senderId) {
-    const { data } = await supabase.auth.getUser();
-    senderId = data.user?.id;
+    const user = getAuthUser();
+    senderId = user?.id;
     
     if (!senderId) return; // No authenticated user
   }
@@ -29,7 +30,7 @@ export async function sendMentionNotifications(
     console.log("Found mentions:", mentions);
     
     // Get user IDs for the mentioned usernames
-    const { data: mentionedUsers, error } = await supabase
+    const { data: mentionedUsers, error } = await (supabase as any)
       .from('profiles')
       .select('id, username')
       .in('username', mentions);
@@ -42,14 +43,14 @@ export async function sendMentionNotifications(
     console.log("Mentioned users data:", mentionedUsers);
     
     // Create notifications for each mentioned user
-    for (const user of mentionedUsers) {
+    for (const user of (mentionedUsers as any[])) {
       // Skip notification if the sender is mentioning themselves
       if (user.id === senderId) continue;
       
       const notificationType = commentId ? 'comment_mention' : 'post_mention';
       
       // Create notification
-      await supabase
+      await (supabase as any)
         .from('notifications')
         .insert({
           type: notificationType,
@@ -58,7 +59,7 @@ export async function sendMentionNotifications(
           post_id: postId,
           comment_id: commentId,
           message: `te ha mencionado en ${commentId ? 'un comentario' : 'una publicación'}`
-        });
+        } as any);
     }
   } catch (error) {
     console.error("Error processing mentions:", error);
@@ -69,7 +70,7 @@ export async function sendMentionNotifications(
 export async function sendNewPostNotifications(userId: string, postId: string) {
   try {
     // Get user's followers (people they follow)
-    const { data: followers, error: followersError } = await supabase
+    const { data: followers, error: followersError } = await (supabase as any)
       .from('followers')
       .select('following_id')
       .eq('follower_id', userId);
@@ -82,7 +83,7 @@ export async function sendNewPostNotifications(userId: string, postId: string) {
     if (!followers || followers.length === 0) return; // No followers
     
     // Create notifications for each person they follow
-    const notifications = followers.map(follower => ({
+    const notifications = (followers as any[]).map((follower: any) => ({
       type: 'new_post',
       sender_id: userId,
       receiver_id: follower.following_id,
@@ -91,9 +92,9 @@ export async function sendNewPostNotifications(userId: string, postId: string) {
     }));
     
     // Insert all notifications
-    const { error: notifyError } = await supabase
+    const { error: notifyError } = await (supabase as any)
       .from('notifications')
-      .insert(notifications);
+      .insert(notifications as any);
     
     if (notifyError) {
       console.error("Error sending notifications:", notifyError);

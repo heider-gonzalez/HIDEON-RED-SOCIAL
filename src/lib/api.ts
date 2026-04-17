@@ -4,6 +4,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { getMultiplePostSharesCounts } from "@/lib/api/posts/queries/shares";
 import { getMultiplePostViewsCounts } from "@/lib/api/posts/queries/views";
 import { checkColumnExists } from "@/lib/api/posts/retrieve/utils/column-check";
+import { getAuthUser, requireAuthUser } from "@/lib/auth/auth-store";
 
 let cachedHasSharedFields: boolean | null = null;
 async function getHasSharedFields(): Promise<boolean> {
@@ -26,7 +27,7 @@ async function enrichPosts(
   companyById: Record<string, { id: string; name: string; slug: string; logo_url: string | null }>
 ) {
   // Obtener el usuario actual para verificar si le ha dado like
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = getAuthUser();
 
   let pollVotesMap: Record<string, string> = {};
   try {
@@ -493,7 +494,7 @@ export async function getPublicFeedPreview(limit = 5) {
 
 export async function getHiddenPosts() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     if (!user) return [];
 
     const { data, error } = await (supabase as any)
@@ -511,8 +512,7 @@ export async function getHiddenPosts() {
 
 export async function hidePost(postId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
+    const user = requireAuthUser();
 
     const { error } = await (supabase as any)
       .from("hidden_posts")
@@ -529,8 +529,7 @@ export async function hidePost(postId: string) {
 
 export async function unhidePost(postId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
+    const user = requireAuthUser();
 
     const { error } = await supabase
       .from("hidden_posts")
@@ -561,10 +560,7 @@ export async function createPost({
   visibility?: "public" | "friends" | "private";
 }) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error("No user logged in");
-    }
+    const user = requireAuthUser();
 
     let mediaUrl: string | null = null;
     let mediaType: string | null = null;
@@ -665,8 +661,7 @@ export async function createPost({
 
 export async function addReaction(postId: string, reactionType: string = 'love') {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
+    const user = requireAuthUser();
 
     // Check if reaction exists
     const { data: existingReaction, error: checkError } = await (supabase as any)
@@ -719,8 +714,7 @@ export async function addReaction(postId: string, reactionType: string = 'love')
 
 export async function deletePost(postId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
+    const user = requireAuthUser();
 
     // Get post to check ownership
     const { data: post, error: fetchError } = await (supabase as any)
@@ -776,8 +770,7 @@ export async function deletePost(postId: string) {
 // Comment reactions API functions
 export async function addCommentReaction(commentId: string, reactionType: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
+    const user = requireAuthUser();
 
     // Check if user already reacted to this comment
     const { data: existingReaction } = await (supabase
@@ -817,8 +810,7 @@ export async function addCommentReaction(commentId: string, reactionType: string
 
 export async function removeCommentReaction(commentId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No user logged in");
+    const user = requireAuthUser();
 
     const { error } = await (supabase
       .from("comment_reactions") as any)

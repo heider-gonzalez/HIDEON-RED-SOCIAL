@@ -2,17 +2,18 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getAuthUser } from "@/lib/auth/auth-store";
 
 export function useAuthCheck() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      setIsAuthenticated(!!data.session);
+    const checkAuth = () => {
+      const user = getAuthUser();
+      setIsAuthenticated(!!user);
       
-      if (!data.session) {
+      if (!user) {
         toast({
           variant: "destructive",
           title: "Error de autenticación",

@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthSnapshot } from "@/lib/auth/auth-store";
 
 export async function sendVerificationEmail(email: string, username: string) {
   try {
@@ -11,7 +12,7 @@ export async function sendVerificationEmail(email: string, username: string) {
     console.log("URL de la función:", functionsUrl);
     
     // Obtenemos el token de la sesión actual para autorización
-    const { data: { session } } = await supabase.auth.getSession();
+    const { session } = getAuthSnapshot();
     const token = session?.access_token || '';
     
     const response = await fetch(functionsUrl, {

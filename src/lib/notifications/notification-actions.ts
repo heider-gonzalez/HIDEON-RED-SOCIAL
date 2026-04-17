@@ -1,40 +1,41 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthUser, requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function handleFriendRequest(notificationId: string, senderId: string, accept: boolean) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     if (!user) return false;
 
     if (accept) {
       // Actualizamos la solicitud a 'accepted'
-      await supabase
+      await (supabase as any)
         .from('friendships')
-        .update({ status: 'accepted' })
+        .update({ status: 'accepted' } as any)
         .eq('user_id', senderId)
         .eq('friend_id', user.id);
 
       // Creamos la relación bidireccional
-      await supabase
+      await (supabase as any)
         .from('friendships')
         .insert({
           user_id: user.id,
           friend_id: senderId,
           status: 'accepted'
-        });
+        } as any);
 
       // Enviamos notificación al remitente
-      await supabase
+      await (supabase as any)
         .from('notifications')
         .insert({
           type: 'friend_accepted',
           sender_id: user.id,
           receiver_id: senderId,
           read: false
-        });
+        } as any);
     } else {
       // Rechazamos la solicitud eliminándola
-      await supabase
+      await (supabase as any)
         .from('friendships')
         .delete()
         .eq('user_id', senderId)
@@ -42,9 +43,9 @@ export async function handleFriendRequest(notificationId: string, senderId: stri
     }
 
     // Marcamos la notificación como leída
-    await supabase
+    await (supabase as any)
       .from('notifications')
-      .update({ read: true })
+      .update({ read: true } as any)
       .eq('id', notificationId);
 
     return true;
@@ -55,13 +56,13 @@ export async function handleFriendRequest(notificationId: string, senderId: stri
 }
 
 export async function markNotificationsAsRead(notificationIds?: string[]) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = getAuthUser();
   if (!user) return false;
 
   try {
-    let query = supabase
+    let query = (supabase as any)
       .from('notifications')
-      .update({ read: true });
+      .update({ read: true } as any);
 
     if (notificationIds && notificationIds.length > 0) {
       // Mark only the specified notifications
@@ -80,11 +81,11 @@ export async function markNotificationsAsRead(notificationIds?: string[]) {
 }
 
 export async function removeNotification(notificationId: string) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = getAuthUser();
   if (!user) return false;
 
   try {
-    await supabase
+    await (supabase as any)
       .from('notifications')
       .delete()
       .eq('id', notificationId)
@@ -98,11 +99,11 @@ export async function removeNotification(notificationId: string) {
 }
 
 export async function clearAllNotifications() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = getAuthUser();
   if (!user) return false;
 
   try {
-    await supabase
+    await (supabase as any)
       .from('notifications')
       .delete()
       .eq('receiver_id', user.id);

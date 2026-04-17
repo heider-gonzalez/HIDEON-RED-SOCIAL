@@ -1,13 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadToSupabase } from "@/lib/storage/cloudflare-r2";
 import type { ProjectFormData } from "@/types/project";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 // Accept single File or array of Files for images/documents
 export async function createProject(data: ProjectFormData, files?: File | File[]) {
   try {
     // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("User not authenticated");
+    const user = requireAuthUser();
 
     let imageUrls: string[] = data.image_url ? [data.image_url] : [];
 
@@ -27,7 +27,7 @@ export async function createProject(data: ProjectFormData, files?: File | File[]
     }
 
     // Create post first
-    const { data: post, error: postError } = await supabase
+    const { data: post, error: postError } = await (supabase as any)
       .from('posts')
       .insert({
         user_id: user.id,
@@ -35,14 +35,14 @@ export async function createProject(data: ProjectFormData, files?: File | File[]
         visibility: 'public',
         post_type: 'project_showcase',
         media_urls: imageUrls.length > 0 ? imageUrls : null
-      })
+      } as any)
       .select()
       .single();
 
     if (postError) throw postError;
 
     // Create project showcase
-    const { data: project, error: projectError } = await supabase
+    const { data: project, error: projectError } = await (supabase as any)
       .from('project_showcases')
       .insert({
         post_id: post.id,
@@ -59,20 +59,20 @@ export async function createProject(data: ProjectFormData, files?: File | File[]
         achievements: data.achievements ? [data.achievements] : [],
         industry: data.category,
         is_academic: data.is_academic
-      })
+      } as any)
       .select()
       .single();
 
     if (projectError) throw projectError;
 
     // Add creator as first participant
-    const { error: participantError } = await supabase
+    const { error: participantError } = await (supabase as any)
       .from('idea_participants')
       .insert({
         post_id: post.id,
         user_id: user.id,
         profession: data.category || 'Desarrollador del proyecto'
-      });
+      } as any);
 
     if (participantError) {
       console.error('Error adding creator as participant:', participantError);

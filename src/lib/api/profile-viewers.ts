@@ -1,8 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthUser } from "@/lib/auth/auth-store";
 
 export async function trackProfileView(profileId: string, viewerIpAddress?: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     await (supabase as any).rpc('track_analytics_event', {
       p_event_type: 'profile_view',
       p_entity_type: 'profile',

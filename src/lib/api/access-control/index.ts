@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 // Temporary access control using profile metadata until proper tables are created
 export interface AccessControlConfig {
@@ -54,19 +55,18 @@ export async function validateInvitationCode(code: string) {
 // Use invitation code (store usage in profile metadata)
 export async function useInvitationCode(code: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('No user found');
+    const user = requireAuthUser();
 
     const upperCode = code.toUpperCase();
     
     // Update user profile with invitation code info
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('profiles')
       .update({
         invitation_code_used: upperCode,
         institution_name: ACCESS_CONFIG.invitationCodes[upperCode]?.institution,
         updated_at: new Date().toISOString()
-      })
+      } as any)
       .eq('id', user.id);
 
     if (error) throw error;

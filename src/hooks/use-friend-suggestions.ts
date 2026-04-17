@@ -2,15 +2,16 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { FriendSuggestion } from "@/types/friends";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 export function useFriendSuggestions(suggestions: FriendSuggestion[]) {
   const [requestedFriends, setRequestedFriends] = useState<Record<string, boolean>>({});
 
   const checkExistingRequest = async (friendId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = requireAuthUser();
     if (!user) return false;
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('friendships')
       .select('status')
       .eq('user_id', user.id)
@@ -23,7 +24,7 @@ export function useFriendSuggestions(suggestions: FriendSuggestion[]) {
 
   useEffect(() => {
     const loadExistingRequests = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = requireAuthUser();
       if (!user) return;
 
       const requests = {};

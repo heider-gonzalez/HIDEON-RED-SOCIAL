@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { getAuthUser } from '@/lib/auth/auth-store';
 
 interface UseUserReturn {
   user: User | null;
@@ -16,14 +17,12 @@ export function useUser(): UseUserReturn {
 
   useEffect(() => {
     // Obtener la sesión actual al cargar el hook
-    const getInitialSession = async () => {
+    const getInitialSession = () => {
       try {
         setIsLoading(true);
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const authUser = getAuthUser();
         
-        if (sessionError) throw sessionError;
-        
-        setUser(session?.user ?? null);
+        setUser(authUser);
       } catch (err) {
         console.error('Error al obtener la sesión:', err);
         setError(err instanceof Error ? err : new Error('Error al obtener la sesión'));

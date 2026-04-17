@@ -1,14 +1,14 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { FriendRequest } from "./types";
+import { getAuthUser, requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function getPendingFriendRequests() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Usuario no autenticado");
+    const user = requireAuthUser();
 
     // Get pending friendships
-    const { data: friendships, error } = await supabase
+    const { data: friendships, error } = await (supabase as any)
       .from('friendships')
       .select('id, user_id, friend_id, status, created_at')
       .eq('friend_id', user.id)
@@ -20,8 +20,8 @@ export async function getPendingFriendRequests() {
     }
 
     // Fetch profiles separately
-    const requestsArray = await Promise.all((friendships || []).map(async (friendship) => {
-      const { data: profile } = await supabase
+    const requestsArray = await Promise.all(((friendships || []) as any[]).map(async (friendship: any) => {
+      const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('id, username, avatar_url')
         .eq('id', friendship.user_id)
@@ -53,11 +53,11 @@ async function getMutualFriendsForRequests(requests: any[]) {
   try {
     if (!requests || requests.length === 0) return {};
     
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     if (!user) return {};
     
     // Get all user's friends in one query
-    const { data: userFriends } = await supabase
+    const { data: userFriends } = await (supabase as any)
       .from('friendships')
       .select('friend_id')
       .eq('user_id', user.id)
@@ -71,7 +71,7 @@ async function getMutualFriendsForRequests(requests: any[]) {
     const requestUserIds = requests.map(req => req.user_id);
     
     // Get all request senders' friends in one query
-    const { data: allRequestUserFriends } = await supabase
+    const { data: allRequestUserFriends } = await (supabase as any)
       .from('friendships')
       .select('user_id, friend_id')
       .in('user_id', requestUserIds)
@@ -80,8 +80,8 @@ async function getMutualFriendsForRequests(requests: any[]) {
     const mutualFriendsMap: Record<string, any[]> = {};
     
     for (const requestUserId of requestUserIds) {
-      const requestUserFriends = allRequestUserFriends?.filter(f => f.user_id === requestUserId) || [];
-      const requestUserFriendIds = requestUserFriends.map(f => f.friend_id);
+      const requestUserFriends = (allRequestUserFriends as any[] | null)?.filter((f: any) => f.user_id === requestUserId) || [];
+      const requestUserFriendIds = requestUserFriends.map((f: any) => f.friend_id);
       const mutualFriendIds = userFriendIds.filter(id => requestUserFriendIds.includes(id));
       
       if (mutualFriendIds.length === 0) {
@@ -90,7 +90,7 @@ async function getMutualFriendsForRequests(requests: any[]) {
       }
       
       // Get profiles for mutual friends
-      const { data: mutualFriendProfiles } = await supabase
+      const { data: mutualFriendProfiles } = await (supabase as any)
         .from('profiles')
         .select('username, avatar_url')
         .in('id', mutualFriendIds)

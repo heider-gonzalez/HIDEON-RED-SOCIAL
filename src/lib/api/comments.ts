@@ -1,74 +1,74 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Comment } from "@/types/post";
 import { sendMentionNotifications } from "./posts/notifications";
+import { getAuthSnapshot, requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function createComment(postId: string, content: string, parentId?: string, mediaUrl?: string, mediaType?: string) {
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session?.user) throw new Error("Usuario no autenticado");
+  const user = requireAuthUser();
 
-  const { data: comment, error } = await supabase
+  const { data: comment, error } = await (supabase as any)
     .from('comments')
     .insert({
       post_id: postId,
       content,
       parent_id: parentId,
-      user_id: sessionData.session.user.id,
+      user_id: user.id,
       media_url: mediaUrl,
       media_type: mediaType
-    })
+    } as any)
     .select('*, profiles(username, avatar_url)')
     .single();
 
   if (error) throw error;
+  if (!comment) throw new Error('No se pudo crear el comentario');
 
-  await sendMentionNotifications(content, postId, comment.id, sessionData.session.user.id);
+  await sendMentionNotifications(content, postId, (comment as any).id, user.id);
 
-  const { data: post } = await supabase
+  const { data: post } = await (supabase as any)
     .from('posts')
     .select('user_id')
     .eq('id', postId)
     .single();
 
-  const { data: parentComment } = parentId ? await supabase
+  const { data: parentComment } = parentId ? await (supabase as any)
     .from('comments')
     .select('user_id')
     .eq('id', parentId)
     .single() : { data: null };
 
-  if (post && post.user_id !== sessionData.session.user.id && !parentId) {
-    await supabase
+  if (post && (post as any).user_id !== user.id && !parentId) {
+    await (supabase as any)
       .from('notifications')
       .insert({
         type: 'post_comment',
-        sender_id: sessionData.session.user.id,
-        receiver_id: post.user_id,
+        sender_id: user.id,
+        receiver_id: (post as any).user_id,
         post_id: postId,
-        comment_id: comment.id,
+        comment_id: (comment as any).id,
         message: 'Ha comentado en tu publicación'
-      });
+      } as any);
   }
 
-  if (parentComment && parentComment.user_id !== sessionData.session.user.id) {
-    await supabase
+  if (parentComment && (parentComment as any).user_id !== user.id) {
+    await (supabase as any)
       .from('notifications')
       .insert({
         type: 'comment_reply',
-        sender_id: sessionData.session.user.id,
-        receiver_id: parentComment.user_id,
+        sender_id: user.id,
+        receiver_id: (parentComment as any).user_id,
         post_id: postId,
-        comment_id: comment.id,
+        comment_id: (comment as any).id,
         message: 'Ha respondido a tu comentario'
-      });
+      } as any);
   }
 
   return comment;
 }
 
 export async function getComments(postId: string) {
-  const { data } = await supabase.auth.getSession();
-  const currentUser = data.session?.user;
+  const { user: currentUser } = getAuthSnapshot();
   
-  const { data: commentsData, error: commentsError } = await supabase
+  const { data: commentsData, error: commentsError } = await (supabase as any)
     .from('comments')
     .select(`
       *,
@@ -79,7 +79,7 @@ export async function getComments(postId: string) {
 
   if (commentsError) throw commentsError;
   
-  let comments = (commentsData || []).map(comment => {
+  let comments = (commentsData || []).map((comment: any) => {
     return {
       ...comment,
       profiles: comment.profiles ? {
@@ -98,7 +98,7 @@ export async function getComments(postId: string) {
     const commentIds = comments.map(comment => comment.id);
     
     if (commentIds.length > 0) {
-      const { data: userReactions } = await supabase
+      const { data: userReactions } = await (supabase as any)
         .from('reactions')
         .select('comment_id, reaction_type')
         .eq('user_id', currentUser.id)
@@ -106,25 +106,27 @@ export async function getComments(postId: string) {
       
       const reactionsByCommentId = new Map();
       if (userReactions) {
-        userReactions.forEach(reaction => {
+        (userReactions as any[]).forEach((reaction: any) => {
           reactionsByCommentId.set(reaction.comment_id, reaction.reaction_type);
         });
       }
       
       const countByCommentId = new Map();
       
-      const { data: allReactions } = await supabase
+      const { data: allReactions } = await (supabase as any)
         .from('reactions')
         .select('comment_id')
         .in('comment_id', commentIds);
       
       if (allReactions) {
         const counts: Record<string, number> = {};
-        allReactions.forEach(reaction => {
-          if (!counts[reaction.comment_id]) {
-            counts[reaction.comment_id] = 0;
+        (allReactions as any[]).forEach((reaction: any) => {
+          const cid = String(reaction.comment_id || '');
+          if (!cid) return;
+          if (!counts[cid]) {
+            counts[cid] = 0;
           }
-          counts[reaction.comment_id]++;
+          counts[cid]++;
         });
         
         Object.entries(counts).forEach(([commentId, count]) => {
@@ -162,17 +164,16 @@ export async function getComments(postId: string) {
 }
 
 export async function updateComment(commentId: string, content: string) {
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session?.user) throw new Error("Usuario no autenticado");
+  const user = requireAuthUser();
 
-  const { data: comment, error } = await supabase
+  const { data: comment, error } = await (supabase as any)
     .from('comments')
     .update({
       content,
       updated_at: new Date().toISOString()
-    })
+    } as any)
     .eq('id', commentId)
-    .eq('user_id', sessionData.session.user.id) // Solo el autor puede editar
+    .eq('user_id', user.id) // Solo el autor puede editar
     .select('*, profiles(username, avatar_url)')
     .single();
 

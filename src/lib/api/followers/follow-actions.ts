@@ -1,12 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getAuthUser, requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function followUser(userId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Usuario no autenticado");
+    const user = requireAuthUser();
 
-    const { data: existing, error: existingError } = await supabase
+    const { data: existing, error: existingError } = await (supabase as any)
       .from('followers')
       .select('follower_id')
       .eq('follower_id', user.id)
@@ -19,12 +19,12 @@ export async function followUser(userId: string) {
       return true;
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('followers')
       .insert({
         follower_id: user.id,
         following_id: userId
-      });
+      } as any);
 
     if (error) throw error;
     
@@ -39,10 +39,9 @@ export async function followUser(userId: string) {
 
 export async function unfollowUser(userId: string) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Usuario no autenticado");
+    const user = requireAuthUser();
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('followers')
       .delete()
       .eq('follower_id', user.id)
@@ -61,10 +60,10 @@ export async function unfollowUser(userId: string) {
 
 export async function isFollowing(userId: string): Promise<boolean> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     if (!user) return false;
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('followers')
       .select('follower_id')
       .eq('follower_id', user.id)

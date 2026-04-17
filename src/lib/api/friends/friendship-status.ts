@@ -1,20 +1,20 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { FriendshipStatus } from "./types";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function checkFriendship(targetUserId: string): Promise<FriendshipStatus> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Usuario no autenticado");
+    const user = requireAuthUser();
 
-    const { data: userFollowsTarget, error: error1 } = await supabase
+    const { data: userFollowsTarget, error: error1 } = await (supabase as any)
       .from('friendships')
       .select('status')
       .eq('user_id', user.id)
       .eq('friend_id', targetUserId)
       .single();
 
-    const { data: targetFollowsUser, error: error2 } = await supabase
+    const { data: targetFollowsUser, error: error2 } = await (supabase as any)
       .from('friendships')
       .select('status')
       .eq('user_id', targetUserId)

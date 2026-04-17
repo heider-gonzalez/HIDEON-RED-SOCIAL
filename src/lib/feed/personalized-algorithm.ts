@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Post } from "@/types/post";
+import { getAuthUser } from "@/lib/auth/auth-store";
 
 export interface UserInteractionData {
   id: string;
@@ -353,7 +354,7 @@ export class PersonalizedFeedAlgorithm {
     durationSeconds?: number
   ) {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = getAuthUser();
       if (!user) return;
 
       if (interactionType === 'view') {

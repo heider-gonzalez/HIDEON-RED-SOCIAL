@@ -23,23 +23,67 @@ export function usePresence(conversationId?: string) {
 
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const presenceTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingSendChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const globalPresenceSendChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  useEffect(() => {
+    if (!conversationId) {
+      if (typingSendChannelRef.current) {
+        supabase.removeChannel(typingSendChannelRef.current);
+        typingSendChannelRef.current = null;
+      }
+      return;
+    }
+
+    const channel = supabase.channel(`presence-${conversationId}`);
+    typingSendChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (typingSendChannelRef.current === channel) {
+        typingSendChannelRef.current = null;
+      }
+    };
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      if (globalPresenceSendChannelRef.current) {
+        supabase.removeChannel(globalPresenceSendChannelRef.current);
+        globalPresenceSendChannelRef.current = null;
+      }
+      return;
+    }
+
+    const channel = supabase.channel('global-presence');
+    globalPresenceSendChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (globalPresenceSendChannelRef.current === channel) {
+        globalPresenceSendChannelRef.current = null;
+      }
+    };
+  }, [user?.id]);
 
   // Broadcast typing status
   const broadcastTyping = useCallback(async (typing: boolean) => {
     if (!user?.id || !conversationId) return;
 
     try {
-      await supabase.channel(`presence-${conversationId}`)
-        .send({
-          type: 'broadcast',
-          event: 'typing',
-          payload: {
-            userId: user.id,
-            conversationId,
-            isTyping: typing,
-            timestamp: Date.now()
-          } as TypingEvent
-        });
+      const channel = typingSendChannelRef.current;
+      if (!channel) return;
+
+      await channel.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: {
+          userId: user.id,
+          conversationId,
+          isTyping: typing,
+          timestamp: Date.now()
+        } as TypingEvent
+      });
     } catch (error) {
       console.error('Error broadcasting typing status:', error);
     }
@@ -85,16 +129,18 @@ export function usePresence(conversationId?: string) {
     if (!user?.id) return;
 
     try {
-      await supabase.channel('global-presence')
-        .send({
-          type: 'broadcast',
-          event: 'presence',
-          payload: {
-            userId: user.id,
-            lastSeen: Date.now(),
-            isOnline: true
-          } as OnlineUser
-        });
+      const channel = globalPresenceSendChannelRef.current;
+      if (!channel) return;
+
+      await channel.send({
+        type: 'broadcast',
+        event: 'presence',
+        payload: {
+          userId: user.id,
+          lastSeen: Date.now(),
+          isOnline: true
+        } as OnlineUser
+      });
     } catch (error) {
       console.error('Error updating presence:', error);
     }

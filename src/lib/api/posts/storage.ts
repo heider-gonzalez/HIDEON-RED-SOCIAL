@@ -1,13 +1,13 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { uploadWithOptimization } from "@/lib/storage/cloudflare-r2";
+import { requireAuthUser } from "@/lib/auth/auth-store";
 
 export async function uploadMediaFile(file: File): Promise<string | null> {
   if (!file) return null;
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("User not authenticated");
+    const user = requireAuthUser();
 
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;

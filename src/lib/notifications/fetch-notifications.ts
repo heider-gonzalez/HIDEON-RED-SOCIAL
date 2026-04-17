@@ -1,13 +1,14 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { NotificationType, NotificationWithSender } from "@/types/notifications";
+import { getAuthUser } from "@/lib/auth/auth-store";
 
 let notificationsTableChecked = false;
 let notificationsTableAvailable = true;
 
 export async function fetchNotifications(): Promise<NotificationWithSender[]> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = getAuthUser();
     if (!user) return [];
 
     // Check table existence only once to avoid extra query on every load
