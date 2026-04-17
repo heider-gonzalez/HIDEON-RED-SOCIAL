@@ -198,43 +198,19 @@ async function migratePostsInBatches(config: BatchMigrationConfig): Promise<Migr
   
   while (true) {
     try {
-      // Obtener lote de posts - DOS QUERIES SEPARADAS para evitar error PGRST100
-      const [mediaUrlResult, mediaUrlsResult] = await Promise.all([
-        supabase
-          .from('posts')
-          .select('id, media_url, media_urls, user_id')
-          .like('media_url', '%supabase%')
-          .range(offset, offset + config.batchSize - 1),
-        supabase
-          .from('posts')
-          .select('id, media_url, media_urls, user_id')
-          .filter('media_urls', 'cs', '{"http"}') // Buscar arrays que contengan URLs
-          .range(offset, offset + config.batchSize - 1)
-      ]);
+      // Obtener lote de posts y filtrar en JavaScript para arrays
+      const { data: posts, error: fetchError } = await supabase
+        .from('posts')
+        .select('id, media_url, media_urls, user_id')
+        .or('media_url.ilike.%supabase%,media_urls.not.is.null')
+        .range(offset, offset + config.batchSize - 1);
 
-      // Combinar resultados y deduplicar por ID
-      const allPosts = new Map();
-      
-      if (!mediaUrlResult.error && mediaUrlResult.data) {
-        (mediaUrlResult.data as any[]).forEach(post => {
-          allPosts.set(post.id, post);
-        });
-      }
-      
-      if (!mediaUrlsResult.error && mediaUrlsResult.data) {
-        (mediaUrlsResult.data as any[]).forEach(post => {
-          // Solo agregar si no existe y tiene media_urls con supabase
-          if (!allPosts.has(post.id) && post.media_urls) {
-            const hasSupabaseUrls = post.media_urls.some((url: string) => url.includes('supabase'));
-            if (hasSupabaseUrls) {
-              allPosts.set(post.id, post);
-            }
-          }
-        });
-      }
-
-      const posts = Array.from(allPosts.values());
-      const fetchError = mediaUrlResult.error || mediaUrlsResult.error;
+      // Filtrar en JavaScript los que tienen URLs de Supabase en media_urls
+      const postsToProcess = posts?.filter((post: any) => {
+        const hasMediaUrl = post.media_url?.includes('supabase');
+        const hasMediaUrls = post.media_urls?.some((url: string) => url.includes('supabase'));
+        return hasMediaUrl || hasMediaUrls;
+      }) || [];
 
       if (fetchError) {
         console.error(`Error fetching posts batch ${offset}:`, fetchError);
@@ -256,10 +232,16 @@ async function migratePostsInBatches(config: BatchMigrationConfig): Promise<Migr
         break;
       }
 
-      console.log(`Procesando lote de ${posts.length} posts (offset: ${offset})`);
+      if (postsToProcess.length === 0) {
+        console.log(`No hay posts con URLs de Supabase en este lote (offset: ${offset})`);
+        offset += config.batchSize;
+        continue;
+      }
 
-      // Procesar cada post en el lote
-      for (const post of posts as any[]) {
+      console.log(`Procesando lote de ${postsToProcess.length} posts con URLs de Supabase (offset: ${offset}, total: ${posts.length})`);
+
+      // Procesar cada post que necesita migración
+      for (const post of postsToProcess as any[]) {
         try {
           let postMigrated = false;
           let newMediaUrl = post.media_url;
@@ -534,7 +516,7 @@ async function migrateMessagesInBatches(config: BatchMigrationConfig): Promise<M
 /**
  * Migrar project showcases en lotes
  */
-async function migrateProjectShowcasesInBatches(config: BatchMigrationConfig): Promise<MigrationResult> {
+export async function migrateProjectShowcasesInBatches(config: BatchMigrationConfig): Promise<MigrationResult> {
   console.log('\n=== MIGRANDO PROJECT SHOWCASES ===');
   
   let offset = 0;
@@ -545,12 +527,17 @@ async function migrateProjectShowcasesInBatches(config: BatchMigrationConfig): P
   
   while (true) {
     try {
-      // Obtener lote de project showcases con URLs de imágenes
+      // Obtener lote de project showcases y filtrar en JavaScript
       const { data: showcases, error: fetchError } = await supabase
         .from('project_showcases')
         .select('id, images_urls, github_url, demo_url, project_url')
-        .like('images_urls', '%supabase%')
+        .not('images_urls', 'is', null)
         .range(offset, offset + config.batchSize - 1);
+
+      // Filtrar en JavaScript los que tienen URLs de Supabase
+      const toMigrate = showcases?.filter((s: any) => 
+        s.images_urls?.some((url: string) => url.includes('supabase'))
+      ) || [];
 
       if (fetchError) {
         console.error(`Error fetching project showcases batch ${offset}:`, fetchError);
@@ -572,10 +559,16 @@ async function migrateProjectShowcasesInBatches(config: BatchMigrationConfig): P
         break;
       }
 
-      console.log(`Procesando lote de ${showcases.length} project showcases (offset: ${offset})`);
+      if (toMigrate.length === 0) {
+        console.log(`No hay project showcases con URLs de Supabase en este lote (offset: ${offset})`);
+        offset += config.batchSize;
+        continue;
+      }
 
-      // Procesar cada showcase en el lote
-      for (const showcase of showcases as any[]) {
+      console.log(`Procesando lote de ${toMigrate.length} project showcases con URLs de Supabase (offset: ${offset}, total: ${showcases.length})`);
+
+      // Procesar cada showcase que necesita migración
+      for (const showcase of toMigrate as any[]) {
         try {
           let showcaseMigrated = false;
           let newImagesUrls: string[] = [];
