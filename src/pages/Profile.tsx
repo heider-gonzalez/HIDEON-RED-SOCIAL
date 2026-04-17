@@ -54,7 +54,6 @@ export default function Profile() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
-  const debug = import.meta.env.DEV;
 
   const handleProfileUpdate = (updatedProfile: Profile) => {
     console.log('Updating profile state:', updatedProfile);
@@ -117,19 +116,7 @@ export default function Profile() {
         const { count: postsCount, error: postsError } = postsResult;
         const { count: heartsCount, error: heartsError } = heartsResult;
 
-        if (debug) {
-          const profileDataAny = profileData as any;
-          console.log('=== DEPURACIÓN PROFUNDA ===');
-          console.log('Profile ID buscado:', profileId);
-          console.log('Profile Error:', profileError);
-          console.log('Profile Data crudo:', profileData);
-          console.log('Profile Data keys:', profileDataAny ? Object.keys(profileDataAny) : 'No data');
-          console.log('Career en profileData:', profileDataAny?.career ?? 'undefined');
-          console.log('Semester en profileData:', profileDataAny?.semester ?? 'undefined');
-          console.log('Tipo de profileData:', typeof profileData);
-          console.log('========================');
-        }
-
+        
         // Si el perfil no existe, crearlo automáticamente para el usuario actual
         if (profileError && profileError.code === 'PGRST116' && user?.id === profileId) {
           console.log('Profile not found, creating profile for user:', user?.id);
