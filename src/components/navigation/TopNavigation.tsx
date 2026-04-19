@@ -18,6 +18,7 @@ import { useUser } from "@/hooks/use-user";
 
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 import { usePostComposer } from "@/providers/PostComposerProvider";
+import { CreateContentMenu } from "./CreateContentMenu";
 
 interface TopNavigationProps {
   pendingRequestsCount: number;
@@ -61,6 +62,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
 
   const { isAuthenticated, userProfile } = state;
   const [showFullScreenSearch, setShowFullScreenSearch] = useState(false);
+  const [showContentMenu, setShowContentMenu] = useState(false);
   const { user } = useUser();
 
   const { open: openComposer } = usePostComposer();
@@ -181,7 +183,7 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
               variant="ghost"
               size="icon"
               className="h-10 w-10 rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/60"
-              onClick={() => openComposer({ userAvatar: userProfile?.avatar_url || user?.user_metadata?.avatar_url })}
+              onClick={() => setShowContentMenu(true)}
               aria-label="Crear"
             >
               <Plus className="h-5 w-5" strokeWidth={1.5} />
@@ -208,6 +210,12 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
         <FullScreenSearch 
           isOpen={showFullScreenSearch} 
           onClose={() => setShowFullScreenSearch(false)} 
+        />
+
+        {/* Create Content Menu */}
+        <CreateContentMenu
+          open={showContentMenu}
+          onOpenChange={setShowContentMenu}
         />
       </nav>
     );
@@ -289,6 +297,12 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
       <FullScreenSearch
         isOpen={showFullScreenSearch}
         onClose={() => setShowFullScreenSearch(false)}
+      />
+
+      {/* Create Content Menu */}
+      <CreateContentMenu
+        open={showContentMenu}
+        onOpenChange={setShowContentMenu}
       />
     </nav>
   );
