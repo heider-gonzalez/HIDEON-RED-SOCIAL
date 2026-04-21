@@ -50,9 +50,9 @@ export const CommentActions = forwardRef<HTMLDivElement, CommentActionsProps>(({
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
@@ -60,7 +60,8 @@ export const CommentActions = forwardRef<HTMLDivElement, CommentActionsProps>(({
               >
                 <MoreVertical className="h-3 w-3" />
               </Button>
-            </DropdownMenuTrigger>
+            </TooltipTrigger>
+          </DropdownMenuTrigger>
             <DropdownMenuContent 
               align="end" 
               className="w-56 bg-background"
@@ -133,8 +134,7 @@ export const CommentActions = forwardRef<HTMLDivElement, CommentActionsProps>(({
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
-          </DropdownMenu>
-        </TooltipTrigger>
+        </DropdownMenu>
         <TooltipContent>
           <p>Opciones</p>
         </TooltipContent>

@@ -249,78 +249,86 @@ export function InstagramAudioPlayer({
       )}
 
       {/* Instagram-style Audio Player */}
-      <div className="flex items-center space-x-3">
+      <div className="grid grid-cols-[48px_1fr_40px] items-center gap-3">
         {/* Album Art / Music Icon */}
         <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
           <Music className="h-6 w-6 text-white" />
         </div>
 
         {/* Audio Info and Controls */}
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0">
           {/* Track Name */}
-          <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+          <div className="text-sm font-medium text-gray-900 dark:text-white text-center truncate">
             {displayName}
           </div>
-          
-          {/* Progress Bar */}
-          <div className="flex items-center space-x-2 mt-1">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {formatTime(currentTime)}
-            </span>
-            
-            <input
-              type="range"
-              min="0"
-              max={duration || 0}
-              value={currentTime}
-              onChange={handleSeek}
-              className="flex-1 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
-              style={{
-                background: `linear-gradient(to right, #E91E63 ${(currentTime / duration) * 100}%, #E5E7EB ${(currentTime / duration) * 100}%)`
-              }}
-            />
-            
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {formatTime(displayDuration)}
-            </span>
+
+          <div className="mt-2 space-y-2">
+            {/* Volume Control (separate row, above progress) */}
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={toggleMute}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
+                type="button"
+              >
+                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              </button>
+
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={isMuted ? 0 : volume}
+                onChange={handleVolumeChange}
+                className="w-32 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #E91E63 ${(isMuted ? 0 : volume) * 100}%, #E5E7EB ${(isMuted ? 0 : volume) * 100}%)`
+                }}
+              />
+            </div>
+
+            {/* Progress Bar */}
+            <div className="flex items-center gap-2">
+              <span className="w-9 text-xs tabular-nums text-gray-500 dark:text-gray-400 text-left">
+                {formatTime(currentTime)}
+              </span>
+
+              <input
+                type="range"
+                min="0"
+                max={duration || 0}
+                value={currentTime}
+                onChange={handleSeek}
+                className="flex-1 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #E91E63 ${(currentTime / duration) * 100}%, #E5E7EB ${(currentTime / duration) * 100}%)`
+                }}
+              />
+
+              <span className="w-9 text-xs tabular-nums text-gray-500 dark:text-gray-400 text-right">
+                {formatTime(displayDuration)}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Play/Pause Button */}
-        <button
-          onClick={togglePlayPause}
-          disabled={isLoading}
-          className="w-10 h-10 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow disabled:opacity-50"
-        >
-          {isLoading ? (
-            <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-          ) : isPlaying ? (
-            <Pause size={16} className="text-purple-500" />
-          ) : (
-            <Play size={16} className="text-purple-500 ml-0.5" />
-          )}
-        </button>
-
-        {/* Volume Control */}
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center justify-end">
           <button
-            onClick={toggleMute}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            onClick={togglePlayPause}
+            disabled={isLoading}
+            className="w-10 h-10 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow disabled:opacity-50"
+            type="button"
           >
-            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            {isLoading ? (
+              <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+            ) : isPlaying ? (
+              <Pause size={16} className="text-purple-500" />
+            ) : (
+              <Play size={16} className="text-purple-500 ml-0.5" />
+            )}
           </button>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            value={isMuted ? 0 : volume}
-            onChange={handleVolumeChange}
-            className="w-16 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
-            style={{
-              background: `linear-gradient(to right, #E91E63 ${(isMuted ? 0 : volume) * 100}%, #E5E7EB ${(isMuted ? 0 : volume) * 100}%)`
-            }}
-          />
         </div>
       </div>
 

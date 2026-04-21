@@ -1,53 +1,38 @@
-import { useMemo } from "react";
-import { usePersonalizedFeed } from "@/hooks/feed/use-personalized-feed";
+import { useQuery } from "@tanstack/react-query";
 import type { Post } from "@/types/post";
-import { getPostVideoUrl } from "@/lib/hybrid-url";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Hook optimizado para obtener posts de video (Reels)
  * Filtra videos de la data existente sin queries adicionales
  */
-export function useReelsFeed() {
-  const { 
-    posts, 
-    isLoading, 
-    trackPostView, 
-    trackPostInteraction,
-    refetch
-  } = usePersonalizedFeed();
+export function useReelsFeed(limit: number = 12) {
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["reels-feed", limit],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("posts")
+        .select(
+          "id, content, created_at, media_url, media_urls, media_type, visibility, profiles:profiles(id, username, avatar_url)"
+        )
+        .eq("visibility", "public")
+        .eq("media_type", "video")
+        .order("created_at", { ascending: false })
+        .limit(limit);
 
-  // Filtrar solo posts con videos - mejorado para Supabase Storage
-  const videosPosts = useMemo(() => {
-    return posts.filter((post: Post) => Boolean(getPostVideoUrl(post)));
-  }, [posts]);
+      if (error) throw error;
 
-  // Track view específico para reels con duración optimizado
-  const trackReelView = (postId: string, durationSeconds?: number) => {
-    try {
-      trackPostView(postId, durationSeconds);
-      // Bonus para videos vistos completamente solo si es significativo
-      if (durationSeconds && durationSeconds > 15) {
-        trackPostInteraction(postId, 'like');
-      }
-    } catch (error) {
-      console.warn('Error tracking reel view:', error);
-    }
-  };
-
-  const trackReelInteraction = (postId: string, type: 'like' | 'comment' | 'share') => {
-    try {
-      trackPostInteraction(postId, type);
-    } catch (error) {
-      console.warn('Error tracking reel interaction:', error);
-    }
-  };
+      return (data || []) as unknown as Post[];
+    },
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+  });
 
   return {
-    videosPosts,
+    videosPosts: (data || []) as Post[],
     isLoading,
-    trackReelView,
-    trackReelInteraction,
     refetch,
-    hasVideos: videosPosts.length > 0
+    hasVideos: (data?.length || 0) > 0
   };
 }

@@ -1,5 +1,15 @@
 import { supabaseAdmin } from './supabase-admin';
 
+type ProfileInsert = {
+  id: string;
+  username: string;
+  bio: string;
+  career: string;
+  avatar_url: string;
+  created_at: string;
+  updated_at: string;
+};
+
 async function createMissingUsers() {
   console.log('👥 Creando usuarios faltantes...');
   
@@ -42,17 +52,19 @@ async function createMissingUsers() {
       console.log(`✅ Usuario auth creado: ${user.username} (${userId})`);
 
       // Crear perfil
-      const { error: profileError } = await supabaseAdmin
+      const profile: ProfileInsert = {
+        id: userId,
+        username: user.username,
+        bio: user.bio,
+        career: user.career,
+        avatar_url: user.avatar_url,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: profileError } = await (supabaseAdmin as any)
         .from('profiles')
-        .insert({
-          id: userId,
-          username: user.username,
-          bio: user.bio,
-          career: user.career,
-          avatar_url: user.avatar_url,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+        .insert(profile);
 
       if (profileError) {
         console.error(`❌ Error creando perfil de ${user.username}:`, profileError.message);

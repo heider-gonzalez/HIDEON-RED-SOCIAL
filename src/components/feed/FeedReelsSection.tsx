@@ -4,34 +4,22 @@ import type { Post } from "@/types/post";
 import { useFullscreenVideo } from "@/components/video/FullscreenVideoContext";
 import { normalizePostContent } from "@/utils/post-content";
 import { getPostVideoUrl } from "@/lib/hybrid-url";
+import { useReelsFeed } from "@/hooks/reels/use-reels-feed";
 
-interface FeedReelsSectionProps {
-  posts: Post[];
-}
-
-function isVideoUrl(url: string) {
-  if (!url) return false;
-  const videoExtensions = [".mp4", ".mov", ".webm", ".avi", ".mkv", ".m4v", ".ogg"];
-  const lower = url.toLowerCase();
-  return videoExtensions.some((ext) => lower.includes(ext));
-}
-
-export function FeedReelsSection({ posts }: FeedReelsSectionProps) {
+export function FeedReelsSection() {
   const navigate = useNavigate();
   const fullscreenVideo = useFullscreenVideo();
 
+  const { videosPosts: posts, isLoading } = useReelsFeed(12);
+
   const reels = useMemo(() => {
-    return posts
-      .filter((p) => {
-        const urls = (p.media_urls && Array.isArray(p.media_urls) ? p.media_urls : []).filter(Boolean) as string[];
-        const hasVideoInUrls = urls.some(isVideoUrl);
-        const hasVideoType = p.media_type?.startsWith("video") || p.media_type === "video";
-        const hasVideoUrl = Boolean(p.media_url && isVideoUrl(p.media_url));
-        return hasVideoInUrls || hasVideoType || hasVideoUrl;
-      })
+    return (posts as Post[])
+      .map((post) => ({ post, url: getPostVideoUrl(post) }))
+      .filter((x) => Boolean(x.url))
       .slice(0, 12);
   }, [posts]);
 
+  if (isLoading) return null;
   if (reels.length === 0) return null;
 
   return (
@@ -50,9 +38,12 @@ export function FeedReelsSection({ posts }: FeedReelsSectionProps) {
 
         <div className="px-3 py-3 overflow-x-auto">
           <div className="flex gap-3">
-            {reels.map((post) => {
-              const url = getPostVideoUrl(post) || "";
-              if (!url) return null;
+            {reels.map(({ post, url }) => {
+              const safeUrl = url || "";
+              if (!safeUrl) return null;
+
+              const author = (post as any)?.profiles;
+              const authorName = author?.username || "";
 
               return (
                 <button
@@ -61,15 +52,15 @@ export function FeedReelsSection({ posts }: FeedReelsSectionProps) {
                   onClick={() => {
                     fullscreenVideo.open({
                       initialPostId: post.id,
-                      initialUrl: url,
+                      initialUrl: safeUrl,
                       initialTime: 0,
                       muted: true,
                     });
                   }}
-                  className="relative flex-none w-[140px] h-[220px] rounded-lg overflow-hidden bg-black"
+                  className="relative flex-none w-[140px] h-[220px] rounded-lg overflow-hidden bg-gray-950"
                 >
                   <video
-                    src={url}
+                    src={safeUrl}
                     className="w-full h-full object-cover"
                     muted
                     playsInline
@@ -78,6 +69,11 @@ export function FeedReelsSection({ posts }: FeedReelsSectionProps) {
                     preload="metadata"
                   />
                   <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
+                    {authorName ? (
+                      <div className="text-[10px] text-white/80 text-left truncate mb-0.5">
+                        @{authorName}
+                      </div>
+                    ) : null}
                     <div className="text-[11px] text-white/90 line-clamp-2 text-left">
                       {normalizePostContent(post.content || "")}
                     </div>

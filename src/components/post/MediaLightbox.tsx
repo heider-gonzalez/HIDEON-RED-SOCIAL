@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { Post } from "@/types/post";
@@ -102,15 +103,16 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
 
   const isDesktopPostViewer = Boolean(post) && !isMobile;
 
+
+  useEffect(() => {
+    setIsReelLikeVideo(false);
+  }, [index, current?.url, current?.type]);
+
   useEffect(() => {
     if (isOpen) {
       setIndex(Math.min(Math.max(startIndex, 0), Math.max(total - 1, 0)));
     }
   }, [isOpen, startIndex, total]);
-
-  useEffect(() => {
-    setIsReelLikeVideo(false);
-  }, [index, current?.url, current?.type]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -196,8 +198,11 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
             ? "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100vh] max-w-none border-none rounded-none bg-black/95 overflow-hidden [&>button]:hidden"
             : "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100svh] max-w-none border-none rounded-none bg-black/95 overflow-hidden [&>button]:hidden"
         }
+        aria-describedby={undefined}
       >
-        <DialogTitle className="sr-only">Visor de medios</DialogTitle>
+        <DialogTitle asChild>
+          <VisuallyHidden>Visor de medios</VisuallyHidden>
+        </DialogTitle>
         <DialogDescription className="sr-only">Visor tipo Facebook para navegar por imágenes y videos</DialogDescription>
 
         {/* Fixed close button (estilo Facebook) */}
@@ -365,10 +370,15 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
           </div>
         ) : (
           <div
-            className="relative flex-1 flex items-center justify-center overflow-hidden bg-black h-full w-full"
+            className="relative flex-1 flex items-center justify-center overflow-hidden bg-gray-950 h-full w-full"
             onClick={(e) => {
               if (e.target === e.currentTarget) onClose();
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') onClose();
+            }}
+            role="button"
+            tabIndex={0}
             onWheel={handleWheel}
             onPointerDown={(e) => {
               pointerStartXRef.current = e.clientX;
@@ -443,11 +453,14 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                 alt={`Media ${index + 1} de ${total}`}
                 className="max-h-full max-w-full object-contain"
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
                 loading="eager"
                 decoding="async"
+                role="button"
+                tabIndex={0}
               />
             ) : (
-              <div className="h-full w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <div className="h-full w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="button" tabIndex={0}>
                 {isReelLikeVideo ? (
                   <div className="h-full max-h-full aspect-[9/16] w-auto max-w-full">
                     <video

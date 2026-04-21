@@ -45,7 +45,7 @@ export const FeedContent = memo(function FeedContent({
         insertedReels = true;
         nodes.push(
           <div key="feed-reels" className="w-full">
-            <FeedReelsSection posts={allPosts} />
+            <FeedReelsSection />
           </div>
         );
       }
