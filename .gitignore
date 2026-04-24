@@ -31,3 +31,10 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Android / Gradle
+android/**/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/captures/
