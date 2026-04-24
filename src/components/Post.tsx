@@ -177,6 +177,17 @@ function PostInner({ post, hideComments = false, isHidden = false, initialShowCo
   // Detectar si es un post de demostración (no permite interacciones)
   const isDemoPost = !!post.is_demo || !!post.demo_readonly;
 
+  // Disparar eventos cuando el usuario interactúa con el post
+  useEffect(() => {
+    // Evento cuando el post entra en vista
+    window.dispatchEvent(new CustomEvent('post:view:start', { detail: { postId: post.id } }));
+    
+    return () => {
+      // Evento cuando el post sale de vista
+      window.dispatchEvent(new CustomEvent('post:view:end', { detail: { postId: post.id } }));
+    };
+  }, [post.id]);
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const [resolvedSharedPost, setResolvedSharedPost] = useState<PostType | null>(null);

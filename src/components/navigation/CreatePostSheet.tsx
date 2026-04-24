@@ -375,11 +375,14 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
         // ignore
       }
 
-      // Invalidar múltiples queries para asegurar actualización
-      queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
-      queryClient.invalidateQueries({ queryKey: ["feed"], exact: false });
-      queryClient.invalidateQueries({ queryKey: ["user-posts"], exact: false });
-      queryClient.refetchQueries({ queryKey: ["posts"], exact: false });
+      // Invalidar queries de forma más controlada para evitar cambios bruscos
+      queryClient.invalidateQueries({ 
+        queryKey: ["posts"], 
+        exact: false,
+        refetchType: 'active' // Solo refetchar queries activas
+      });
+      // No invalidar "feed" para evitar recargas completas
+      // No hacer refetchQueries inmediatamente
 
       try {
         window.dispatchEvent(new Event('hsocial:home_refresh'));

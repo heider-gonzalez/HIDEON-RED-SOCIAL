@@ -71,10 +71,11 @@ export function usePersonalizedFeed(
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage?.nextCursor,
     enabled: true,
-    staleTime: 1000 * 60 * 2,
-    gcTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 5, // 5 minutos en lugar de 2
+    gcTime: 1000 * 60 * 15, // 15 minutos en lugar de 10
     refetchOnMount: false,
     refetchOnReconnect: false,
+    refetchOnWindowFocus: false, // Evitar refetch al cambiar de ventana
   });
 
   const rawPosts = useMemo(() => {
@@ -124,8 +125,12 @@ export function usePersonalizedFeed(
     if (algorithLoading) {
       return rawPosts;
     }
+    // Evitar cambios bruscos manteniendo el orden original si la personalización falla
+    if (!personalizedPosts || personalizedPosts.length === 0) {
+      return rawPosts;
+    }
     return personalizedPosts;
-  }, [isPersonalized, rawPosts, personalizedPosts]);
+  }, [isPersonalized, rawPosts, personalizedPosts, algorithLoading]);
 
   const [hiddenPostIds, setHiddenPostIds] = useState<string[]>([]);
 
