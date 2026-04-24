@@ -11,6 +11,7 @@ import { usePollVoteMutation } from "@/hooks/post-mutations/use-poll-vote-mutati
 import { backgroundPresets } from "./TextBackgroundPalette";
 import { MentionsText } from "./MentionsText";
 import { MediaCarousel } from "./MediaCarousel";
+ 
 
 interface PostContentProps {
   post: Post;
@@ -54,9 +55,45 @@ function PostContentComponent({ post, postId, hideText = false }: PostContentPro
            lowerUrl.includes('stream');
   };
 
+  const isYoutubeUrl = (url: string) => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return lower.includes('youtube.com') || lower.includes('youtu.be');
+  };
+
+  const extractYouTubeId = (url: string) => {
+    try {
+      const u = new URL(url);
+
+      // youtube.com/watch?v=ID
+      const watchId = u.searchParams.get('v');
+      if (watchId) return watchId;
+
+      // youtu.be/ID
+      if (u.hostname === 'youtu.be') {
+        const id = u.pathname.split('/').filter(Boolean)[0];
+        if (id) return id;
+      }
+
+      // youtube.com/shorts/ID
+      const parts = u.pathname.split('/').filter(Boolean);
+      const shortsIdx = parts.indexOf('shorts');
+      if (shortsIdx !== -1) {
+        const id = parts[shortsIdx + 1];
+        if (id) return id;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   // 3. Buscar el primer video válido entre los metadatos
   const demoUrl = proyectoDemoUrl || fallbackDemoUrl || projectShowcaseVideoUrl || projectShowcaseDemoUrl;
   const demoIsVideo = isVideoUrl(demoUrl);
+  const demoIsYoutube = isYoutubeUrl(demoUrl);
+  const youtubeId = demoIsYoutube ? extractYouTubeId(demoUrl) : null;
 
   // 4. Determinar si mostrar media
   const hasMedia =
@@ -198,6 +235,19 @@ function PostContentComponent({ post, postId, hideText = false }: PostContentPro
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {!demoIsVideo && demoIsYoutube && youtubeId && (
+        <div className="mt-3 px-4 md:px-0">
+          <iframe
+            src={`https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`}
+            title="YouTube video"
+            className="w-full aspect-video rounded-xl shadow-sm"
+            allowFullScreen
+            loading="lazy"
+            frameBorder={0}
+          />
         </div>
       )}
       

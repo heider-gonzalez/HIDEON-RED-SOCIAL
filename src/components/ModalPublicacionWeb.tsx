@@ -1,5 +1,5 @@
 ﻿import { useState, useRef, useEffect, useMemo } from 'react';
-import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar, Music, Edit } from 'lucide-react';
+import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar, Music, Edit, Youtube, Globe, Users, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { AudioPlayer } from '@/components/media/AudioPlayer';
@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { FirstPostBadge } from '@/components/badges/FirstPostBadge';
 
-export type PostType = 'idea' | 'proyecto' | 'encuesta' | 'evento' | 'empleo' | 'servicios' | null;
+export type PostType = 'idea' | 'proyecto' | 'encuesta' | 'evento' | 'empleo' | 'servicios' | 'youtube' | null;
 
 interface ModalPublicacionWebProps {
   isVisible: boolean;
@@ -169,6 +169,8 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
   const [serviceCategory, setServiceCategory] = useState('');
 
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+
   const serviceCategoryOptions = useMemo(
     () => [
       'Asesoramiento',
@@ -202,6 +204,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       setShowWaveformEditor(false);
       setShowMusicSelector(false);
       setShowAudioEditor(false);
+      setYoutubeUrl('');
     }
   }, [initialContent, initialMedia, isVisible]);
 
@@ -405,8 +408,14 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     if (selectedPostType === 'servicios') {
       return Boolean(serviceCategory.trim()) && Boolean(content.trim() || selectedFiles.length > 0);
     }
+    if (selectedPostType === 'youtube') {
+      const url = youtubeUrl.trim();
+      if (!url) return false;
+      const lower = url.toLowerCase();
+      return lower.includes('youtube.com') || lower.includes('youtu.be');
+    }
     return Boolean(content.trim() || selectedFiles.length > 0);
-  }, [content, selectedFiles.length, selectedPostType, ideaTitle, ideaDescription, projectTitle, projectDescription, projectStatus, projectTechnologies, projectObjectives, projectTeamMembers, projectGithubUrl, projectDemoUrl, pollQuestion, pollOptions, eventTitle, eventDescription, eventStartDate, eventLocationType, eventMeetingLink, eventLocation, serviceCategory]);
+  }, [content, selectedFiles.length, selectedPostType, ideaTitle, ideaDescription, projectTitle, projectDescription, projectStatus, projectTechnologies, projectObjectives, projectTeamMembers, projectGithubUrl, projectDemoUrl, pollQuestion, pollOptions, eventTitle, eventDescription, eventStartDate, eventLocationType, eventMeetingLink, eventLocation, serviceCategory, youtubeUrl]);
 
   const handlePublish = async () => {
     if (effectivePublishing) return;
@@ -602,6 +611,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       } else if (selectedPostType === 'servicios') {
         postData.post_type = 'services';
         postData.service_category = serviceCategory.trim();
+      } else if (selectedPostType === 'youtube') {
+        postData.post_type = 'regular';
+        postData.demo_url = youtubeUrl.trim();
       } else {
         postData.post_type = 'regular';
       }
@@ -788,6 +800,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     if (type !== 'servicios') {
       setServiceCategory('');
     }
+    if (type !== 'youtube') {
+      setYoutubeUrl('');
+    }
     setShowPostTypeMenu(false);
   };
 
@@ -826,27 +841,22 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
             <div className="relative" ref={privacyMenuRef}>
               <button
+                type="button"
                 onClick={() => setShowPrivacyMenu(!showPrivacyMenu)}
                 className="flex items-center rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
               >
                 <span className="text-primary">
                   {privacy === 'Público' ? (
                     <span className="flex items-center">
-                      <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 2a5 5 0 00-5 5v2a2 5 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
-                      </svg>
+                      <Globe className="mr-1 h-4 w-4" />
                     </span>
                   ) : privacy === 'Amigos' ? (
                     <span className="flex items-center">
-                      <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                      </svg>
+                      <Users className="mr-1 h-4 w-4" />
                     </span>
                   ) : (
                     <span className="flex items-center">
-                      <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                      </svg>
+                      <Lock className="mr-1 h-4 w-4" />
                     </span>
                   )}
                 </span>
@@ -857,30 +867,27 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               {showPrivacyMenu && (
                 <div className="absolute left-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 z-50">
                   <button
+                    type="button"
                     onClick={() => handlePrivacySelect('Público')}
                     className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                   >
-                    <svg className="mr-2 h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 2a5 5 0 00-5 5v2a2 5 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
-                    </svg>
+                    <Globe className="mr-2 h-5 w-5 text-primary" />
                     Público
                   </button>
                   <button
+                    type="button"
                     onClick={() => handlePrivacySelect('Amigos')}
                     className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                   >
-                    <svg className="mr-2 h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                    </svg>
+                    <Users className="mr-2 h-5 w-5 text-primary" />
                     Amigos
                   </button>
                   <button
+                    type="button"
                     onClick={() => handlePrivacySelect('Solo yo')}
                     className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                   >
-                    <svg className="mr-2 h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                    </svg>
+                    <Lock className="mr-2 h-5 w-5 text-primary" />
                     Solo yo
                   </button>
                 </div>
@@ -963,6 +970,29 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
         {/* Content */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4">
+          {selectedPostType === 'youtube' && (
+            <div className="space-y-3 mb-4">
+              <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-muted/40 px-3 py-2 text-sm text-foreground">
+                Tipo: <span className="font-semibold">Video de YouTube</span>
+              </div>
+              <input
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="Pega aquí el enlace del video (youtube.com / youtu.be)"
+                className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                inputMode="url"
+                autoComplete="url"
+              />
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Descripción (opcional)"
+                rows={4}
+                className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+              />
+            </div>
+          )}
+
           {selectedPostType === 'idea' && (
             <div className="space-y-3 mb-4">
               <input
@@ -1558,6 +1588,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           
           <div className="relative" ref={menuRef}>
             <button 
+              type="button"
               onClick={() => {
                 setShowPostTypeMenu(!showPostTypeMenu);
               }}
@@ -1571,6 +1602,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
             {showPostTypeMenu && (
               <div className="absolute bottom-12 right-0 z-[9999] w-56 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800">
                 <button
+                  type="button"
                   onClick={() => handlePostTypeSelect('idea')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
@@ -1579,6 +1611,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 </button>
                 
                 <button
+                  type="button"
                   onClick={() => handlePostTypeSelect('proyecto')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
@@ -1587,6 +1620,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 </button>
                 
                 <button
+                  type="button"
                   onClick={() => handlePostTypeSelect('encuesta')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
@@ -1595,6 +1629,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 </button>
                 
                 <button
+                  type="button"
                   onClick={() => handlePostTypeSelect('evento')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
@@ -1603,6 +1638,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => handlePostTypeSelect('empleo')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
@@ -1611,11 +1647,21 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => handlePostTypeSelect('servicios')}
                   className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
                   <Briefcase className="mr-3 h-5 w-5 text-primary" />
                   Publicar servicios
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handlePostTypeSelect('youtube')}
+                  className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Youtube className="mr-3 h-5 w-5 text-primary" />
+                  Publicar video de YouTube
                 </button>
               </div>
             )}
