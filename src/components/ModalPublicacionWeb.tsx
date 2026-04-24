@@ -1,4 +1,5 @@
 ﻿import { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar, Music, Edit, Youtube, Globe, Users, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -119,6 +120,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [showPrivacyMenu, setShowPrivacyMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const privacyMenuRef = useRef<HTMLDivElement>(null);
+  const postTypeButtonRef = useRef<HTMLButtonElement>(null);
+  const postTypeMenuPortalRef = useRef<HTMLDivElement>(null);
+  const [postTypeMenuPosition, setPostTypeMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [isPublishingInternal, setIsPublishingInternal] = useState(false);
 
   const [ideaTitle, setIdeaTitle] = useState('');
@@ -361,10 +365,18 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const targetNode = event.target as Node;
+      if (
+        postTypeMenuPortalRef.current &&
+        postTypeMenuPortalRef.current.contains(targetNode)
+      ) {
+        return;
+      }
+
+      if (menuRef.current && !menuRef.current.contains(targetNode)) {
         setShowPostTypeMenu(false);
       }
-      if (privacyMenuRef.current && !privacyMenuRef.current.contains(event.target as Node)) {
+      if (privacyMenuRef.current && !privacyMenuRef.current.contains(targetNode)) {
         setShowPrivacyMenu(false);
       }
     }
@@ -374,6 +386,37 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (!showPostTypeMenu) return;
+
+    const updatePosition = () => {
+      const btn = postTypeButtonRef.current;
+      if (!btn) return;
+
+      const rect = btn.getBoundingClientRect();
+      const menuWidth = 224;
+      const margin = 8;
+
+      const desiredLeft = rect.right - menuWidth;
+      const clampedLeft = Math.max(margin, Math.min(desiredLeft, window.innerWidth - menuWidth - margin));
+      const top = Math.max(margin, rect.top - 12);
+
+      setPostTypeMenuPosition({
+        top,
+        left: clampedLeft,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [showPostTypeMenu]);
 
   const effectivePublishing = isPublishing || isPublishingInternal;
 
@@ -1589,6 +1632,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           <div className="relative" ref={menuRef}>
             <button 
               type="button"
+              ref={postTypeButtonRef}
               onClick={() => {
                 setShowPostTypeMenu(!showPostTypeMenu);
               }}
@@ -1598,9 +1642,21 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
             >
               <Plus className="h-5 w-5" />
             </button>
-            
-            {showPostTypeMenu && (
-              <div className="absolute bottom-12 right-0 z-[9999] w-56 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800">
+          </div>
+        </div>
+
+        {showPostTypeMenu && postTypeMenuPosition && (
+          <>
+            {createPortal(
+              <div
+                ref={postTypeMenuPortalRef}
+                style={{
+                  position: 'fixed',
+                  top: postTypeMenuPosition.top,
+                  left: postTypeMenuPosition.left,
+                }}
+                className="z-[9999] w-56 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800"
+              >
                 <button
                   type="button"
                   onClick={() => handlePostTypeSelect('idea')}
@@ -1663,10 +1719,11 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   <Youtube className="mr-3 h-5 w-5 text-primary" />
                   Publicar video de YouTube
                 </button>
-              </div>
+              </div>,
+              document.body
             )}
-          </div>
-        </div>
+          </>
+        )}
         </form>
       </div>
 
