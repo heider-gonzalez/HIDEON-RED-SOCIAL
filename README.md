@@ -1,5 +1,5 @@
-Perfecto. He actualizado el archivo para que incluya el enlace directo al despliegue en Render y el contacto profesional vía WhatsApp, manteniendo el estándar de un perfil de ingeniería.
 
+HZ1 - DEV HG ;)
 HIDEON — Professional Social Network
 HIDEON es una plataforma social profesional orientada al ecosistema universitario, diseñada para potenciar la red de contactos y el desarrollo profesional de los estudiantes.
 
