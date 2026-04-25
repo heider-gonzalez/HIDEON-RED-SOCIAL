@@ -15,7 +15,7 @@ Contacto: WhatsApp: +57 301 4343180 (Solo mensajes)
 
 🔗 Despliegue Oficial
 Puedes acceder a la aplicación en producción a través del siguiente enlace:
-👉 HIDEON en Render
+👉 hsocial-app.onrender.com HIDEON en Render 
 
 🚀 Stack Tecnológico
 Arquitectura moderna enfocada en la experiencia de usuario y velocidad:
