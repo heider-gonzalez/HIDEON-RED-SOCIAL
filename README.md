@@ -1,69 +1,46 @@
-# Welcome to your Lovable project
+Perfecto. He actualizado el archivo para que incluya el enlace directo al despliegue en Render y el contacto profesional vía WhatsApp, manteniendo el estándar de un perfil de ingeniería.
 
-## Project info
+HIDEON — Professional Social Network
+HIDEON es una plataforma social profesional orientada al ecosistema universitario, diseñada para potenciar la red de contactos y el desarrollo profesional de los estudiantes.
 
-**URL**: https://lovable.dev/projects/36f0fb1d-244b-410e-8614-86a05afefe0e
+👨‍💻 Detalles del Desarrollador
+Autor: Heider González
 
-## How can I edit this code?
+Cargo: Ingeniero Informático Profesional
 
-There are several ways of editing your application.
+Contacto: WhatsApp: +57 301 4343180 (Solo mensajes)
 
-**Use Lovable**
+🔗 Despliegue Oficial
+Puedes acceder a la aplicación en producción a través del siguiente enlace:
+👉 HIDEON en Render
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/36f0fb1d-244b-410e-8614-86a05afefe0e) and start prompting.
+🚀 Stack Tecnológico
+Arquitectura moderna enfocada en la experiencia de usuario y velocidad:
 
-Changes made via Lovable will be committed automatically to this repo.
+Frontend: React con TypeScript
 
-**Use your preferred IDE**
+Herramientas de Construcción: Vite
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Diseño y Estilos: Tailwind CSS & shadcn/ui
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Infraestructura: Render (Deployment) & Cloudflare R2 (Storage)
 
-Follow these steps:
+🛠️ Configuración de Desarrollo
+Si eres colaborador o deseas realizar pruebas locales:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+Clonación:
+
+Bash
 git clone <YOUR_GIT_URL>
+Instalación:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Bash
+npm install
+Lanzamiento:
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+Bash
 npm run dev
-```
+📈 Estado del Proyecto
+HIDEON se encuentra en una fase activa de crecimiento, conectando actualmente a una comunidad de estudiantes universitarios y facilitando el intercambio de información profesional y académica.
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/36f0fb1d-244b-410e-8614-86a05afefe0e) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+© 2026 HIDEON - Barranquilla, Colombia.
