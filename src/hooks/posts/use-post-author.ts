@@ -1,6 +1,8 @@
 
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthSnapshot } from "@/lib/auth/auth-store";
+import { useUserRoles } from "@/hooks/use-user-roles";
 
 /**
  * Hook to check if the current user is the author of a post
@@ -11,29 +13,23 @@ export function usePostAuthor(
   setIsCurrentUserAuthor: (value: boolean) => void,
   setCanDeletePost: (value: boolean) => void
 ) {
+  const userRolesQuery = useUserRoles();
+
   useEffect(() => {
     const checkAuthor = async () => {
-      const { data } = await supabase.auth.getUser();
-      const uid = data?.user?.id;
+      const { user } = getAuthSnapshot();
+      const uid = user?.id;
       if (!uid) {
         setIsCurrentUserAuthor(false);
         setCanDeletePost(false);
         return;
       }
 
-      try {
-        const [{ data: isMod }, { data: isAdmin }] = await Promise.all([
-          (supabase.rpc as any)("has_role", { _role: "moderator", _user_id: uid }),
-          (supabase.rpc as any)("has_role", { _role: "admin", _user_id: uid }),
-        ]);
-
-        if (Boolean(isMod) || Boolean(isAdmin)) {
-          setIsCurrentUserAuthor(false);
-          setCanDeletePost(true);
-          return;
-        }
-      } catch {
-        // ignore role errors and fallback to owner/company logic
+      const isModeratorOrAdmin = Boolean(userRolesQuery.data?.isModeratorOrAdmin);
+      if (isModeratorOrAdmin) {
+        setIsCurrentUserAuthor(false);
+        setCanDeletePost(true);
+        return;
       }
 
       const isOwner = uid === postUserId;
@@ -72,5 +68,5 @@ export function usePostAuthor(
     };
     
     checkAuthor();
-  }, [postUserId, companyId, setIsCurrentUserAuthor, setCanDeletePost]);
+  }, [postUserId, companyId, setIsCurrentUserAuthor, setCanDeletePost, userRolesQuery.data?.isModeratorOrAdmin]);
 }

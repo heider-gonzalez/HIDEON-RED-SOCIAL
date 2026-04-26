@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getAuthSnapshot } from '@/lib/auth/auth-store';
 
 export function useSuperuser() {
   const [isSuperuser, setIsSuperuser] = useState(false);
@@ -8,7 +9,7 @@ export function useSuperuser() {
   useEffect(() => {
     const checkSuperuserStatus = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { user } = getAuthSnapshot();
         
         if (!user) {
           setIsSuperuser(false);
