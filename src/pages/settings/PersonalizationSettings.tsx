@@ -241,32 +241,6 @@ export default function PersonalizationSettings() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Banner Styles Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
-              Banners de perfil por nivel
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Personaliza el banner de tu perfil según tu nivel de corazones y actividad en la plataforma.
-              </p>
-              
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => navigate('/banners')}
-              >
-                <Palette className="h-4 w-4 mr-2" />
-                Configurar banners por nivel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
