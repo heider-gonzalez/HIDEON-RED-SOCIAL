@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-let pinnedProjectsQueryDisabled = false;
+let pinnedProjectsQueryDisabled = true;
 
 export function usePinnedProjects(userId: string | undefined) {
   const { data, isLoading, error } = useQuery({
