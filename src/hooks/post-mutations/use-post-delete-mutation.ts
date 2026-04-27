@@ -28,13 +28,28 @@ export function usePostDeleteMutation(postId: string) {
       if (fetchError) throw fetchError;
       
       // If this post doesn't belong to the current user, allow only moderator/admin
-      if (post.user_id !== currentSession.user.id) {
-        const [{ data: isMod }, { data: isAdmin }] = await Promise.all([
-          (supabase.rpc as any)("has_role", { _role: "moderator", _user_id: currentSession.user.id }),
-          (supabase.rpc as any)("has_role", { _role: "admin", _user_id: currentSession.user.id }),
-        ]);
+      if (post && (post as any).user_id !== currentSession.user.id) {
+        // Use cached roles to avoid repeated RPC calls
+        const { getCachedUserRoles } = await import("@/lib/auth/roles-cache");
+        const cached = getCachedUserRoles(currentSession.user.id);
+        
+        let isMod = false;
+        let isAdmin = false;
+        
+        if (cached) {
+          isMod = cached.isModerator;
+          isAdmin = cached.isAdmin;
+        } else {
+          // Fallback to direct RPC if no cache available
+          const [{ data: modData }, { data: adminData }] = await Promise.all([
+            (supabase.rpc as any)("has_role", { _role: "moderator", _user_id: currentSession.user.id }),
+            (supabase.rpc as any)("has_role", { _role: "admin", _user_id: currentSession.user.id }),
+          ]);
+          isMod = Boolean(modData);
+          isAdmin = Boolean(adminData);
+        }
 
-        if (!Boolean(isMod) && !Boolean(isAdmin)) {
+        if (!isMod && !isAdmin) {
           throw new Error("No tienes permiso para eliminar esta publicación");
         }
       }

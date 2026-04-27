@@ -15,12 +15,27 @@ export async function deletePost(postId: string) {
   const postRow = post as unknown as { user_id: string | null; media_url: string | null } | null;
 
   if (postRow && postRow.user_id !== user.id) {
-    const [{ data: isMod }, { data: isAdmin }] = await Promise.all([
-      (supabase.rpc as any)("has_role", { _role: "moderator", _user_id: user.id }),
-      (supabase.rpc as any)("has_role", { _role: "admin", _user_id: user.id }),
-    ]);
+    // Use cached roles to avoid repeated RPC calls
+    const { getCachedUserRoles } = await import("@/lib/auth/roles-cache");
+    const cached = getCachedUserRoles(user.id);
+    
+    let isMod = false;
+    let isAdmin = false;
+    
+    if (cached) {
+      isMod = cached.isModerator;
+      isAdmin = cached.isAdmin;
+    } else {
+      // Fallback to direct RPC if no cache available
+      const [{ data: modData }, { data: adminData }] = await Promise.all([
+        (supabase.rpc as any)("has_role", { _role: "moderator", _user_id: user.id }),
+        (supabase.rpc as any)("has_role", { _role: "admin", _user_id: user.id }),
+      ]);
+      isMod = Boolean(modData);
+      isAdmin = Boolean(adminData);
+    }
 
-    if (!Boolean(isMod) && !Boolean(isAdmin)) {
+    if (!isMod && !isAdmin) {
       throw new Error('No tienes permiso para eliminar esta publicación');
     }
   }

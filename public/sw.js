@@ -139,44 +139,49 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle images with cache-first strategy
+  // Handle images with network-first strategy for dynamic content
   if (request.destination === 'image') {
-    event.respondWith(cacheFirstStrategy(request, IMAGES_CACHE));
+    event.respondWith(networkFirstStrategy(request, IMAGES_CACHE));
     return;
   }
 
-  // Handle static assets
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      return fetch(request).then((response) => {
-        // Cache successful responses
-        if (response.ok && response.type === 'basic') {
-          const responseClone = response.clone();
-          caches.open(STATIC_CACHE).then((cache) => {
-            cache.put(request, responseClone);
-          });
-        }
-        return response;
-      }).catch(() => {
-        // Return offline fallback for navigation
-        if (request.mode === 'navigate') {
-          return caches.match('/').then((response) => {
-            return response || new Response(getOfflinePage(), {
-              headers: { 'Content-Type': 'text/html' }
-            });
-          });
-        }
-        return new Response('Offline', { status: 503 });
-      });
-    })
-  );
+  // Handle static assets with network-first strategy for dynamic content
+  event.respondWith(networkFirstStrategy(request, STATIC_CACHE));
 });
 
-// Cache first strategy for images
+// Network first strategy for dynamic content
+async function networkFirstStrategy(request, cacheName) {
+  try {
+    // Try network first
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      // Cache successful network response
+      const cache = await caches.open(cacheName);
+      cache.put(request, networkResponse.clone());
+      return networkResponse;
+    }
+  } catch (error) {
+    console.log('🌐 Network failed, trying cache for:', request.url);
+  }
+
+  // If network fails, try cache
+  const cachedResponse = await caches.match(request);
+  if (cachedResponse) {
+    console.log('📦 Serving from cache:', request.url);
+    return cachedResponse;
+  }
+
+  // If both fail, return appropriate fallback
+  if (request.mode === 'navigate') {
+    return new Response(getOfflinePage(), {
+      headers: { 'Content-Type': 'text/html' }
+    });
+  }
+  
+  return new Response('Offline', { status: 503 });
+}
+
+// Cache first strategy for static assets (kept for reference)
 async function cacheFirstStrategy(request, cacheName) {
   const cachedResponse = await caches.match(request);
   if (cachedResponse) {
