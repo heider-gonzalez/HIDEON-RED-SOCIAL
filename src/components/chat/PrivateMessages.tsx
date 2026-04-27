@@ -1426,7 +1426,7 @@ export function PrivateMessages() {
                     )}
 
                     {/* Typing Indicator */}
-                    {false && ( // typingUsers.size > 0 && (
+                    {typingUsers.size > 0 && (
                       <div className="flex gap-3">
                         <Avatar className="h-8 w-8 flex-shrink-0">
                           <AvatarFallback>

@@ -30,22 +30,22 @@ import { useToast } from "@/hooks/use-toast";
 import Index from "./pages/Index";
 import Auth from "@/pages/Auth";
 
-// Essential pages lazy loaded
-const Friends = React.lazy(() => import("@/pages/Friends"));
-const FollowersPage = React.lazy(() => import("@/pages/FollowersPage"));
-const Notifications = React.lazy(() => import("@/pages/Notifications"));
-const Profile = React.lazy(() => import("@/pages/Profile"));
-const Projects = React.lazy(() => import("@/pages/Projects"));
-const Teams = React.lazy(() => import("@/pages/Teams"));
-const Ideas = React.lazy(() => import("@/pages/Ideas"));
-const Events = React.lazy(() => import("@/pages/Events"));
-const Messages = React.lazy(() => import("@/pages/Messages"));
-const GlobalChatPage = React.lazy(() => import("@/pages/GlobalChat"));
-const PasswordReset = React.lazy(() => import("@/pages/PasswordReset"));
-const Explore = React.lazy(() => import("@/pages/Explore"));
-const Leaderboard = React.lazy(() => import("@/pages/Leaderboard"));
-const Saved = React.lazy(() => import("@/pages/Saved"));
-const Reels = React.lazy(() => import("@/pages/Reels"));
+// Essential pages lazy loaded with chunk names for better splitting
+const Friends = React.lazy(() => import(/* webpackChunkName: "friends" */ "@/pages/Friends"));
+const FollowersPage = React.lazy(() => import(/* webpackChunkName: "followers" */ "@/pages/FollowersPage"));
+const Notifications = React.lazy(() => import(/* webpackChunkName: "notifications" */ "@/pages/Notifications"));
+const Profile = React.lazy(() => import(/* webpackChunkName: "profile" */ "@/pages/Profile"));
+const Projects = React.lazy(() => import(/* webpackChunkName: "projects" */ "@/pages/Projects"));
+const Teams = React.lazy(() => import(/* webpackChunkName: "teams" */ "@/pages/Teams"));
+const Ideas = React.lazy(() => import(/* webpackChunkName: "ideas" */ "@/pages/Ideas"));
+const Events = React.lazy(() => import(/* webpackChunkName: "events" */ "@/pages/Events"));
+const Messages = React.lazy(() => import(/* webpackChunkName: "messages" */ "@/pages/Messages"));
+const GlobalChatPage = React.lazy(() => import(/* webpackChunkName: "global-chat" */ "@/pages/GlobalChat"));
+const PasswordReset = React.lazy(() => import(/* webpackChunkName: "auth" */ "@/pages/PasswordReset"));
+const Explore = React.lazy(() => import(/* webpackChunkName: "explore" */ "@/pages/Explore"));
+const Leaderboard = React.lazy(() => import(/* webpackChunkName: "leaderboard" */ "@/pages/Leaderboard"));
+const Saved = React.lazy(() => import(/* webpackChunkName: "saved" */ "@/pages/Saved"));
+const Reels = React.lazy(() => import(/* webpackChunkName: "reels" */ "@/pages/Reels"));
 // Opportunities removed
 const Groups = React.lazy(() => import("@/pages/Groups"));
 const GroupDetail = React.lazy(() => import("@/pages/GroupDetail"));

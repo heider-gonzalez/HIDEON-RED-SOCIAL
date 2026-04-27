@@ -32,7 +32,7 @@ type SidebarItem = {
   dot?: boolean;
 };
 
-export function LeftSidebar({}: LeftSidebarProps) {
+export function LeftSidebar(): JSX.Element {
   const { handleHomeClick } = useNavigation();
   const { data, isLoading: groupsLoading } = useGroupsOverview({ publicLimit: 12 });
 
