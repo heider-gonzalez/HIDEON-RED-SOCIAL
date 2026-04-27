@@ -75,6 +75,7 @@ const queryClient = new QueryClient({
       staleTime: 1000 * 60 * 10, // 10 minutes - increased for better caching
       retry: 1,
       refetchOnWindowFocus: false, // Reduce unnecessary network calls
+      refetchOnMount: false,
     },
   },
 });

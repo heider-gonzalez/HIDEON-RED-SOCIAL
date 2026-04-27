@@ -6,6 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 let globalSubscriptionsActive = false;
 let subscriptionCount = 0;
 
+let globalRealtimeFailureCount = 0;
+let globalRealtimeBlockedUntilMs = 0;
+let globalRealtimeNextDelayMs = 2000;
+
 export function useRealtimeFeedSimple(userId?: string) {
   const queryClient = useQueryClient();
   const isSubscribedRef = useRef(false);
@@ -20,6 +24,11 @@ export function useRealtimeFeedSimple(userId?: string) {
       return;
     }
 
+    const now = Date.now();
+    if (globalRealtimeBlockedUntilMs > now) {
+      return;
+    }
+
     globalSubscriptionsActive = true;
     isSubscribedRef.current = true;
     subscriptionCount++;
@@ -28,7 +37,7 @@ export function useRealtimeFeedSimple(userId?: string) {
     let reactionsChannel: any = null;
     let commentsChannel: any = null;
     let reconnectAttempts = 0;
-    const maxReconnectAttempts = 2; // Reduced from 3 to 2
+    const maxReconnectAttempts = 2; // Quick retries before circuit breaker
     let cancelled = false;
 
     const safeRemoveChannel = (channel: any) => {
@@ -43,6 +52,7 @@ export function useRealtimeFeedSimple(userId?: string) {
     const subscribeChannels = async () => {
       try {
         if (cancelled) return;
+
         // Clean up existing channels first
         safeRemoveChannel(postsChannel);
         safeRemoveChannel(reactionsChannel);
@@ -192,28 +202,55 @@ export function useRealtimeFeedSimple(userId?: string) {
         const successfulSubscriptions = [postsStatus, reactionsStatus, commentsStatus]
           .filter(status => status === 'SUBSCRIBED').length;
 
-        if (successfulSubscriptions >= 1) { // Accept if at least 1 subscription works
-          reconnectAttempts = 0; // Reset on successful connection
-        } else if (reconnectAttempts < maxReconnectAttempts) {
+        if (successfulSubscriptions >= 1) {
+          reconnectAttempts = 0;
+          globalRealtimeFailureCount = 0;
+          globalRealtimeNextDelayMs = 2000;
+          globalRealtimeBlockedUntilMs = 0;
+          return;
+        }
+
+        globalRealtimeFailureCount++;
+
+        if (reconnectAttempts < maxReconnectAttempts) {
           reconnectAttempts++;
           if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
           reconnectTimeoutRef.current = setTimeout(() => {
             if (cancelled) return;
             subscribeChannels();
-          }, 3000 * reconnectAttempts);
-        } else {
-          console.error(' Max reconnection attempts reached - using fallback polling');
-          // Fallback to periodic cache invalidation
-          if (!fallbackIntervalRef.current) {
-            fallbackIntervalRef.current = setInterval(() => {
-              if (cancelled) return;
-              queryClient.invalidateQueries({ queryKey: ["posts"] });
-            }, 60000); // Every minute as fallback
-          }
+          }, 2500 * reconnectAttempts);
+          return;
+        }
+
+        if (globalRealtimeFailureCount >= 3) {
+          const delay = Math.min(5 * 60_000, Math.max(2000, globalRealtimeNextDelayMs));
+          globalRealtimeBlockedUntilMs = Date.now() + delay;
+          globalRealtimeNextDelayMs = Math.min(5 * 60_000, delay * 2);
+          if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (cancelled) return;
+            subscribeChannels();
+          }, delay);
+        }
+
+        // Fallback polling while blocked
+        if (!fallbackIntervalRef.current) {
+          fallbackIntervalRef.current = setInterval(() => {
+            if (cancelled) return;
+            queryClient.invalidateQueries({ queryKey: ["posts"] });
+          }, 60_000);
         }
 
       } catch (error) {
         console.error(' Critical error setting up realtime subscriptions:', error);
+
+        globalRealtimeFailureCount++;
+
+        if (globalRealtimeFailureCount >= 3) {
+          const delay = Math.min(5 * 60_000, Math.max(2000, globalRealtimeNextDelayMs));
+          globalRealtimeBlockedUntilMs = Date.now() + delay;
+          globalRealtimeNextDelayMs = Math.min(5 * 60_000, delay * 2);
+        }
 
         // Fallback polling on critical error
         if (!fallbackIntervalRef.current) {

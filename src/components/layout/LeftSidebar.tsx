@@ -16,8 +16,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useNavigation } from "@/components/navigation/use-navigation";
 import { cn } from "@/lib/utils";
-import { Fragment, useEffect, useReducer } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { Fragment, useMemo } from "react";
+import { useGroupsOverview } from "@/hooks/groups/use-groups-overview";
 
 interface LeftSidebarProps {
   currentUserId: string | null;
@@ -32,39 +32,17 @@ type SidebarItem = {
   dot?: boolean;
 };
 
-type LeftSidebarState = {
-  myGroups: any[];
-  recommendedGroups: any[];
-  groupsLoading: boolean;
-};
-
-type LeftSidebarAction =
-  | { type: 'SET_MY_GROUPS'; payload: any[] }
-  | { type: 'SET_RECOMMENDED_GROUPS'; payload: any[] }
-  | { type: 'SET_GROUPS_LOADING'; payload: boolean };
-
-function leftSidebarReducer(state: LeftSidebarState, action: LeftSidebarAction): LeftSidebarState {
-  switch (action.type) {
-    case 'SET_MY_GROUPS':
-      return { ...state, myGroups: action.payload };
-    case 'SET_RECOMMENDED_GROUPS':
-      return { ...state, recommendedGroups: action.payload };
-    case 'SET_GROUPS_LOADING':
-      return { ...state, groupsLoading: action.payload };
-    default:
-      return state;
-  }
-}
-
-export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
+export function LeftSidebar({}: LeftSidebarProps) {
   const { handleHomeClick } = useNavigation();
-  const [state, dispatch] = useReducer(leftSidebarReducer, {
-    myGroups: [],
-    recommendedGroups: [],
-    groupsLoading: false,
-  });
+  const { data, isLoading: groupsLoading } = useGroupsOverview({ publicLimit: 12 });
 
-  const { myGroups, recommendedGroups, groupsLoading } = state;
+  const { myGroups, recommendedGroups } = useMemo(() => {
+    const rows = (data?.groups ?? []) as any[];
+    const myIds = new Set((data?.myGroupIds ?? []).map((x) => String(x)));
+    const mine = rows.filter((g) => myIds.has(String((g as any)?.id))).slice(0, 6);
+    const recs = rows.filter((g) => !myIds.has(String((g as any)?.id))).slice(0, 6);
+    return { myGroups: mine, recommendedGroups: recs };
+  }, [data]);
 
   const menuItems: SidebarItem[] = [
     { icon: Home, label: "Feed", path: "/home", onClick: handleHomeClick },
@@ -83,50 +61,6 @@ export function LeftSidebar({ currentUserId }: LeftSidebarProps) {
   const bottomItems: SidebarItem[] = [
     { icon: HelpCircle, label: "Ayuda", path: "/help" },
   ];
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadGroups = async () => {
-      dispatch({ type: 'SET_GROUPS_LOADING', payload: true });
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        const userId = userData?.user?.id;
-
-        const [mine, publicGroups] = await Promise.all([
-          userId
-            ? (supabase as any).rpc("get_user_groups", { user_id_param: userId })
-            : Promise.resolve({ data: [], error: null } as any),
-          (supabase as any).rpc("get_public_groups", { limit_count: 12 }),
-        ]);
-
-        if (mine?.error) throw mine.error;
-        if (publicGroups?.error) throw publicGroups.error;
-        if (cancelled) return;
-
-        const mineRows = (mine?.data ?? []) as any[];
-        const publicRows = (publicGroups?.data ?? []) as any[];
-        const mineIds = new Set(mineRows.flatMap((g) => String(g?.id) ? [String(g?.id)] : []));
-        const recs = publicRows.filter((g) => !mineIds.has(String(g?.id))).slice(0, 6);
-        
-        // Consolidate state updates
-        dispatch({ type: 'SET_MY_GROUPS', payload: mineRows.slice(0, 6) });
-        dispatch({ type: 'SET_RECOMMENDED_GROUPS', payload: recs });
-      } catch {
-        if (cancelled) return;
-        // Consolidate state updates
-        dispatch({ type: 'SET_MY_GROUPS', payload: [] });
-        dispatch({ type: 'SET_RECOMMENDED_GROUPS', payload: [] });
-      } finally {
-        if (!cancelled) dispatch({ type: 'SET_GROUPS_LOADING', payload: false });
-      }
-    };
-
-    loadGroups();
-    return () => {
-      cancelled = true;
-    };
-  }, [currentUserId]);
 
   return (
     <aside className="h-full w-[300px] bg-background/70 backdrop-blur flex flex-col">

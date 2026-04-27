@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getAuthSnapshot } from "@/lib/auth/auth-store";
+import { useAuth } from "@/providers/AuthProvider";
+import { getCachedUserRoles, setCachedUserRoles } from "@/lib/auth/roles-cache";
 
 type UserRolesResult = {
   userId: string | null;
@@ -20,33 +21,39 @@ async function hasRole(userId: string, role: "admin" | "moderator") {
 }
 
 export function useUserRoles() {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+
   return useQuery<UserRolesResult>({
-    queryKey: ["user-roles"],
+    queryKey: ["user-roles", userId],
+    enabled: Boolean(userId),
     queryFn: async () => {
-      const { user } = getAuthSnapshot();
-      const userId = user?.id ?? null;
-      if (!userId) {
-        return {
-          userId: null,
-          isAdmin: false,
-          isModerator: false,
-          isModeratorOrAdmin: false,
-        };
-      }
+      if (!userId) throw new Error("Missing user");
+
+      const cached = getCachedUserRoles(userId);
+      if (cached) return cached;
 
       const [isModerator, isAdmin] = await Promise.all([
         hasRole(userId, "moderator"),
         hasRole(userId, "admin"),
       ]);
 
-      return {
+      const result = {
         userId,
         isAdmin,
         isModerator,
         isModeratorOrAdmin: isModerator || isAdmin,
       };
+
+      setCachedUserRoles(userId, {
+        isAdmin: result.isAdmin,
+        isModerator: result.isModerator,
+        isModeratorOrAdmin: result.isModeratorOrAdmin,
+      });
+
+      return result;
     },
-    staleTime: 10 * 60_000,
+    staleTime: Infinity,
     gcTime: 30 * 60_000,
     retry: 0,
   });

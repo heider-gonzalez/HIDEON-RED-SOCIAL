@@ -5,20 +5,28 @@ import { supabase } from "@/integrations/supabase/client";
 // Global state to prevent multiple interaction subscriptions
 let interactionSubscriptionsActive = false;
 
+let globalInteractionsFailureCount = 0;
+let globalInteractionsBlockedUntilMs = 0;
+let globalInteractionsNextDelayMs = 2000;
+
 export function useRealtimeInteractions(userId?: string) {
   const queryClient = useQueryClient();
   const channelsRef = useRef<any[]>([]);
   const isSubscribedRef = useRef(false);
   const throttleTimeoutRef = useRef<NodeJS.Timeout>();
+  const retryTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     // Prevent multiple subscriptions and ensure we have a userId
     if (!userId || interactionSubscriptionsActive || isSubscribedRef.current) {
-      console.log('⚡ Skipping interaction subscriptions - already active or no userId');
       return;
     }
 
-    console.log('⚡ Setting up realtime interactions...');
+    const now = Date.now();
+    if (globalInteractionsBlockedUntilMs > now) {
+      return;
+    }
+
     interactionSubscriptionsActive = true;
     isSubscribedRef.current = true;
 
@@ -27,6 +35,22 @@ export function useRealtimeInteractions(userId?: string) {
       supabase.removeChannel(channel);
     });
     channelsRef.current = [];
+
+    const scheduleRetry = () => {
+      globalInteractionsFailureCount++;
+      if (globalInteractionsFailureCount < 3) {
+        const delay = Math.min(30_000, 1500 * Math.pow(2, globalInteractionsFailureCount - 1));
+        retryTimeoutRef.current = setTimeout(() => {
+          interactionSubscriptionsActive = false;
+          isSubscribedRef.current = false;
+        }, delay);
+        return;
+      }
+
+      const delay = Math.min(5 * 60_000, Math.max(2000, globalInteractionsNextDelayMs));
+      globalInteractionsBlockedUntilMs = Date.now() + delay;
+      globalInteractionsNextDelayMs = Math.min(5 * 60_000, delay * 2);
+    };
 
     try {
       // Create reactions channel with throttling
@@ -40,8 +64,10 @@ export function useRealtimeInteractions(userId?: string) {
             table: 'reactions'
           },
           (payload) => {
-            console.log('❤️ Reaction change detected:', payload.new);
-            
+            if (import.meta.env.DEV) {
+              console.debug(' Reaction change detected:', payload.new);
+            }
+
             // Throttle updates to prevent excessive invalidations - increased for better performance
             clearTimeout(throttleTimeoutRef.current);
             throttleTimeoutRef.current = setTimeout(() => {
@@ -50,9 +76,13 @@ export function useRealtimeInteractions(userId?: string) {
           }
         )
         .subscribe((status) => {
-          console.log('❤️ Reactions subscription status:', status);
           if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.error('❌ Reactions subscription failed:', status);
+            scheduleRetry();
+          }
+          if (status === 'SUBSCRIBED') {
+            globalInteractionsFailureCount = 0;
+            globalInteractionsBlockedUntilMs = 0;
+            globalInteractionsNextDelayMs = 2000;
           }
         });
 
@@ -66,40 +96,47 @@ export function useRealtimeInteractions(userId?: string) {
             schema: 'public',
             table: 'comments'
           },
-            (payload) => {
-              console.log('💬 Comment change detected:', payload.new);
-              
-              if (payload.new && typeof payload.new === 'object' && 'post_id' in payload.new) {
-                // Throttle updates and target specific post comments - increased for better performance
-                clearTimeout(throttleTimeoutRef.current);
-                throttleTimeoutRef.current = setTimeout(() => {
-                  queryClient.invalidateQueries({ 
-                    queryKey: ["comments", (payload.new as any).post_id] 
-                  });
-                  queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
-                }, 5000); // 5 second throttle for better performance
-              }
+          (payload) => {
+            if (import.meta.env.DEV) {
+              console.debug(' Comment change detected:', payload.new);
             }
+
+            if (payload.new && typeof payload.new === 'object' && 'post_id' in payload.new) {
+              // Throttle updates and target specific post comments - increased for better performance
+              clearTimeout(throttleTimeoutRef.current);
+              throttleTimeoutRef.current = setTimeout(() => {
+                queryClient.invalidateQueries({ 
+                  queryKey: ["comments", (payload.new as any).post_id] 
+                });
+                queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
+              }, 5000); // 5 second throttle for better performance
+            }
+          }
         )
         .subscribe((status) => {
-          console.log('💬 Comments subscription status:', status);
           if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.error('❌ Comments subscription failed:', status);
+            scheduleRetry();
+          }
+          if (status === 'SUBSCRIBED') {
+            globalInteractionsFailureCount = 0;
+            globalInteractionsBlockedUntilMs = 0;
+            globalInteractionsNextDelayMs = 2000;
           }
         });
 
       channelsRef.current = [reactionsChannel, commentsChannel];
 
     } catch (error) {
-      console.error('❌ Error setting up realtime interactions:', error);
+      scheduleRetry();
     }
 
     // Cleanup on unmount
     return () => {
-      console.log('⚡ Cleaning up realtime interactions...');
-      
       if (throttleTimeoutRef.current) {
         clearTimeout(throttleTimeoutRef.current);
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
       }
       
       channelsRef.current.forEach(channel => {

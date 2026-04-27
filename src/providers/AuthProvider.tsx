@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { performanceMonitor } from '@/utils/performance-monitor';
 import { useToast } from '@/hooks/use-toast';
 import { setAuthSnapshot } from '@/lib/auth/auth-store';
+import { clearCachedUserRoles } from '@/lib/auth/roles-cache';
 
 function clearSupabaseAuthStorage() {
   try {
@@ -131,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (event === 'SIGNED_OUT') {
           try {
             const prevUserId = userIdRef.current;
+            clearCachedUserRoles(prevUserId ?? undefined);
             if (prevUserId) {
               await (supabase as any)
                 .from('profiles')

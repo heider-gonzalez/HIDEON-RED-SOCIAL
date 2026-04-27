@@ -19,7 +19,6 @@ import { SavePostMenuItem } from "./menu-items/SavePostMenuItem";
 import { CopyLinkMenuItem } from "./menu-items/CopyLinkMenuItem";
 import { ReportDialog } from "./ReportDialog";
 import { useSuperuser } from "@/hooks/use-superuser";
-import { supabase } from "@/integrations/supabase/client";
 
 interface PostOptionsMenuProps {
   postId: string;
@@ -48,9 +47,11 @@ export function PostOptionsMenu({
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!mounted) return;
-      setCurrentUserId(data.user?.id ?? null);
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.auth.getUser().then(({ data }) => {
+        if (!mounted) return;
+        setCurrentUserId(data.user?.id ?? null);
+      });
     });
     return () => {
       mounted = false;

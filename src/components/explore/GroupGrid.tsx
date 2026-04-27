@@ -1,47 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useGroupsOverview } from "@/hooks/groups/use-groups-overview";
 
 export function GroupGrid({ searchQuery }: { searchQuery: string }) {
   const navigate = useNavigate();
 
-  const { data: groups, isLoading } = useQuery({
-    queryKey: ["explore-groups", searchQuery],
-    queryFn: async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      const [publicGroups, userGroups] = await Promise.all([
-        supabase.rpc("get_public_groups", {
-          limit_count: 50,
-        }),
-        user?.id
-          ? supabase.rpc("get_user_groups", {
-              user_id_param: user.id,
-            })
-          : Promise.resolve({ data: [], error: null }),
-      ]);
-
-      if (publicGroups.error) throw publicGroups.error;
-      if (userGroups.error) throw userGroups.error;
-
-      const merged: any[] = [...(publicGroups.data ?? []), ...(userGroups.data ?? [])];
-      const byId = new Map<string, any>();
-      for (const g of merged) {
-        if (!g?.id) continue;
-        byId.set(String(g.id), g);
-      }
-      return Array.from(byId.values());
-    },
-  });
+  const { data, isLoading } = useGroupsOverview({ publicLimit: 50 });
+  const groups = data?.groups ?? [];
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
-  const filteredGroups = (groups ?? []).filter((g) => {
+  const filteredGroups = groups.filter((g) => {
     if (!normalizedQuery) return true;
     return (
       g.name?.toLowerCase().includes(normalizedQuery) ||

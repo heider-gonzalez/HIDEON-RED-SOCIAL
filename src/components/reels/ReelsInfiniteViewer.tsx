@@ -162,11 +162,12 @@ function ReelsInfiniteViewerComponent({
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    containerRef.current?.addEventListener('wheel', handleWheel, { passive: false });
+    const el = containerRef.current;
+    el?.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      containerRef.current?.removeEventListener('wheel', handleWheel);
+      el?.removeEventListener('wheel', handleWheel);
     };
   }, [activeIndex, posts.length]);
 

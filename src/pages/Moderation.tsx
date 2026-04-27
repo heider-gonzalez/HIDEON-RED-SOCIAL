@@ -15,6 +15,7 @@ import PostView from "@/components/moderation/PostView";
 import EmptyState from "@/components/moderation/EmptyState";
 import LoadingState from "@/components/moderation/LoadingState";
 import RestrictedAccess from "@/components/moderation/RestrictedAccess";
+import { useUserRoles } from "@/hooks/use-user-roles";
 
 const ModerationPage = () => {
   const [reportedPosts, setReportedPosts] = useState<ReportedPost[]>([]);
@@ -24,6 +25,7 @@ const ModerationPage = () => {
   const [isModerator, setIsModerator] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { data: roles, isLoading: rolesLoading } = useUserRoles();
 
   const checkModeratorStatus = async () => {
     const { data } = await supabase.auth.getUser();
@@ -32,28 +34,13 @@ const ModerationPage = () => {
       return false;
     }
 
-    try {
-      const { data: isMod, error: modError } = await (supabase.rpc as any)('has_role', {
-        _role: 'moderator',
-        _user_id: data.user.id
-      });
-      if (!modError && isMod) return true;
-
-      const { data: isAdmin, error: adminError } = await (supabase.rpc as any)('has_role', {
-        _role: 'admin',
-        _user_id: data.user.id
-      });
-      if (!adminError && isAdmin) return true;
-
-      return false;
-    } catch {
-      return false;
-    }
+    return Boolean(roles?.isModeratorOrAdmin);
   };
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        if (rolesLoading) return;
         const isAllowed = await checkModeratorStatus();
         setIsModerator(isAllowed);
         
@@ -82,7 +69,7 @@ const ModerationPage = () => {
     };
     
     loadData();
-  }, [navigate, toast]);
+  }, [navigate, toast, rolesLoading, roles?.isModeratorOrAdmin]);
 
   const handleSelectPost = async (postId: string) => {
     try {

@@ -6,6 +6,43 @@ interface ViewportTrackingOptions {
   minDuration?: number; // Tiempo mínimo en milisegundos para contar como view
 }
 
+const viewedPostsSessionKey = 'hsocial:viewed_posts';
+
+function loadViewedPostsFromSession(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = sessionStorage.getItem(viewedPostsSessionKey);
+    if (!raw) return new Set();
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.map((x) => String(x)));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveViewedPostsToSession(viewed: Set<string>) {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(viewedPostsSessionKey, JSON.stringify(Array.from(viewed)));
+  } catch {
+    // ignore
+  }
+}
+
+const viewedPostsMemory = loadViewedPostsFromSession();
+
+function hasViewedPost(postId: string): boolean {
+  if (viewedPostsMemory.has(postId)) return true;
+  return false;
+}
+
+function markViewedPost(postId: string) {
+  viewedPostsMemory.add(postId);
+  saveViewedPostsToSession(viewedPostsMemory);
+}
+
 /**
  * Hook para trackear tiempo que el usuario pasa viendo cada post
  * Similar al sistema de TikTok para medir engagement real
@@ -15,49 +52,66 @@ export function useViewportTracking(
   options: ViewportTrackingOptions = {}
 ) {
   const { threshold = 0.5, minDuration = 1000 } = options;
-  
+
   const elementRef = useRef<HTMLDivElement>(null);
-  const startTimeRef = useRef<number | null>(null);
+  const viewTimeoutRef = useRef<number | null>(null);
   const isVisibleRef = useRef(false);
-  const totalViewTimeRef = useRef(0);
+  const hasCountedRef = useRef(false);
 
   const trackView = useCallback(async () => {
-    if (totalViewTimeRef.current >= minDuration) {
-      try {
-        await personalizedFeedAlgorithm.trackInteraction(
-          postId,
-          'view',
-          Math.round(totalViewTimeRef.current / 1000) // Convert to seconds
-        );
-        totalViewTimeRef.current = 0;
-      } catch (error) {
-        console.error('Error tracking view:', error);
-      }
+    if (hasCountedRef.current) return;
+    if (hasViewedPost(postId)) {
+      hasCountedRef.current = true;
+      return;
     }
-  }, [postId, minDuration]);
+
+    try {
+      await personalizedFeedAlgorithm.trackInteraction(postId, 'view');
+      markViewedPost(postId);
+      hasCountedRef.current = true;
+    } catch (error) {
+      console.error('Error tracking view:', error);
+    }
+  }, [postId]);
 
   useEffect(() => {
     const element = elementRef.current;
     if (!element) return;
 
+    if (hasViewedPost(postId)) {
+      hasCountedRef.current = true;
+    }
+
+    const clearTimer = () => {
+      if (viewTimeoutRef.current) {
+        window.clearTimeout(viewTimeoutRef.current);
+        viewTimeoutRef.current = null;
+      }
+    };
+
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        
+
         if (entry.isIntersecting && entry.intersectionRatio >= threshold) {
           // Post became visible
           if (!isVisibleRef.current) {
-            startTimeRef.current = Date.now();
             isVisibleRef.current = true;
+
+            clearTimer();
+            if (!hasCountedRef.current) {
+              viewTimeoutRef.current = window.setTimeout(() => {
+                if (isVisibleRef.current && !hasCountedRef.current) {
+                  void trackView();
+                }
+              }, minDuration);
+            }
           }
         } else {
           // Post became hidden
-          if (isVisibleRef.current && startTimeRef.current) {
-            const viewTime = Date.now() - startTimeRef.current;
-            totalViewTimeRef.current += viewTime;
+          if (isVisibleRef.current) {
             isVisibleRef.current = false;
-            startTimeRef.current = null;
-            trackView();
+            clearTimer();
           }
         }
       },
@@ -71,26 +125,25 @@ export function useViewportTracking(
 
     // Cleanup function - track final view time
     return () => {
-      if (isVisibleRef.current && startTimeRef.current) {
-        const viewTime = Date.now() - startTimeRef.current;
-        totalViewTimeRef.current += viewTime;
-      }
-      
-      observer.unobserve(element);
-      trackView();
+      isVisibleRef.current = false;
+      clearTimer();
+      observer.disconnect();
     };
-  }, [threshold, trackView]);
+  }, [threshold, trackView, postId, minDuration]);
 
   // Track view when component unmounts or postId changes
   useEffect(() => {
     return () => {
-      trackView();
+      if (viewTimeoutRef.current) {
+        window.clearTimeout(viewTimeoutRef.current);
+        viewTimeoutRef.current = null;
+      }
     };
   }, [postId, trackView]);
 
   return {
     ref: elementRef,
-    currentViewTime: totalViewTimeRef.current
+    currentViewTime: 0
   };
 }
 
