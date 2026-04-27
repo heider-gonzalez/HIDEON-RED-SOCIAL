@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Play, Volume2, VolumeX, Heart, MessageCircle, Share2 } from "lucide-react";
+import { Eye, Play, Volume2, VolumeX, MessageCircle, Share2 } from "lucide-react";
 import { Post } from "@/types/post";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
-import { usePostReactions } from "@/hooks/posts/use-post-reactions";
 import { FollowButton } from "@/components/FollowButton";
 import { useBatchFollowingStatus } from "@/hooks/use-batch-following-status";
 import { useDoubleClick } from "@/hooks/use-double-click";
@@ -14,9 +13,14 @@ import { useVolumeControl } from "@/hooks/reels/use-volume-control";
 import { VolumeSlider } from "./VolumeSlider";
 import { MentionsText } from "@/components/post/MentionsText";
 import { getPostVideoUrl } from "@/lib/hybrid-url";
-import { useReelComments } from "@/hooks/reels/use-reel-comments";
-import { Comments } from "@/components/post/Comments";
+import { CommentForm } from "@/components/feed/CommentForm";
+import { CommentList } from "@/components/feed/CommentList";
+import { useAuth } from "@/providers/AuthProvider";
+import { usePostComments } from "@/hooks/usePostComments";
+import { LikeButton } from "@/components/feed/LikeButton";
+import { useUnifiedReactions } from "@/hooks/use-unified-reactions";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { ShareModal } from "@/components/post/actions/ShareModal";
 
 interface OptimizedReelItemProps {
   post: Post;
@@ -43,29 +47,16 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   const [isReady, setIsReady] = useState(false);
   const [currentSrc, setCurrentSrc] = useState(() => getPostVideoUrl(post) || '');
   const [isVertical, setIsVertical] = useState(true);
+  const [showComments, setShowComments] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<number | null>(null);
 
-  const { userReaction, onReaction: handleReaction } = usePostReactions(post.id);
+  const { user } = useAuth();
+  const { addComment } = usePostComments(post.id);
+  const { reactionCount } = useUnifiedReactions(post.id);
 
-  const {
-    comments,
-    newComment,
-    setNewComment,
-    replyTo,
-    commentImage,
-    setCommentImage,
-    showComments,
-    setShowComments,
-    handleSubmitComment,
-    handleCommentLike,
-    handleReply,
-    loadReplies,
-    handleDeleteComment,
-    handleCancelReply,
-  } = useReelComments(post.id);
-  
   // Control de volumen mejorado
   const { volume, isMuted, showSlider, toggleMute, changeVolume, showSliderTemporarily } = useVolumeControl(videoRef);
 
@@ -155,8 +146,17 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   // Reset error cuando cambia el post
   useEffect(() => {
     setHasError(false);
+  }, [post.media_url, post.media_urls, post.media_type]);
+
+  useEffect(() => {
     setIsReady(false);
+  }, [post.media_url, post.media_urls, post.media_type]);
+
+  useEffect(() => {
     setCurrentSrc(getPostVideoUrl(post) || '');
+  }, [post.media_url, post.media_urls, post.media_type]);
+
+  useEffect(() => {
     setIsVertical(true);
   }, [post.media_url, post.media_urls, post.media_type]);
 
@@ -212,7 +212,6 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   );
 
   const handleLike = () => {
-    handleReaction(post.id, 'love');
     onReaction(post.id, 'love');
   };
 
@@ -221,7 +220,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-screen bg-black flex items-center justify-center snap-start overflow-hidden"
+      className="relative w-full h-full bg-gray-950 flex items-center justify-center snap-start overflow-hidden"
     >
       {/* Video layer */}
       <div className="absolute inset-0 z-0">
@@ -248,7 +247,11 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
           <video
             ref={videoRef}
             src={currentSrc || undefined}
-            className="w-full h-full object-contain bg-black"
+            className={
+              isVertical
+                ? "w-full h-full object-cover bg-gray-950"
+                : "w-full h-full object-contain bg-gray-950"
+            }
             controls={false}
             loop
             playsInline
@@ -274,7 +277,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
       </div>
 
       {!hasError && !isReady && currentSrc && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-950/40 z-10">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/30 border-t-white" />
         </div>
       )}
@@ -307,7 +310,14 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
         </div>
 
         {/* Right actions */}
-        <div className="absolute right-4 bottom-20 flex flex-col gap-4 items-center pointer-events-auto z-20">
+        <div className="absolute right-4 bottom-20 mb-[80px] flex flex-col gap-4 items-center pointer-events-auto z-30">
+          <div className="flex flex-col items-center">
+            <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white border border-white/20 flex items-center justify-center">
+              <Eye className="h-6 w-6" />
+            </div>
+            <span className="text-white text-xs mt-1 font-medium">{Number(post.views_count || 0)}</span>
+          </div>
+
           <Button
             variant="ghost"
             size="icon"
@@ -323,19 +333,13 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
           </Button>
 
           <div className="flex flex-col items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLike}
-              className={`h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/20 ${
-                userReaction === 'love'
-                  ? 'text-red-500'
-                  : ''
-              }`}
-            >
-              <Heart className={`h-6 w-6 ${userReaction === 'love' ? 'fill-current' : ''}`} />
-            </Button>
-            <span className="text-white text-xs mt-1 font-medium">{(post as any).views_count || 0}</span>
+            <LikeButton
+              postId={post.id}
+              userId={user?.id}
+              compact={true}
+              onReacted={handleLike}
+            />
+            <span className="text-white text-xs mt-1 font-medium">{Number(reactionCount || 0)}</span>
           </div>
 
           <div className="flex flex-col items-center">
@@ -350,14 +354,17 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
             >
               <MessageCircle className="h-6 w-6" />
             </Button>
-            <span className="text-white text-xs mt-1 font-medium">{(post as any).comments_count || 0}</span>
+            <span className="text-white text-xs mt-1 font-medium">{Number(post.comments_count || 0)}</span>
           </div>
 
           <div className="flex flex-col items-center">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onReaction(post.id, 'share')}
+              onClick={() => {
+                setShowShare(true);
+                onReaction(post.id, 'share');
+              }}
               className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/20"
             >
               <Share2 className="h-6 w-6" />
@@ -366,9 +373,9 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
         </div>
 
         {/* Bottom-left user info */}
-        <div className="absolute left-0 right-0 bottom-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10">
+        <div className="absolute left-0 right-0 bottom-0 p-4 pb-[80px] bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20">
           <div className="max-w-[calc(100%-5rem)]">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-3">
               <Avatar className="h-10 w-10 border-2 border-white">
                 <AvatarImage src={post.profiles?.avatar_url} alt={post.profiles?.username} />
                 <AvatarFallback className="bg-primary text-primary-foreground">
@@ -377,7 +384,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
               </Avatar>
 
               <div className="flex-1 min-w-0 text-white">
-                <h3 className="font-semibold text-sm truncate">{post.profiles?.username || 'Usuario'}</h3>
+                <h3 className="font-semibold text-sm truncate -mt-0.5">{post.profiles?.username || 'Usuario'}</h3>
                 <span className="text-xs text-gray-300">
                   {formatDistanceToNow(new Date(post.created_at), {
                     addSuffix: true,
@@ -401,7 +408,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
             {contentForMentions && (
               <MentionsText
                 content={contentForMentions}
-                className="text-sm text-gray-100 whitespace-pre-wrap break-words line-clamp-3"
+                className="text-sm text-gray-100 whitespace-pre-wrap break-words line-clamp-3 -mt-0.5"
               />
             )}
           </div>
@@ -421,27 +428,26 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
             </button>
           </div>
           <div className="overflow-y-auto">
-            <Comments
-              postId={post.id}
-              comments={comments}
-              onReaction={handleCommentLike}
-              onReply={handleReply}
-              onSubmitComment={handleSubmitComment}
-              onDeleteComment={handleDeleteComment}
-              onLoadReplies={loadReplies}
-              newComment={newComment}
-              onNewCommentChange={setNewComment}
-              replyTo={replyTo}
-              onCancelReply={handleCancelReply}
-              showComments={true}
-              commentImage={commentImage}
-              setCommentImage={setCommentImage}
-              postAuthorId={post.user_id}
-              totalCommentsCount={(post as any).comments_count ?? (post as any).comments?.count}
-            />
+            <div className="px-4 py-3 space-y-3">
+              <CommentList postId={post.id} />
+              <CommentForm
+                postId={post.id}
+                userId={user?.id}
+                onAddComment={async (content) => {
+                  if (!user?.id) return;
+                  await addComment(content, user.id);
+                }}
+              />
+            </div>
           </div>
         </DrawerContent>
       </Drawer>
+
+      <ShareModal
+        isOpen={showShare}
+        onClose={() => setShowShare(false)}
+        post={post}
+      />
     </div>
   );
 });
@@ -471,7 +477,7 @@ export const OptimizedReelsInfiniteViewer = memo(function OptimizedReelsInfinite
   }, [initialPostId, posts]);
 
   // Optimización: batch following status para todos los autores de reels
-  const authorIds = posts.map(post => post.user_id).filter(Boolean);
+  const authorIds = posts.flatMap((post) => (post.user_id ? [post.user_id] : []));
   const { 
     getFollowingStatus, 
     updateFollowingStatus, 
@@ -499,10 +505,20 @@ export const OptimizedReelsInfiniteViewer = memo(function OptimizedReelsInfinite
     if (containerRef.current) {
       const targetElement = containerRef.current.children[currentIndex] as HTMLElement;
       if (targetElement) {
-        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        targetElement.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
     }
   }, [currentIndex]);
+
+  // Keep currentIndex in sync with user scroll (snap)
+  const handleScroll = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const h = el.clientHeight || 1;
+    const idx = Math.round(el.scrollTop / h);
+    const next = Math.max(0, Math.min(posts.length - 1, idx));
+    if (next !== currentIndex) setCurrentIndex(next);
+  }, [currentIndex, posts.length]);
 
   if (posts.length === 0) {
     return (
@@ -517,31 +533,35 @@ export const OptimizedReelsInfiniteViewer = memo(function OptimizedReelsInfinite
   }
 
   return (
-    <div 
-      ref={containerRef}
-      className="w-full h-screen overflow-y-auto snap-y snap-mandatory scrollbar-hide bg-black"
-      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-    >
-      {posts.map((post, index) => (
+    <div className="w-full h-full relative bg-gray-950 overflow-hidden flex items-center justify-center">
+      <div className="h-full aspect-[9/16] w-full max-w-[520px] rounded-2xl overflow-hidden bg-gray-950 flex items-center justify-center">
         <div
-          key={post.id}
-          className="w-full h-screen flex items-center justify-center snap-start bg-black"
+          ref={containerRef}
+          onScroll={handleScroll}
+          className="w-full h-full relative flex flex-col overflow-y-auto snap-y snap-mandatory"
         >
-          <OptimizedReelItem
-            post={post}
-            isActive={index === currentIndex}
-            onReaction={onReaction}
-            onViewTracked={onViewTracked}
-            batchFollowingStatus={post.user_id ? getFollowingStatus(post.user_id) : undefined}
-            onBatchFollowingUpdate={updateFollowingStatus}
-            initialSeek={
-              initialPlayback && initialPlayback.postId === post.id
-                ? { time: initialPlayback.time, muted: initialPlayback.muted }
-                : undefined
-            }
-          />
+          {posts.map((post, index) => (
+            <div
+              key={post.id}
+              className="w-full h-full flex items-center justify-center snap-start bg-gray-950 shrink-0"
+            >
+              <OptimizedReelItem
+                post={post}
+                isActive={index === currentIndex}
+                onReaction={onReaction}
+                onViewTracked={onViewTracked}
+                batchFollowingStatus={post.user_id ? getFollowingStatus(post.user_id) : undefined}
+                onBatchFollowingUpdate={updateFollowingStatus}
+                initialSeek={
+                  initialPlayback && initialPlayback.postId === post.id
+                    ? { time: initialPlayback.time, muted: initialPlayback.muted }
+                    : undefined
+                }
+              />
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
   );
 });

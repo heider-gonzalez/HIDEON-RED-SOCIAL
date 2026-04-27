@@ -47,19 +47,20 @@ export default function Reels() {
 
   // Contenido de reels
   const reelsContent = isLoading ? (
-    <div className="flex justify-center items-center h-screen bg-black">
+    <div className="flex justify-center items-center h-screen bg-gray-950">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
     </div>
   ) : hasVideos ? (
     shouldUseMobileLayout ? (
-      <OptimizedReelsInfiniteViewer
-        posts={videosPosts}
-        onReaction={trackReelInteraction}
-        onViewTracked={trackReelView}
-      />
-    ) : (
       <ReelsInfiniteViewer 
         posts={videosPosts} 
+        onReaction={trackReelInteraction}
+        onViewTracked={trackReelView}
+        initialPostId={reelId}
+      />
+    ) : (
+      <OptimizedReelsInfiniteViewer
+        posts={videosPosts}
         onReaction={trackReelInteraction}
         onViewTracked={trackReelView}
         initialPostId={reelId}

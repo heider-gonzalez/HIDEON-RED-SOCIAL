@@ -15,9 +15,11 @@ export function ReelsDesktopLayout({ children }: ReelsDesktopLayoutProps) {
 
   // Desktop: escenario centrado (la app ya tiene sidebar global)
   return (
-    <main className="w-full h-screen bg-black flex items-center justify-center">
-      <div className="w-full max-w-[1400px] h-screen">
-        {children}
+    <main className="w-full h-[calc(100vh-64px)] bg-gray-950">
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="w-full h-full max-w-[1400px] flex items-center justify-center">
+          {children}
+        </div>
       </div>
     </main>
   );
