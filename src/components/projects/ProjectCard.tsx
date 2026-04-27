@@ -676,7 +676,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
-                {project.demo_url && (
+                {project.demo_url && project.demo_url.trim() && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -689,7 +689,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
                     </a>
                   </Button>
                 )}
-                {project.github_url && (
+                {project.github_url && project.github_url.trim() && (
                   <Button
                     variant="outline"
                     size="sm"

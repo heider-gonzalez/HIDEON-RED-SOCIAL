@@ -539,11 +539,19 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
                     <Mail size={16} />
                     Contactar Equipo
                   </Button>
-                  {project.github_url && (
+                  {project.github_url && project.github_url.trim() && (
                     <Button variant="outline" className="flex items-center gap-2" asChild>
                       <a href={project.github_url} target="_blank" rel="noopener noreferrer">
                         <Github size={16} />
                         Ver Código
+                      </a>
+                    </Button>
+                  )}
+                  {project.demo_url && project.demo_url.trim() && (
+                    <Button variant="outline" className="flex items-center gap-2" asChild>
+                      <a href={project.demo_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink size={16} />
+                        Demo en Vivo
                       </a>
                     </Button>
                   )}
@@ -578,7 +586,7 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
 
                 {/* Demo and Documentation Links */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {project.demo_url && (
+                  {project.demo_url && project.demo_url.trim() && (
                     <Button
                       variant="outline"
                       className="flex items-center gap-2 justify-center"
