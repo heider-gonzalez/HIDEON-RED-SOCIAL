@@ -167,7 +167,7 @@ export function LeftSidebar({}: LeftSidebarProps) {
           className={() =>
             cn(
               "group flex items-center gap-3 px-4 py-3 rounded-2xl mb-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background shadow-sm hover:shadow-md",
-              "bg-gray-800 text-white hover:bg-gray-700"
+              "bg-blue-600 text-white hover:bg-blue-700"
             )
           }
         >

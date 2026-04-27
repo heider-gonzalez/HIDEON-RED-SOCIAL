@@ -7,7 +7,7 @@ import { VolumeSlider } from "./VolumeSlider";
 import { getPostVideoUrl } from "@/lib/hybrid-url";
 import { LikeButton } from "@/components/feed/LikeButton";
 import { useAuth } from "@/providers/AuthProvider";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { CommentList } from "@/components/feed/CommentList";
 import { CommentForm } from "@/components/feed/CommentForm";
 import { usePostComments } from "@/hooks/usePostComments";
@@ -297,8 +297,7 @@ const ReelItem2 = memo(function ReelItem2({
           <LikeButton
             postId={post.id}
             userId={user?.id}
-            compact={true}
-            onReacted={() => onReaction(post.id, 'love')}
+            className="bg-transparent border-0"
           />
           <span className="text-white text-xs mt-1 font-medium">{Number(reactionCount || 0)}</span>
         </div>
@@ -380,28 +379,24 @@ const ReelItem2 = memo(function ReelItem2({
 
       <Drawer open={showComments} onOpenChange={setShowComments}>
         <DrawerContent className="max-h-[80svh]">
+          <DrawerTitle className="sr-only">Comentarios del reel</DrawerTitle>
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div className="text-sm font-semibold">Comentarios</div>
             <button
-              className="text-sm text-muted-foreground"
               onClick={() => setShowComments(false)}
-              type="button"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
-              Cerrar
+              ✕
             </button>
           </div>
-          <div className="overflow-y-auto">
-            <div className="px-4 py-3 space-y-3">
-              <CommentList postId={post.id} />
-              <CommentForm
-                postId={post.id}
-                userId={user?.id}
-                onAddComment={async (content) => {
-                  if (!user?.id) return;
-                  await addComment(content, user.id);
-                }}
-              />
-            </div>
+          <div className="flex-1 overflow-y-auto">
+            <CommentList postId={post.id} />
+          </div>
+          <div className="border-t border-border p-4">
+            <CommentForm
+              postId={post.id}
+              onCommentAdded={() => refetch()}
+            />
           </div>
         </DrawerContent>
       </Drawer>

@@ -19,7 +19,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { usePostComments } from "@/hooks/usePostComments";
 import { LikeButton } from "@/components/feed/LikeButton";
 import { useUnifiedReactions } from "@/hooks/use-unified-reactions";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { ShareModal } from "@/components/post/actions/ShareModal";
 
 interface OptimizedReelItemProps {
@@ -336,8 +336,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
             <LikeButton
               postId={post.id}
               userId={user?.id}
-              compact={true}
-              onReacted={handleLike}
+              className="bg-transparent border-0"
             />
             <span className="text-white text-xs mt-1 font-medium">{Number(reactionCount || 0)}</span>
           </div>
@@ -417,6 +416,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
 
       <Drawer open={showComments} onOpenChange={setShowComments}>
         <DrawerContent className="max-h-[80svh]">
+          <DrawerTitle className="sr-only">Comentarios del reel</DrawerTitle>
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div className="text-sm font-semibold">Comentarios</div>
             <button
