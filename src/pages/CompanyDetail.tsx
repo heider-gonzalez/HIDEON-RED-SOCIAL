@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { getHybridUrl } from "@/lib/hybrid-url";
 
 type CompanyRow = {
   id: string;
@@ -308,12 +309,12 @@ export default function CompanyDetail() {
           <CardContent className="p-0 overflow-hidden">
             <div className="h-32 sm:h-40 bg-muted relative">
               {company.cover_url ? (
-                <img src={company.cover_url} alt="" className="h-full w-full object-cover" />
+                <img src={getHybridUrl(company.cover_url) || company.cover_url} alt="" className="h-full w-full object-cover" />
               ) : null}
             </div>
             <div className="p-4 sm:p-6 flex items-start gap-4">
               <Avatar className="h-16 w-16 -mt-10 border-4 border-background">
-                <AvatarImage src={company.logo_url || undefined} />
+                <AvatarImage src={getHybridUrl(company.logo_url) || company.logo_url || undefined} />
                 <AvatarFallback>{(company.name || "E").slice(0, 1).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">

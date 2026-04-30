@@ -36,16 +36,8 @@ export function FallbackImage({ src, alt, className, onClick, loading = 'lazy' }
 
   const handleError = () => {
     if (!hasError && src) {
-      // Si falla la URL híbrida, intentar directamente con Supabase
-      if (!src.startsWith('http')) {
-        const supabaseUrl = `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/${src.replace(/^\//, '')}`;
-        console.log('🔄 Intentando fallback a Supabase:', supabaseUrl);
-        setCurrentUrl(supabaseUrl);
-        setHasError(true);
-      } else {
-        console.error('❌ No se pudo cargar la imagen:', src);
-        setIsLoading(false);
-      }
+      setHasError(true);
+      setIsLoading(false);
     } else {
       console.error('❌ Fallback también falló');
       setIsLoading(false);

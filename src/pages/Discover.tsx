@@ -9,6 +9,7 @@ import { Heart, X, Star, MapPin, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
+import { getHybridUrl } from "@/lib/hybrid-url";
 
 const Discover = () => {
   const isMobile = useIsMobile();
@@ -101,10 +102,11 @@ const Discover = () => {
         <Card className="relative overflow-hidden shadow-lg">
           <div className="aspect-[3/4] relative">
             <img
-              src={currentProfile.avatar_url || "/placeholder.svg"}
+              src={getHybridUrl(currentProfile.avatar_url) || currentProfile.avatar_url || "/placeholder.svg"}
               alt={currentProfile.username}
               className="w-full h-full object-cover"
             />
+
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             
             <div className="absolute bottom-6 left-6 right-6 text-white">

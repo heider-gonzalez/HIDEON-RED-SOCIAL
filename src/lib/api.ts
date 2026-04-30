@@ -4,6 +4,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { getMultiplePostSharesCounts } from "@/lib/api/posts/queries/shares";
 import { getMultiplePostViewsCounts } from "@/lib/api/posts/queries/views";
 import { checkColumnExists } from "@/lib/api/posts/retrieve/utils/column-check";
+import { getMediaType, uploadMediaFile } from "@/lib/api/posts/storage";
 import { getAuthUser, requireAuthUser } from "@/lib/auth/auth-store";
 
 let cachedHasSharedFields: boolean | null = null;
@@ -567,41 +568,8 @@ export async function createPost({
 
     // Upload file if present
     if (file) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { data: fileData, error: uploadError } = await supabase
-        .storage
-        .from("media")
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) {
-        console.error('File upload error:', uploadError);
-        throw uploadError;
-      }
-
-      // Get public URL for the uploaded file
-      const { data: urlData } = await supabase
-        .storage
-        .from("media")
-        .getPublicUrl(fileName);
-
-      mediaUrl = urlData.publicUrl;
-      
-      // Map file type to database accepted values
-      if (file.type.startsWith('image/')) {
-        mediaType = 'image';
-      } else if (file.type.startsWith('video/')) {
-        mediaType = 'video';
-      } else if (file.type.startsWith('audio/')) {
-        mediaType = 'audio';
-      } else {
-        // Default to 'image' if type cannot be determined
-        mediaType = 'image';
-      }
+      mediaUrl = await uploadMediaFile(file);
+      mediaType = getMediaType(file);
     }
 
     // Create poll object if poll data is present

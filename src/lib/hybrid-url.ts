@@ -4,23 +4,54 @@
  */
 export function normalizeStorageUrl(url?: string | null): string | null {
   if (!url) return null;
-  // La app ya migró a Supabase Storage. NO convertimos a R2.
-  return url;
+  return getHybridUrl(url);
 }
 
 // Función para manejar URLs híbridas entre Supabase y R2
 export function getHybridUrl(url?: string | null): string | null {
   if (!url) return null;
 
+  const R2_PUBLIC_URL = (import.meta as any)?.env?.VITE_R2_PUBLIC_URL as string | undefined;
+
   // Si ya es una URL completa (contiene http), usarla directamente
   if (url.startsWith('http://') || url.startsWith('https://')) {
+    // Si es una URL de Supabase Storage, intentar convertir a R2 para evitar egress.
+    if (R2_PUBLIC_URL && url.includes('/storage/v1/object/public/')) {
+      try {
+        const u = new URL(url);
+        const idx = u.pathname.indexOf('/storage/v1/object/public/');
+        if (idx >= 0) {
+          let rest = u.pathname.slice(idx + '/storage/v1/object/public/'.length).replace(/^\//, '');
+          if (rest) {
+            if (rest.startsWith('media/')) {
+              const file = rest.slice('media/'.length);
+              const m = file.match(/^([0-9a-fA-F-]{36})_(avatar|cover)_/);
+              if (m) {
+                const userId = m[1];
+                const kind = m[2];
+                rest = `profiles/${userId}/${kind}/${file}`;
+              } else {
+                rest = file;
+              }
+            }
+            if (rest.startsWith('multi_media/')) rest = rest.slice('multi_media/'.length);
+            return `${String(R2_PUBLIC_URL).replace(/\/$/, '')}/${rest}`;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
     return url;
   }
   
-  // Si es solo un path, construir URL con dominio Supabase (revertir migración)
+  // Si es solo un path, construir URL con dominio R2
   const cleanPath = url.startsWith('/') ? url.slice(1) : url;
-  
-  return `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media/${cleanPath}`;
+  if (R2_PUBLIC_URL) {
+    return `${String(R2_PUBLIC_URL).replace(/\/$/, '')}/${cleanPath}`;
+  }
+
+  return cleanPath;
 }
 
 // Función mejorada con fallback y logging para debugging
@@ -32,14 +63,14 @@ export function getHybridUrlWithFallback(url?: string | null): string | null {
   // Si ya es una URL completa, usarla directamente
   if (url.startsWith('http://') || url.startsWith('https://')) {
     console.log('✅ URL completa detectada:', url);
-    return url;
+    return getHybridUrl(url);
   }
   
   // Si es solo un path, construir URL Supabase
   const cleanPath = url.startsWith('/') ? url.slice(1) : url;
-  const supabaseUrl = `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/media/${cleanPath}`;
-  console.log('🔄 URL Supabase generada:', supabaseUrl);
-  return supabaseUrl;
+  const built = getHybridUrl(cleanPath);
+  console.log('🔄 URL generada:', built);
+  return built;
 }
 
 /** Obtiene la URL principal de video de un post (media_urls, media_url o demo_url).

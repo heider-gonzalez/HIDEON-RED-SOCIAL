@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getHybridUrlWithFallback, checkUrlAccessibility } from '@/lib/hybrid-url';
+import { getHybridUrl } from '@/lib/hybrid-url';
 import { MediaRenderer } from './MediaRenderer';
 
 interface SmartMediaRendererProps {
@@ -38,38 +38,14 @@ export function SmartMediaRenderer(props: SmartMediaRendererProps) {
       setError(null);
       
       try {
-        // Obtener URL híbrida con logging
-        const hybridUrl = getHybridUrlWithFallback(props.url);
-        
+        const hybridUrl = getHybridUrl(props.url) || props.url;
         if (!hybridUrl) {
           setError('No se pudo generar la URL');
           setIsLoading(false);
           return;
         }
 
-        // Verificar si la URL es accesible
-        const isAccessible = await checkUrlAccessibility(hybridUrl);
-        
-        if (isAccessible) {
-          setFinalUrl(hybridUrl);
-          console.log('✅ URL verificada y accesible:', hybridUrl);
-        } else {
-          // Si no es accesible, intentar fallback a Supabase
-          if (props.url && !props.url.startsWith('http')) {
-            const supabaseUrl = `https://wgbbaxvuuinubkgffpiq.supabase.co/storage/v1/object/public/${props.url.replace(/^\//, '')}`;
-            const supabaseAccessible = await checkUrlAccessibility(supabaseUrl);
-            
-            if (supabaseAccessible) {
-              setFinalUrl(supabaseUrl);
-              console.log('🔄 Usando fallback de Supabase:', supabaseUrl);
-            } else {
-              setError('No se pudo acceder al archivo en R2 ni Supabase');
-              console.error('❌ Ninguna URL es accesible');
-            }
-          } else {
-            setError('URL no accesible');
-          }
-        }
+        setFinalUrl(hybridUrl);
       } catch (err) {
         setError('Error al procesar la URL');
         console.error('❌ Error procesando URL:', err);

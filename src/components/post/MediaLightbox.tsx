@@ -10,6 +10,7 @@ import { PostActivitySummary } from "@/components/post/PostActivitySummary";
 import { ActionsButtons } from "@/components/post/actions/ActionsButtons";
 import { Comments } from "@/components/post/Comments";
 import { usePost } from "@/hooks/use-post";
+import { getHybridUrl } from "@/lib/hybrid-url";
 
 export type LightboxMediaItem = {
   url: string;
@@ -100,6 +101,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
 
   const total = items.length;
   const current = items[index];
+  const currentSrc = getHybridUrl(current?.url) || current?.url;
 
   const isDesktopPostViewer = Boolean(post) && !isMobile;
 
@@ -195,8 +197,8 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
       <DialogContent
         className={
           isDesktopPostViewer
-            ? "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100vh] max-w-none border-none rounded-none bg-black/95 overflow-hidden [&>button]:hidden"
-            : "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100svh] max-w-none border-none rounded-none bg-black/95 overflow-hidden [&>button]:hidden"
+            ? "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100vh] max-w-none border-none rounded-none bg-zinc-950/95 overflow-hidden [&>button]:hidden"
+            : "p-0 fixed inset-0 translate-x-0 translate-y-0 w-screen h-[100svh] max-w-none border-none rounded-none bg-zinc-950/95 overflow-hidden [&>button]:hidden"
         }
         aria-describedby={undefined}
       >
@@ -211,7 +213,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="absolute top-5 left-5 z-[10002] rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur"
+          className="absolute top-5 left-5 z-[10002] rounded-full bg-zinc-950/60 text-white hover:bg-zinc-950/80 backdrop-blur"
           aria-label="Cerrar"
         >
           <X className="h-5 w-5" />
@@ -274,7 +276,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/55 hover:bg-black/80 text-white z-[80] h-11 w-11 rounded-full backdrop-blur"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-zinc-950/55 hover:bg-zinc-950/80 text-white z-[80] h-11 w-11 rounded-full backdrop-blur"
                   onPointerDown={(e) => {
                     e.stopPropagation();
                   }}
@@ -290,7 +292,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
 
               {current.type === "image" ? (
                 <img
-                  src={current.url}
+                  src={currentSrc}
                   alt={`Media ${index + 1} de ${total}`}
                   className="max-h-full max-w-[calc(100vw-400px)] object-contain transition-opacity duration-200"
                   loading="eager"
@@ -301,7 +303,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                   {isReelLikeVideo ? (
                     <div className="h-full max-h-full aspect-[9/16] w-auto max-w-[calc(100vw-400px)]">
                       <video
-                        src={current.url}
+                        src={currentSrc}
                         className="h-full w-full object-cover transition-opacity duration-200"
                         controls
                         autoPlay
@@ -323,7 +325,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                     </div>
                   ) : (
                     <video
-                      src={current.url}
+                      src={currentSrc}
                       className="max-h-full max-w-[calc(100vw-400px)] object-contain transition-opacity duration-200"
                       controls
                       autoPlay
@@ -351,7 +353,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/55 hover:bg-black/80 text-white z-[80] h-11 w-11 rounded-full backdrop-blur"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-zinc-950/55 hover:bg-zinc-950/80 text-white z-[80] h-11 w-11 rounded-full backdrop-blur"
                   onPointerDown={(e) => {
                     e.stopPropagation();
                   }}
@@ -433,7 +435,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white z-[80]"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-zinc-950/40 hover:bg-zinc-950/60 text-white z-[80]"
                 onPointerDown={(e) => {
                   e.stopPropagation();
                 }}
@@ -449,7 +451,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
 
             {current.type === "image" ? (
               <img
-                src={current.url}
+                src={currentSrc}
                 alt={`Media ${index + 1} de ${total}`}
                 className="max-h-full max-w-full object-contain"
                 onClick={(e) => e.stopPropagation()}
@@ -464,7 +466,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                 {isReelLikeVideo ? (
                   <div className="h-full max-h-full aspect-[9/16] w-auto max-w-full">
                     <video
-                      src={current.url}
+                      src={currentSrc}
                       className="h-full w-full object-cover"
                       controls
                       autoPlay
@@ -486,7 +488,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                   </div>
                 ) : (
                   <video
-                    src={current.url}
+                    src={currentSrc}
                     className="max-h-full max-w-full object-contain"
                     controls
                     autoPlay
@@ -514,7 +516,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white z-[80]"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-zinc-950/40 hover:bg-zinc-950/60 text-white z-[80]"
                 onPointerDown={(e) => {
                   e.stopPropagation();
                 }}

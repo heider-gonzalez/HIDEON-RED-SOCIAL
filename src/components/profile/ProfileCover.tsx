@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { ImagePlus, Maximize } from "lucide-react";
+import { getHybridUrl } from "@/lib/hybrid-url";
 
 interface ProfileCoverProps {
   coverUrl: string | null;
@@ -15,12 +16,14 @@ export function ProfileCover({
   onUpload, 
   onOpenFullscreen 
 }: ProfileCoverProps) {
+  const resolvedCoverUrl = getHybridUrl(coverUrl) || coverUrl;
+
   return (
     <div className="relative h-[300px]">
       <div className="w-full h-full bg-muted flex items-center justify-center">
-        {coverUrl ? (
+        {resolvedCoverUrl ? (
           <img 
-            src={coverUrl} 
+            src={resolvedCoverUrl} 
             alt="Cover" 
             className="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
             onClick={onOpenFullscreen}

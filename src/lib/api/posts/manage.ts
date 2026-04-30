@@ -48,11 +48,25 @@ export async function deletePost(postId: string) {
   if (deleteError) throw deleteError;
 
   if (postRow && postRow.media_url) {
-    const url = new URL(postRow.media_url);
-    const pathParts = url.pathname.split('/');
-    const filePath = pathParts.slice(pathParts.indexOf('media') + 1).join('/');
-    if (filePath) {
-      await supabase.storage.from('media').remove([filePath]);
+    const key = (() => {
+      const raw = String(postRow.media_url || '');
+      if (!raw) return '';
+      if (!raw.startsWith('http://') && !raw.startsWith('https://')) return raw.replace(/^\//, '');
+      try {
+        const u = new URL(raw);
+        return u.pathname.replace(/^\//, '');
+      } catch {
+        return '';
+      }
+    })();
+
+    if (key) {
+      await supabase.functions.invoke('delete-from-r2', {
+        body: JSON.stringify({ key }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
     }
   }
 }

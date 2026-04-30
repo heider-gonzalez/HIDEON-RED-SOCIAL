@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useProfileImage } from "@/hooks/use-profile-image";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getHybridUrl } from "@/lib/hybrid-url";
 
 export default function PersonalizationSettings() {
   const navigate = useNavigate();
@@ -104,7 +105,7 @@ export default function PersonalizationSettings() {
               <div className="relative h-32 bg-muted rounded-t-lg overflow-hidden">
                 {profile.cover_url ? (
                   <img 
-                    src={profile.cover_url} 
+                    src={getHybridUrl(profile.cover_url) || profile.cover_url} 
                     alt="Cover" 
                     className="w-full h-full object-cover"
                   />
@@ -196,7 +197,7 @@ export default function PersonalizationSettings() {
               <div className="w-full h-24 bg-muted rounded-lg overflow-hidden">
                 {profile.cover_url ? (
                   <img 
-                    src={profile.cover_url} 
+                    src={getHybridUrl(profile.cover_url) || profile.cover_url} 
                     alt="Banner" 
                     className="w-full h-full object-cover"
                   />

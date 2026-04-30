@@ -12,6 +12,7 @@ import { CommentList } from './CommentList';
 import { MediaLightbox, type LightboxMediaItem } from '@/components/post/MediaLightbox';
 import { useFullscreenVideo } from '@/components/video/FullscreenVideoContext';
 import { normalizePostContent } from '@/utils/post-content';
+import { getHybridUrl } from '@/lib/hybrid-url';
 
 export interface PostCardProps {
   post: Post;
@@ -44,6 +45,8 @@ export function PostCard({ post }: PostCardProps) {
   const primaryMediaUrl = post.media_url || 
                           (((post as any).media_urls && (post as any).media_urls.find((url: string) => url.match(/\.(mp4|webm|mov|ogg)$/i))) ||
                            ((post as any).media_urls && (post as any).media_urls[0]));
+
+  const primaryMediaSrc = useMemo(() => getHybridUrl(primaryMediaUrl) || primaryMediaUrl || null, [primaryMediaUrl]);
 
   const mediaItems: LightboxMediaItem[] = useMemo(() => {
     const urls = [
@@ -105,7 +108,7 @@ export function PostCard({ post }: PostCardProps) {
     }
     fullscreenVideo.open({
       initialPostId: post.id,
-      initialUrl: primaryMediaUrl,
+      initialUrl: primaryMediaSrc || primaryMediaUrl,
       initialTime: video?.currentTime ?? 0,
       muted: video?.muted ?? true,
     });
@@ -321,7 +324,7 @@ export function PostCard({ post }: PostCardProps) {
         <div ref={containerRef} className="border-t border-b border-gray-100 dark:border-gray-700">
           {isImage && (
             <img
-              src={primaryMediaUrl}
+              src={primaryMediaSrc || undefined}
               alt="Post media"
               className="w-full h-auto max-h-[500px] object-cover"
               loading="lazy"
@@ -332,10 +335,10 @@ export function PostCard({ post }: PostCardProps) {
             />
           )}
           {isVideo && (
-            <div className="relative w-full bg-black">
+            <div className="relative w-full bg-zinc-950">
               <video
                 ref={videoRef}
-                src={primaryMediaUrl}
+                src={primaryMediaSrc || undefined}
                 className={
                   isVerticalVideo
                     ? "w-full max-h-[500px] cursor-pointer object-cover"
@@ -423,7 +426,7 @@ export function PostCard({ post }: PostCardProps) {
 
                     {showVolumeUI && (
                       <div
-                        className="absolute bottom-10 right-0 z-30 rounded-lg bg-black/70 p-3 backdrop-blur-sm"
+                        className="absolute bottom-10 right-0 z-30 rounded-lg bg-zinc-950/70 p-3 backdrop-blur-sm"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex flex-col items-center gap-2 h-28">

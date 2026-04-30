@@ -4,10 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 const R2_PUBLIC_URL = (import.meta as any)?.env?.VITE_R2_PUBLIC_URL as string | undefined;
 const DISABLE_SUPABASE_FALLBACK = String((import.meta as any)?.env?.VITE_DISABLE_SUPABASE_FALLBACK || '').toLowerCase() === 'true';
 
+export function buildR2PublicUrl(key: string): string {
+  const base = String(R2_PUBLIC_URL || '').replace(/\/$/, '');
+  if (!base) return key;
+  const cleanKey = String(key || '').replace(/^\//, '');
+  return `${base}/${cleanKey}`;
+}
+
 export async function uploadToSupabase(
   file: File,
   fileName: string,
-  options?: { allowFallback?: boolean }
+  options?: { allowFallback?: boolean; return?: 'url' | 'key' }
 ): Promise<string> {
   try {
     try {
@@ -53,13 +60,13 @@ export async function uploadToSupabase(
       }
 
       if (key && R2_PUBLIC_URL) {
-        const finalUrl = `${String(R2_PUBLIC_URL).replace(/\/$/, '')}/${key}`;
+        const finalUrl = buildR2PublicUrl(key);
         console.log('R2 upload successful, URL:', finalUrl);
-        return finalUrl;
+        return options?.return === 'key' ? key : finalUrl;
       }
 
       if (publicUrlFromFn) {
-        return publicUrlFromFn;
+        return options?.return === 'key' && key ? key : publicUrlFromFn;
       }
 
       throw new Error('R2 upload succeeded but no public URL was provided. Set VITE_R2_PUBLIC_URL or CLOUDFLARE_R2_PUBLIC_URL.');
@@ -88,7 +95,7 @@ export async function uploadToSupabase(
         .from('media')
         .getPublicUrl(filePath);
 
-      return publicUrl;
+      return options?.return === 'key' ? filePath : publicUrl;
     }
   } catch (error) {
     console.error('Error uploading to Supabase storage:', error);
@@ -181,4 +188,23 @@ export async function uploadWithOptimization(file: File, fileName: string): Prom
   }
   
   return uploadToSupabase(processedFile, fileName);
+}
+
+export async function uploadWithOptimizationKey(file: File, fileName: string): Promise<string> {
+  let processedFile = file;
+
+  if (file.type.startsWith('image/') && file.size > 500000) {
+    try {
+      processedFile = await compressImage(file, 0.85);
+      console.log('Image compressed:', {
+        originalSize: file.size,
+        compressedSize: processedFile.size,
+        reduction: Math.round(((file.size - processedFile.size) / file.size) * 100) + '%'
+      });
+    } catch (error) {
+      console.warn('Image compression failed, using original:', error);
+    }
+  }
+
+  return uploadToSupabase(processedFile, fileName, { return: 'key' });
 }

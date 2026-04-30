@@ -1,5 +1,5 @@
 import { S3Client } from "https://deno.land/x/s3_lite_client@0.7.0/mod.ts";
-import { getEnv } from './types';
+import { getEnv } from './types.ts';
 
 export interface R2Config {
   accountId: string;

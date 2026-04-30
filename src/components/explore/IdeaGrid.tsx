@@ -12,6 +12,7 @@ import type { Post as PostType } from "@/types/post";
 import { JoinIdeaButton } from "@/components/post/actions/join-idea/JoinIdeaButton";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { getHybridUrl } from "@/lib/hybrid-url";
 
 export function IdeaGrid({
   searchQuery,
@@ -69,7 +70,7 @@ export function IdeaGrid({
             {/* Imagen o placeholder */}
             {idea.media_url ? (
               <img 
-                src={idea.media_url} 
+                src={getHybridUrl(idea.media_url) || idea.media_url} 
                 alt={idea.content}
                 className="w-full h-44 object-cover"
               />

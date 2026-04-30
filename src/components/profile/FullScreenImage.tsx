@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { safeDownload } from "@/utils/safe-seo";
+import { getHybridUrl } from "@/lib/hybrid-url";
 
 interface FullScreenImageProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export function FullScreenImage({ isOpen, onClose, imageUrl, altText = "Imagen" 
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const { toast } = useToast();
+  const resolvedUrl = getHybridUrl(imageUrl) || imageUrl;
 
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + 0.25, 3));
@@ -31,7 +33,7 @@ export function FullScreenImage({ isOpen, onClose, imageUrl, altText = "Imagen" 
   };
 
   const handleDownload = () => {
-    safeDownload(imageUrl, `img_${Date.now()}.jpg`);
+    safeDownload(resolvedUrl, `img_${Date.now()}.jpg`);
   };
 
   const handleShare = async () => {
@@ -39,7 +41,7 @@ export function FullScreenImage({ isOpen, onClose, imageUrl, altText = "Imagen" 
       try {
         await navigator.share({
           title: altText,
-          url: imageUrl,
+          url: resolvedUrl,
         });
         toast({
           title: "Compartido",
@@ -50,7 +52,7 @@ export function FullScreenImage({ isOpen, onClose, imageUrl, altText = "Imagen" 
       }
     } else {
       // Fallback for browsers that don't support the Web Share API
-      navigator.clipboard.writeText(imageUrl);
+      navigator.clipboard.writeText(resolvedUrl);
       toast({
         title: "URL Copiada",
         description: "La URL de la imagen ha sido copiada al portapapeles",
@@ -127,7 +129,7 @@ export function FullScreenImage({ isOpen, onClose, imageUrl, altText = "Imagen" 
         >
           <div className="w-[90vw] h-[85vh] flex items-center justify-center">
             <img 
-              src={imageUrl} 
+              src={resolvedUrl} 
               alt={altText}
               className="max-h-full max-w-full w-full h-full object-contain transition-all duration-200"
               style={{ 

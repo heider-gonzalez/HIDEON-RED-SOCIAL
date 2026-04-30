@@ -11,6 +11,7 @@ import { MediaLightbox, type LightboxMediaItem } from '@/components/post/MediaLi
 import { useFullscreenVideo } from '@/components/video/FullscreenVideoContext';
 import { normalizePostContent } from '@/utils/post-content';
 import { MessageCircle, Share2, MoreHorizontal, User, Briefcase, School, ChevronDown, ChevronUp, Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
+import { getHybridUrl } from '@/lib/hybrid-url';
 
 export interface PostCardProps {
   post: Post;
@@ -50,6 +51,8 @@ export const PostCard = React.memo(function PostCard({ post }: PostCardProps) {
            (((post as any).media_urls && (post as any).media_urls.find((url: string) => url.match(/\.(mp4|webm|mov|ogg)$/i))) ||
             ((post as any).media_urls && (post as any).media_urls[0]));
   }, [post.media_url, (post as any).media_urls]);
+
+  const primaryMediaSrc = useMemo(() => getHybridUrl(primaryMediaUrl) || primaryMediaUrl || null, [primaryMediaUrl]);
 
   const mediaItems: LightboxMediaItem[] = useMemo(() => {
     const urls = [
@@ -168,7 +171,7 @@ export const PostCard = React.memo(function PostCard({ post }: PostCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={avatar_url} alt={username} />
+              <AvatarImage src={getHybridUrl(avatar_url) || avatar_url} alt={username} />
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {username.charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -219,7 +222,7 @@ export const PostCard = React.memo(function PostCard({ post }: PostCardProps) {
           {mediaType.isVideo ? (
             <video
               ref={videoRef}
-              src={primaryMediaUrl}
+              src={primaryMediaSrc || undefined}
               className="w-full max-h-96 object-contain"
               onClick={togglePlay}
               playsInline
@@ -228,7 +231,7 @@ export const PostCard = React.memo(function PostCard({ post }: PostCardProps) {
             />
           ) : (
             <img
-              src={primaryMediaUrl}
+              src={primaryMediaSrc || undefined}
               alt="Post image"
               className="w-full max-h-96 object-contain cursor-pointer"
               onClick={() => setLightboxOpen(true)}

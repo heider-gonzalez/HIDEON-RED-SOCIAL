@@ -37,6 +37,7 @@ import {
   addOptimisticPostToAllInfiniteFeeds,
   replaceOptimisticPostInAllInfiniteFeeds,
 } from "@/lib/feed/optimistic-posts";
+import { uploadMediaFile, getMediaType } from "@/lib/api/posts/storage";
 
 interface CreatePostSheetProps {
   open: boolean;
@@ -264,11 +265,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
       // Upload file if present
       if (selectedFile) {
         try {
-          const { uploadWithOptimization, getMediaType } = await import("@/lib/storage/cloudflare-r2");
-          const fileExt = selectedFile.name.split('.').pop();
-          const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-          
-          mediaUrl = await uploadWithOptimization(selectedFile, fileName);
+          mediaUrl = await uploadMediaFile(selectedFile);
           mediaType = getMediaType(selectedFile);
         } catch (uploadError) {
           console.error('Error uploading file:', uploadError);

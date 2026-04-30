@@ -151,7 +151,7 @@ export function SimplePostModal({ open, onOpenChange }: SimplePostModalProps) {
         
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={profile?.avatar_url || ''} />
+            <AvatarImage src={profile?.avatar_url || undefined} />
             <AvatarFallback className="bg-muted text-muted-foreground text-sm">
               {profile?.username?.[0]?.toUpperCase()}
             </AvatarFallback>

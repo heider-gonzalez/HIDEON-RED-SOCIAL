@@ -2,6 +2,7 @@
 // Upload and manage audio files for posts
 
 import { supabase } from '@/integrations/supabase/client';
+import { uploadToSupabase } from '@/lib/storage/cloudflare-r2';
 
 export interface AudioMetadata {
   name: string;
@@ -21,60 +22,8 @@ export async function uploadAudioFile(
     // Generate unique filename
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}/${Date.now()}.${fileExt}`;
-    
-    // Check if bucket exists, create if needed
-    try {
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const audioBucket = buckets?.find(b => b.name === 'post-audio');
-      
-      if (!audioBucket) {
-        console.log('🪣 Creating post-audio bucket...');
-        // Create bucket if it doesn't exist
-        const { error: bucketError } = await supabase.rpc('create_audio_bucket_if_not_exists');
-        if (bucketError) {
-          console.error('❌ Bucket creation error:', bucketError);
-          throw new Error(`Bucket creation failed: ${bucketError.message}`);
-        }
-      }
-    } catch (bucketCheckError) {
-      console.error('❌ Bucket check error:', bucketCheckError);
-      // Continue with upload attempt
-    }
-    
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from('post-audio')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: file.type,
-      });
 
-    if (error) {
-      console.error('❌ Audio upload error:', error);
-      
-      // If bucket doesn't exist, provide helpful error message
-      if (error.message?.includes('Bucket not found')) {
-        throw new Error(`
-          ❌ El bucket 'post-audio' no existe en Supabase Storage.
-          
-          📋 **SOLUCIÓN:**
-          1. Ve a Supabase Dashboard → Storage
-          2. Crea un nuevo bucket llamado 'post-audio'
-          3. O ejecuta la migración: supabase/migrations/MANUAL_FIX_audio_bucket.sql
-          4. Configura las políticas RLS para acceso público
-          
-          📁 **Archivo SQL:** MANUAL_FIX_audio_bucket.sql
-        `);
-      }
-      
-      throw new Error(`Error uploading audio: ${error.message}`);
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('post-audio')
-      .getPublicUrl(fileName);
+    const key = await uploadToSupabase(file, `post-audio/${fileName}`, { return: 'key' });
 
     // Prepare metadata
     const audioMetadata: AudioMetadata = {
@@ -87,12 +36,12 @@ export async function uploadAudioFile(
     };
 
     console.log('✅ Audio uploaded successfully:', {
-      url: publicUrl,
+      url: key,
       metadata: audioMetadata
     });
 
     return {
-      url: publicUrl,
+      url: key,
       metadata: audioMetadata
     };
 
@@ -104,21 +53,34 @@ export async function uploadAudioFile(
 
 export async function deleteAudioFile(url: string): Promise<void> {
   try {
-    // Extract file path from URL
-    const urlParts = url.split('/');
-    const fileName = urlParts[urlParts.length - 1];
-    const filePath = urlParts.slice(-2).join('/'); // userId/filename
+    if (!url) return;
 
-    const { error } = await supabase.storage
-      .from('post-audio')
-      .remove([filePath]);
+    const key = (() => {
+      if (!url) return '';
+      if (!url.startsWith('http')) return url.replace(/^\//, '');
+      try {
+        const u = new URL(url);
+        return u.pathname.replace(/^\//, '');
+      } catch {
+        return '';
+      }
+    })();
+
+    if (!key) return;
+
+    const { error } = await supabase.functions.invoke('delete-from-r2', {
+      body: JSON.stringify({ key }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
     if (error) {
       console.error('❌ Audio delete error:', error);
       throw new Error(`Error deleting audio: ${error.message}`);
     }
 
-    console.log('✅ Audio deleted successfully:', filePath);
+    console.log('✅ Audio deleted successfully:', key);
 
   } catch (error) {
     console.error('❌ Audio delete failed:', error);

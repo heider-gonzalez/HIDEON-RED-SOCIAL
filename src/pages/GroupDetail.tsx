@@ -26,6 +26,7 @@ import {
 import { uploadWithOptimization } from "@/lib/storage/cloudflare-r2";
 import { ImagePlus, Lock, Trash2, Users } from "lucide-react";
 import { useUserRoles } from "@/hooks/use-user-roles";
+import { getHybridUrl } from "@/lib/hybrid-url";
 
 function normalizeGroupName(input: string) {
   return input.replace(/\s+/g, " ").trim();
@@ -96,6 +97,7 @@ export default function GroupDetail() {
   });
 
   const group = groupRows?.[0];
+  const resolvedCoverUrl = getHybridUrl((group as any)?.cover_url) || (group as any)?.cover_url || null;
 
   const { data: myMembership } = useQuery({
     queryKey: ["group-my-membership", group?.id],
@@ -395,13 +397,13 @@ export default function GroupDetail() {
             <div
               className="h-44 sm:h-56 bg-muted overflow-hidden rounded-t-2xl"
               style={{
-                backgroundImage: group.cover_url ? `url(${group.cover_url})` : undefined,
+                backgroundImage: resolvedCoverUrl ? `url(${resolvedCoverUrl})` : undefined,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
             >
-              {group.cover_url ? (
-                <img src={group.cover_url} alt="Portada" className="w-full h-full object-cover" />
+              {resolvedCoverUrl ? (
+                <img src={resolvedCoverUrl} alt="Portada" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <ImagePlus className="h-10 w-10 text-muted-foreground/50" />

@@ -2,6 +2,7 @@ import { Heart, MapPin, Clock, Target, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { getHybridUrl } from "@/lib/hybrid-url";
 
 export interface ConnectionSuggestion {
   id: string;
@@ -63,7 +64,7 @@ export function ConnectionMagic({ suggestions, onConnect, onPass }: ConnectionMa
               <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
                 {suggestion.avatar_url ? (
                   <img 
-                    src={suggestion.avatar_url} 
+                    src={getHybridUrl(suggestion.avatar_url) || suggestion.avatar_url} 
                     alt={suggestion.username}
                     className="w-full h-full rounded-full object-cover"
                   />

@@ -5,6 +5,7 @@ import { FolderOpen } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getHybridUrl } from "@/lib/hybrid-url";
 
 export function ProjectGrid({
   searchQuery,
@@ -109,6 +110,7 @@ export function ProjectGrid({
               ? (project as any).media_urls[0]
               : (project as any)?.media_url) ||
             "";
+          const resolvedMediaUrl = getHybridUrl(mediaUrl) || mediaUrl;
           const isVideo = Boolean(
             ((project as any)?.media_type && String((project as any).media_type).startsWith('video')) ||
               (mediaUrl && isVideoUrl(mediaUrl))
@@ -129,7 +131,7 @@ export function ProjectGrid({
             {mediaUrl && !isBroken ? (
               isVideo ? (
                 <video
-                  src={mediaUrl}
+                  src={resolvedMediaUrl}
                   className="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
                   style={{ opacity: isLoaded ? 1 : 0 }}
                   muted
@@ -140,7 +142,7 @@ export function ProjectGrid({
                 />
               ) : (
                 <img
-                  src={mediaUrl}
+                  src={resolvedMediaUrl}
                   alt={title}
                   className="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
                   style={{ opacity: isLoaded ? 1 : 0 }}
