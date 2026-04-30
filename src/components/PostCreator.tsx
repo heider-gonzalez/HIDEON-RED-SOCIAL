@@ -467,6 +467,8 @@ export function PostCreator({
       // Invalidate queries to update feed immediately
       queryClient.invalidateQueries({ queryKey: ["posts"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["personalized-feed"] });
+      queryClient.refetchQueries({ queryKey: ["posts"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["personalized-feed"] });
 
       mobileToasts.postCreated();
 

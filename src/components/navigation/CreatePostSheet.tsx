@@ -378,6 +378,8 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
         exact: false,
         refetchType: 'active' // Solo refetchar queries activas
       });
+      queryClient.refetchQueries({ queryKey: ["posts"], exact: false, type: 'active' });
+      queryClient.refetchQueries({ queryKey: ["personalized-feed"], exact: false, type: 'active' });
       // No invalidar "feed" para evitar recargas completas
       // No hacer refetchQueries inmediatamente
 
