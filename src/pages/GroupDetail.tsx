@@ -88,7 +88,7 @@ export default function GroupDetail() {
     queryKey: ["group-detail", slugOrIdSafe],
     enabled: !!slugOrIdSafe,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_group_by_slug_or_id", {
+      const { data, error } = await (supabase as any).rpc("get_group_by_slug_or_id", {
         slug_or_id_param: slugOrIdSafe,
       });
       if (error) throw error;
@@ -148,8 +148,10 @@ export default function GroupDetail() {
   const tagsFromInput = (input: string) => {
     const raw = input
       .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
+      .flatMap((t) => {
+        const trimmed = t.trim();
+        return trimmed ? [trimmed] : [];
+      });
     return Array.from(new Set(raw)).slice(0, 12);
   };
 
@@ -166,7 +168,7 @@ export default function GroupDetail() {
     if (!group?.id) return;
     setJoining(true);
     try {
-      const { data, error } = await supabase.rpc("request_to_join_group", {
+      const { data, error } = await (supabase as any).rpc("request_to_join_group", {
         group_id_param: group.id,
       });
       if (error) throw error;
@@ -205,7 +207,7 @@ export default function GroupDetail() {
   const handleRespondRequest = async (requestId: string, approve: boolean) => {
     if (!requestId) return;
     try {
-      const { data, error } = await supabase.rpc("respond_to_group_join_request", {
+      const { data, error } = await (supabase as any).rpc("respond_to_group_join_request", {
         request_id_param: requestId,
         approve_param: approve,
       });
