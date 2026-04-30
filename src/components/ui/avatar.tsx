@@ -29,20 +29,6 @@ const AvatarImage = React.forwardRef<
     setFailed(false)
   }, [src])
 
-  React.useEffect(() => {
-    if (!src) return
-    const s = String(src)
-    if (!s.includes("r2.dev")) return
-
-    const t = window.setTimeout(() => {
-      setFailed(true)
-    }, 4000)
-
-    return () => {
-      window.clearTimeout(t)
-    }
-  }, [src])
-
   const finalSrc = failed ? undefined : getHybridUrl(src)
 
   return (
