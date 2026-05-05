@@ -16,7 +16,7 @@ export function ProfileCover({
   onUpload, 
   onOpenFullscreen 
 }: ProfileCoverProps) {
-  const resolvedCoverUrl = getHybridUrl(coverUrl) || coverUrl;
+  const resolvedCoverUrl = getHybridUrl(coverUrl);
 
   return (
     <div className="relative h-[300px]">

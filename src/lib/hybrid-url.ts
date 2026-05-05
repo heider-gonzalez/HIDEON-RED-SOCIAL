@@ -13,9 +13,16 @@ export function getHybridUrl(url?: string | null): string | null {
 
   const R2_PUBLIC_URL = (import.meta as any)?.env?.VITE_R2_PUBLIC_URL as string | undefined;
 
+  const isSupabaseStorageUrl = (u: string) =>
+    u.includes('/storage/v1/object/public/') || u.includes('/storage/v1/render/image');
+
   // Si ya es una URL completa (contiene http), usarla directamente
   if (url.startsWith('http://') || url.startsWith('https://')) {
     // Si es una URL de Supabase Storage, intentar convertir a R2 para evitar egress.
+    if (url.includes('/storage/v1/render/image')) {
+      return null;
+    }
+
     if (R2_PUBLIC_URL && url.includes('/storage/v1/object/public/')) {
       try {
         const u = new URL(url);
@@ -41,6 +48,9 @@ export function getHybridUrl(url?: string | null): string | null {
       } catch {
         // ignore
       }
+    }
+    if (isSupabaseStorageUrl(url)) {
+      return null;
     }
     return url;
   }
@@ -103,7 +113,7 @@ export function getPostVideoUrl(post: {
   const firstVideo = candidates.find((u) => isVideo(u));
   if (!firstVideo) return null;
 
-  return getHybridUrl(firstVideo) || firstVideo;
+  return getHybridUrl(firstVideo);
 }
 
 // Función para verificar si una URL es accesible

@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Download, ExternalLink, Plus, Trash2, FileText, Lock, Unlock, Github, Linkedin, Globe, Briefcase } from "lucide-react";
 import type { Profile } from "@/pages/Profile";
+import { uploadWithOptimization } from "@/lib/storage/cloudflare-r2";
+import { getHybridUrl } from "@/lib/hybrid-url";
 
 interface PortfolioLink {
   id: string;
@@ -115,16 +117,8 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
 
     setUploading(true);
     try {
-      const fileName = `${profile.id}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('cvs')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('cvs')
-        .getPublicUrl(fileName);
+      const fileName = `profiles/${profile.id}/cv/${Date.now()}-${file.name}`;
+      const publicUrl = await uploadWithOptimization(file, fileName);
 
       const { error: dbError } = await (supabase as any)
         .from('profile_cv')
@@ -356,7 +350,10 @@ export function ProfilePortfolio({ profile, isOwner }: ProfilePortfolioProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(cv.file_url, '_blank')}
+                    onClick={() => {
+                      const safeUrl = getHybridUrl(cv.file_url) || cv.file_url;
+                      window.open(safeUrl, '_blank');
+                    }}
                   >
                     <Download className="h-4 w-4 mr-1" />
                     Descargar

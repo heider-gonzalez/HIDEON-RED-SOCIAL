@@ -52,7 +52,7 @@ export const PostCard = React.memo(function PostCard({ post }: PostCardProps) {
             ((post as any).media_urls && (post as any).media_urls[0]));
   }, [post.media_url, (post as any).media_urls]);
 
-  const primaryMediaSrc = useMemo(() => getHybridUrl(primaryMediaUrl) || primaryMediaUrl || null, [primaryMediaUrl]);
+  const primaryMediaSrc = useMemo(() => getHybridUrl(primaryMediaUrl) || null, [primaryMediaUrl]);
 
   const mediaItems: LightboxMediaItem[] = useMemo(() => {
     const urls = [
@@ -171,7 +171,7 @@ export const PostCard = React.memo(function PostCard({ post }: PostCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={getHybridUrl(avatar_url) || avatar_url} alt={username} />
+              <AvatarImage src={getHybridUrl(avatar_url) || undefined} alt={username} />
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {username.charAt(0).toUpperCase()}
               </AvatarFallback>

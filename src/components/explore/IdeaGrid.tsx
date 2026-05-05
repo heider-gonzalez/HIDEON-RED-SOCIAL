@@ -70,7 +70,7 @@ export function IdeaGrid({
             {/* Imagen o placeholder */}
             {idea.media_url ? (
               <img 
-                src={getHybridUrl(idea.media_url) || idea.media_url} 
+                src={getHybridUrl(idea.media_url) || "/placeholder.svg"} 
                 alt={idea.content}
                 className="w-full h-44 object-cover"
               />

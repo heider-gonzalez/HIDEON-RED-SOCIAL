@@ -64,7 +64,7 @@ export function ConnectionMagic({ suggestions, onConnect, onPass }: ConnectionMa
               <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
                 {suggestion.avatar_url ? (
                   <img 
-                    src={getHybridUrl(suggestion.avatar_url) || suggestion.avatar_url} 
+                    src={getHybridUrl(suggestion.avatar_url) || "/placeholder.svg"} 
                     alt={suggestion.username}
                     className="w-full h-full rounded-full object-cover"
                   />

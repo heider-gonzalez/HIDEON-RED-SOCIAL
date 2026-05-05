@@ -42,11 +42,14 @@ export function PostCard({ post }: PostCardProps) {
                   ((post as any).media_urls && (post as any).media_urls.some((url: string) => url.match(/\.(jpg|jpeg|png|gif|webp)$/i)));
   
   // Get the primary media URL (for projects, use first video if exists)
-  const primaryMediaUrl = post.media_url || 
+  const primaryMediaUrl = useMemo(() => {
+    return post.media_url ||
                           (((post as any).media_urls && (post as any).media_urls.find((url: string) => url.match(/\.(mp4|webm|mov|ogg)$/i))) ||
                            ((post as any).media_urls && (post as any).media_urls[0]));
 
-  const primaryMediaSrc = useMemo(() => getHybridUrl(primaryMediaUrl) || primaryMediaUrl || null, [primaryMediaUrl]);
+  }, [post.media_url, (post as any).media_urls]);
+
+  const primaryMediaSrc = useMemo(() => getHybridUrl(primaryMediaUrl) || null, [primaryMediaUrl]);
 
   const mediaItems: LightboxMediaItem[] = useMemo(() => {
     const urls = [

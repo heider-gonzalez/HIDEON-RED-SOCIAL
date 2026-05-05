@@ -18,7 +18,7 @@ export function FullScreenImage({ isOpen, onClose, imageUrl, altText = "Imagen" 
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const { toast } = useToast();
-  const resolvedUrl = getHybridUrl(imageUrl) || imageUrl;
+  const resolvedUrl = getHybridUrl(imageUrl);
 
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + 0.25, 3));

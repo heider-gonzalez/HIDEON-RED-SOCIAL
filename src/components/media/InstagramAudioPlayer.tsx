@@ -242,7 +242,7 @@ export function InstagramAudioPlayer({
       {audioUrl && (
         <audio
           ref={audioRef}
-          src={getHybridUrl(audioUrl) || audioUrl}
+          src={getHybridUrl(audioUrl) || undefined}
           loop={loop}
           preload="metadata"
         />

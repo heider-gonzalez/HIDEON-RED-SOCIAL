@@ -106,11 +106,11 @@ export function ProjectGrid({
           const phaseLabel = (phase || 'En desarrollo').toUpperCase();
 
           const mediaUrl =
-            (Array.isArray((project as any)?.media_urls) && (project as any).media_urls.length > 0
+            ((project as any).media_urls && (project as any).media_urls.length > 0
               ? (project as any).media_urls[0]
               : (project as any)?.media_url) ||
             "";
-          const resolvedMediaUrl = getHybridUrl(mediaUrl) || mediaUrl;
+          const resolvedMediaUrl = getHybridUrl(mediaUrl);
           const isVideo = Boolean(
             ((project as any)?.media_type && String((project as any).media_type).startsWith('video')) ||
               (mediaUrl && isVideoUrl(mediaUrl))
@@ -166,7 +166,7 @@ export function ProjectGrid({
             
             <div className="flex items-center gap-2">
               <Avatar className="h-5 w-5">
-                <AvatarImage src={project.profiles?.avatar_url} />
+                <AvatarImage src={getHybridUrl(project.profiles?.avatar_url) || undefined} />
                 <AvatarFallback className="text-xs">
                   {project.profiles?.username?.[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>

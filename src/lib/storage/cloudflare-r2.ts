@@ -2,7 +2,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const R2_PUBLIC_URL = (import.meta as any)?.env?.VITE_R2_PUBLIC_URL as string | undefined;
-const DISABLE_SUPABASE_FALLBACK = String((import.meta as any)?.env?.VITE_DISABLE_SUPABASE_FALLBACK || '').toLowerCase() === 'true';
 
 export function buildR2PublicUrl(key: string): string {
   const base = String(R2_PUBLIC_URL || '').replace(/\/$/, '');
@@ -71,31 +70,7 @@ export async function uploadToSupabase(
 
       throw new Error('R2 upload succeeded but no public URL was provided. Set VITE_R2_PUBLIC_URL or CLOUDFLARE_R2_PUBLIC_URL.');
     } catch (r2Error) {
-      const allowFallback = options?.allowFallback ?? !DISABLE_SUPABASE_FALLBACK;
-      if (!allowFallback) {
-        throw r2Error;
-      }
-      console.warn('R2 upload failed, falling back to Supabase Storage:', r2Error);
-
-      const filePath = fileName;
-
-      const { error } = await supabase.storage
-        .from('media')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: file.type,
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('media')
-        .getPublicUrl(filePath);
-
-      return options?.return === 'key' ? filePath : publicUrl;
+      throw r2Error;
     }
   } catch (error) {
     console.error('Error uploading to Supabase storage:', error);

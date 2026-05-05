@@ -42,7 +42,7 @@ export function ProjectPreviewCard({ project }: ProjectPreviewCardProps) {
       <div className="relative h-48 bg-gradient-to-br from-primary/20 to-primary/5">
         {project.images_urls && project.images_urls[0] ? (
           <img
-            src={getHybridUrl(project.images_urls[0]) || project.images_urls[0]}
+            src={getHybridUrl(project.images_urls[0]) || "/placeholder.svg"}
             alt={project.project_title}
             className="w-full h-full object-cover"
           />
@@ -61,7 +61,7 @@ export function ProjectPreviewCard({ project }: ProjectPreviewCardProps) {
         {/* Autor */}
         <div className="flex items-center gap-3 mb-4">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={getHybridUrl(project.avatar_url) || project.avatar_url} />
+            <AvatarImage src={getHybridUrl(project.avatar_url) || undefined} />
             <AvatarFallback>{project.username?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           <div>

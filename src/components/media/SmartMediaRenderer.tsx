@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+  import React, { useState, useEffect } from 'react';
 import { getHybridUrl } from '@/lib/hybrid-url';
 import { MediaRenderer } from './MediaRenderer';
 
@@ -38,7 +38,7 @@ export function SmartMediaRenderer(props: SmartMediaRendererProps) {
       setError(null);
       
       try {
-        const hybridUrl = getHybridUrl(props.url) || props.url;
+        const hybridUrl = getHybridUrl(props.url);
         if (!hybridUrl) {
           setError('No se pudo generar la URL');
           setIsLoading(false);

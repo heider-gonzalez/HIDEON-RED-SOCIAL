@@ -105,7 +105,7 @@ export default function PersonalizationSettings() {
               <div className="relative h-32 bg-muted rounded-t-lg overflow-hidden">
                 {profile.cover_url ? (
                   <img 
-                    src={getHybridUrl(profile.cover_url) || profile.cover_url} 
+                    src={getHybridUrl(profile.cover_url) || "/placeholder.svg"} 
                     alt="Cover" 
                     className="w-full h-full object-cover"
                   />
@@ -197,7 +197,7 @@ export default function PersonalizationSettings() {
               <div className="w-full h-24 bg-muted rounded-lg overflow-hidden">
                 {profile.cover_url ? (
                   <img 
-                    src={getHybridUrl(profile.cover_url) || profile.cover_url} 
+                    src={getHybridUrl(profile.cover_url) || "/placeholder.svg"} 
                     alt="Banner" 
                     className="w-full h-full object-cover"
                   />

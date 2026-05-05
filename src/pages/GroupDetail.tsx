@@ -97,7 +97,7 @@ export default function GroupDetail() {
   });
 
   const group = groupRows?.[0];
-  const resolvedCoverUrl = getHybridUrl((group as any)?.cover_url) || (group as any)?.cover_url || null;
+  const resolvedCoverUrl = getHybridUrl((group as any)?.cover_url) || null;
 
   const { data: myMembership } = useQuery({
     queryKey: ["group-my-membership", group?.id],

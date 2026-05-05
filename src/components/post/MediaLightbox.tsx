@@ -101,7 +101,7 @@ export function MediaLightbox({ isOpen, onClose, items, startIndex = 0, post }: 
 
   const total = items.length;
   const current = items[index];
-  const currentSrc = getHybridUrl(current?.url) || current?.url;
+  const currentSrc = getHybridUrl(current?.url);
 
   const isDesktopPostViewer = Boolean(post) && !isMobile;
 

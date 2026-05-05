@@ -102,7 +102,7 @@ const Discover = () => {
         <Card className="relative overflow-hidden shadow-lg">
           <div className="aspect-[3/4] relative">
             <img
-              src={getHybridUrl(currentProfile.avatar_url) || currentProfile.avatar_url || "/placeholder.svg"}
+              src={getHybridUrl(currentProfile.avatar_url) || "/placeholder.svg"}
               alt={currentProfile.username}
               className="w-full h-full object-cover"
             />
