@@ -8,8 +8,15 @@ export function normalizeStorageUrl(url?: string | null): string | null {
 }
 
 // Función para manejar URLs híbridas entre Supabase y R2
-export function getHybridUrl(url?: string | null): string | null {
+export function getHybridUrl(input: string | null | undefined): string | null {
+  const url = (input || '').trim();
   if (!url) return null;
+
+  // Defensive fix: some legacy migrations incorrectly produced "...r2.devmedia/..." (missing slash)
+  // Normalize those into "...r2.dev/media/..." before any further processing.
+  const repairedR2Url = url
+    .replace(/\.r2\.devmedia\//i, '.r2.dev/media/')
+    .replace(/\.r2\.devmulti_media\//i, '.r2.dev/multi_media/');
 
   const R2_PUBLIC_URL = (import.meta as any)?.env?.VITE_R2_PUBLIC_URL as string | undefined;
 
@@ -17,15 +24,15 @@ export function getHybridUrl(url?: string | null): string | null {
     u.includes('/storage/v1/object/public/') || u.includes('/storage/v1/render/image');
 
   // Si ya es una URL completa (contiene http), usarla directamente
-  if (url.startsWith('http://') || url.startsWith('https://')) {
+  if (repairedR2Url.startsWith('http://') || repairedR2Url.startsWith('https://')) {
     // Si es una URL de Supabase Storage, intentar convertir a R2 para evitar egress.
-    if (url.includes('/storage/v1/render/image')) {
+    if (repairedR2Url.includes('/storage/v1/render/image')) {
       return null;
     }
 
-    if (R2_PUBLIC_URL && url.includes('/storage/v1/object/public/')) {
+    if (R2_PUBLIC_URL && repairedR2Url.includes('/storage/v1/object/public/')) {
       try {
-        const u = new URL(url);
+        const u = new URL(repairedR2Url);
         const idx = u.pathname.indexOf('/storage/v1/object/public/');
         if (idx >= 0) {
           let rest = u.pathname.slice(idx + '/storage/v1/object/public/'.length).replace(/^\//, '');
@@ -49,10 +56,10 @@ export function getHybridUrl(url?: string | null): string | null {
         // ignore
       }
     }
-    if (isSupabaseStorageUrl(url)) {
+    if (isSupabaseStorageUrl(repairedR2Url)) {
       return null;
     }
-    return url;
+    return repairedR2Url;
   }
   
   // Si es solo un path, construir URL con dominio R2

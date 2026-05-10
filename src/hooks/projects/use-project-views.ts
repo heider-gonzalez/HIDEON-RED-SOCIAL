@@ -72,12 +72,9 @@ export function useProjectViews(postId: string, ownerId?: string) {
       
       const { error } = await supabase
         .from('project_views')
-        .upsert({
+        .insert({
           post_id: postId,
           viewer_id: user.id
-        }, {
-          onConflict: 'post_id,viewer_id',
-          ignoreDuplicates: true
         });
       
       if (error && error.code !== '23505') { // Ignore unique constraint violations

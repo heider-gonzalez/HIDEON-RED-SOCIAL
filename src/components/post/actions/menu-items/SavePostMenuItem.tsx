@@ -22,12 +22,14 @@ export function SavePostMenuItem({ postId }: SavePostMenuItemProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('saved_posts')
         .select('id')
         .eq('user_id', user.id)
         .eq('post_id', postId)
-        .single();
+        .maybeSingle();
+
+      if (error) throw error;
 
       setIsSaved(!!data);
     } catch (error) {
