@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => ({
   },
   // Configuración para producción en Render.com
   base: mode === 'production' ? '/' : '/',
+  // Ensure environment variables are properly loaded in production
+  envPrefix: 'VITE_',
+  envDir: './',
   build: {
     // Production optimizations
     minify: 'terser',

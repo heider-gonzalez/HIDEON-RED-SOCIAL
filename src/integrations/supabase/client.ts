@@ -5,8 +5,25 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Enhanced error validation with detailed debugging information
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  throw new Error('Missing Supabase environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)');
+  const errorDetails = {
+    environment: import.meta.env.MODE,
+    supabaseUrl: SUPABASE_URL ? 'SET' : 'MISSING',
+    supabaseKey: SUPABASE_PUBLISHABLE_KEY ? 'SET' : 'MISSING',
+    allEnvVars: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
+  };
+  
+  console.error('Supabase Configuration Error:', errorDetails);
+  
+  throw new Error(
+    `Missing Supabase environment variables. ` +
+    `VITE_SUPABASE_URL: ${SUPABASE_URL ? 'SET' : 'MISSING'}, ` +
+    `VITE_SUPABASE_ANON_KEY: ${SUPABASE_PUBLISHABLE_KEY ? 'SET' : 'MISSING'}. ` +
+    `Environment: ${import.meta.env.MODE}. ` +
+    `Available VITE_ variables: ${errorDetails.allEnvVars.join(', ')}. ` +
+    `Please ensure these variables are set in your deployment platform (Render).`
+  );
 }
 
 // Import the supabase client like this:
@@ -22,6 +39,10 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   global: {
     headers: {
       'Accept': 'application/json',
+      'Content-Type': 'application/json',
     },
+  },
+  db: {
+    schema: 'public',
   },
 });
