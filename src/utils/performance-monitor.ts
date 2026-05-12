@@ -15,6 +15,7 @@ interface AuthMetrics {
 class PerformanceMonitor {
   private static instance: PerformanceMonitor;
   private metrics: Map<string, AuthMetrics> = new Map();
+  private isDev = !!(import.meta as any)?.env?.DEV;
 
   static getInstance(): PerformanceMonitor {
     if (!PerformanceMonitor.instance) {
@@ -30,7 +31,7 @@ class PerformanceMonitor {
       cached: false,
       userId
     });
-    console.log(`🚀 Performance Monitor: Started tracking auth for user ${userId}`);
+    if (this.isDev) console.log(`🚀 Performance Monitor: Started tracking auth for user ${userId}`);
     return trackingId;
   }
 
@@ -39,7 +40,7 @@ class PerformanceMonitor {
     if (metric) {
       metric.profileCheckTime = performance.now();
       metric.cached = cached;
-      console.log(`🚀 Performance Monitor: Profile check ${cached ? '(CACHED)' : '(DB QUERY)'} for ${metric.userId}`);
+      if (this.isDev) console.log(`🚀 Performance Monitor: Profile check ${cached ? '(CACHED)' : '(DB QUERY)'} for ${metric.userId}`);
     }
   }
 
@@ -49,10 +50,12 @@ class PerformanceMonitor {
       metric.endTime = performance.now();
       metric.totalTime = metric.endTime - metric.startTime;
       
-      console.log(`🚀 Performance Monitor: Auth completed for ${metric.userId}`);
-      console.log(`   ⏱️  Total time: ${metric.totalTime?.toFixed(2)}ms`);
-      console.log(`   🗄️  Profile check: ${metric.profileCheckTime ? (metric.profileCheckTime - metric.startTime).toFixed(2) : 'N/A'}ms`);
-      console.log(`   💾 Cached: ${metric.cached ? 'YES' : 'NO'}`);
+      if (this.isDev) {
+        console.log(`🚀 Performance Monitor: Auth completed for ${metric.userId}`);
+        console.log(`   ⏱️  Total time: ${metric.totalTime?.toFixed(2)}ms`);
+        console.log(`   🗄️  Profile check: ${metric.profileCheckTime ? (metric.profileCheckTime - metric.startTime).toFixed(2) : 'N/A'}ms`);
+        console.log(`   💾 Cached: ${metric.cached ? 'YES' : 'NO'}`);
+      }
       
       // Performance alerts
       if (metric.totalTime > 2000) {
@@ -60,7 +63,7 @@ class PerformanceMonitor {
       }
       
       if (metric.totalTime < 500 && metric.cached) {
-        console.log(`✅ Fast auth with cache: ${metric.totalTime?.toFixed(2)}ms for user ${metric.userId}`);
+        if (this.isDev) console.log(`✅ Fast auth with cache: ${metric.totalTime?.toFixed(2)}ms for user ${metric.userId}`);
       }
     }
   }

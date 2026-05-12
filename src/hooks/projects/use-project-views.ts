@@ -76,9 +76,28 @@ export function useProjectViews(postId: string, ownerId?: string) {
           post_id: postId,
           viewer_id: user.id
         });
-      
-      if (error && error.code !== '23505') { // Ignore unique constraint violations
-        throw error;
+
+      // We expect conflicts for repeated views due to unique index on (post_id, viewer_id).
+      // Supabase can surface this as Postgres code 23505 or HTTP 409.
+      if (error) {
+        const pgCode = (error as any).code;
+        const status = (error as any).status;
+        const httpStatus = (error as any).statusCode;
+        const message = String((error as any).message || '');
+
+        const isConflict =
+          pgCode === '23505' ||
+          status === 409 ||
+          httpStatus === 409 ||
+          message.toLowerCase().includes('duplicate key') ||
+          message.toLowerCase().includes('conflict');
+
+        if (!isConflict) {
+          throw error;
+        }
+
+        // Conflict = already recorded; ignore silently.
+        return;
       }
     },
     onSuccess: () => {

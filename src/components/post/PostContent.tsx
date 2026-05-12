@@ -55,6 +55,14 @@ function PostContentComponent({ post, postId, hideText = false }: PostContentPro
            lowerUrl.includes('stream');
   };
 
+  const inferMediaTypeFromUrl = (url: string): 'image' | 'video' | null => {
+    if (!url) return null;
+    const lower = url.toLowerCase();
+    if (lower.match(/\.(mp4|webm|ogg|mov|avi|wmv|flv|m4v)(\?|#|$)/)) return 'video';
+    if (lower.match(/\.(jpg|jpeg|png|gif|webp|svg)(\?|#|$)/)) return 'image';
+    return null;
+  };
+
   const isYoutubeUrl = (url: string) => {
     if (!url) return false;
     const lower = url.toLowerCase();
@@ -106,11 +114,15 @@ function PostContentComponent({ post, postId, hideText = false }: PostContentPro
   
   if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
     post.media_urls.forEach((url: string) => {
-      const type = post.media_type?.startsWith('video') || isVideoUrl(url) ? 'video' : 'image';
+      const inferred = inferMediaTypeFromUrl(url);
+      const fallback = post.media_type?.startsWith('video') ? 'video' : 'image';
+      const type = inferred ?? (isVideoUrl(url) ? 'video' : fallback);
       mediaItems.push({ url, type });
     });
   } else if (post.media_url) {
-    const type = post.media_type?.startsWith('video') || isVideoUrl(post.media_url) ? 'video' : 'image';
+    const inferred = inferMediaTypeFromUrl(post.media_url);
+    const fallback = post.media_type?.startsWith('video') ? 'video' : 'image';
+    const type = inferred ?? (isVideoUrl(post.media_url) ? 'video' : fallback);
     mediaItems.push({ url: post.media_url, type });
   } else if (demoIsVideo) {
     // Si no hay media_urls, usamos el video encontrado en metadatos

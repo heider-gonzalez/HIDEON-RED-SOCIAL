@@ -427,7 +427,7 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
               Cerrar
             </button>
           </div>
-          <div className="overflow-y-auto">
+          <div className="overflow-y-auto scrollbar-hide">
             <div className="px-4 py-3 space-y-3">
               <CommentList postId={post.id} />
               <CommentForm

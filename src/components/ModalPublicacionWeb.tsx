@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+Ôªøimport { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Image as ImageIcon, Clock, ChevronDown, Plus, Lightbulb, Briefcase, BarChart2, Calendar, Music, Edit, Youtube, Globe, Users, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -89,7 +89,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<File[]>(initialMedia ? [initialMedia] : []);
   const [filePreviews, setFilePreviews] = useState<string[]>(initialMedia ? [URL.createObjectURL(initialMedia)] : []);
   
-  // ≠Éƒ¡ Audio support for Instagram-style music posts
+  // ¬≠∆í√Ñ√Å Audio support for Instagram-style music posts
   const [selectedAudioFile, setSelectedAudioFile] = useState<File | null>(null);
   const [audioPreview, setAudioPreview] = useState<string>('');
   const [audioMetadata, setAudioMetadata] = useState<{
@@ -110,13 +110,13 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     duration: number;
   }>(null);
   
-  // ≠Éƒ¡ Audio clip selection state
+  // ¬≠∆í√Ñ√Å Audio clip selection state
   const [audioClipStart, setAudioClipStart] = useState(0);
   const [audioClipEnd, setAudioClipEnd] = useState(30);
   const [showWaveformEditor, setShowWaveformEditor] = useState(false);
   const [showPostTypeMenu, setShowPostTypeMenu] = useState(false);
   const [selectedPostType, setSelectedPostType] = useState<PostType>(null);
-  const [privacy, setPrivacy] = useState('P˙blico');
+  const [privacy, setPrivacy] = useState('P√∫blico');
   const [showPrivacyMenu, setShowPrivacyMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const privacyMenuRef = useRef<HTMLDivElement>(null);
@@ -164,7 +164,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const [eventDescription, setEventDescription] = useState('');
   const [eventStartDate, setEventStartDate] = useState('');
   const [eventEndDate, setEventEndDate] = useState('');
-  const [eventLocationType, setEventLocationType] = useState<'presencial' | 'virtual' | 'hÌbrido'>('presencial');
+  const [eventLocationType, setEventLocationType] = useState<'presencial' | 'virtual' | 'h√≠brido'>('presencial');
   const [showFirstPostBadge, setShowFirstPostBadge] = useState(false);
   const [eventLocation, setEventLocation] = useState('');
   const [eventMeetingLink, setEventMeetingLink] = useState('');
@@ -178,11 +178,11 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
   const serviceCategoryOptions = useMemo(
     () => [
       'Asesoramiento',
-      'TutorÌas',
+      'Tutor√≠as',
       'Buscar ayudante',
-      'DiseÒo',
-      'ProgramaciÛn',
-      'EdiciÛn de video',
+      'Dise√±o',
+      'Programaci√≥n',
+      'Edici√≥n de video',
       'Otros'
     ],
     []
@@ -198,7 +198,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       setFilePreviews([]);
     }
     
-    // ≠Éƒ¡ Reset audio state when modal closes
+    // ¬≠∆í√Ñ√Å Reset audio state when modal closes
     if (!isVisible) {
       setSelectedAudioFile(null);
       setAudioPreview('');
@@ -235,17 +235,17 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     setShowAudioEditor(false);
 
     toast({
-      title: 'M˙sica aÒadida',
-      description: `${audioData.track.title} ï ${audioData.track.artist}`,
+      title: 'M√∫sica a√±adida',
+      description: `${audioData.track.title} ‚Ä¢ ${audioData.track.artist}`,
     });
   };
 
-  // ≠Éƒ¡ Audio file processing function
+  // ¬≠∆í√Ñ√Å Audio file processing function
   const handleAudioFileSelect = (file: File) => {
     if (!file.type.startsWith('audio/')) {
       toast({
         title: "Error",
-        description: "Por favor selecciona un archivo de audio v·lido (MP3, WAV, etc.)",
+        description: "Por favor selecciona un archivo de audio v√°lido (MP3, WAV, etc.)",
         variant: "destructive",
       });
       return;
@@ -255,7 +255,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "Error", 
-        description: "El archivo de audio es demasiado grande. M·ximo 10MB.",
+        description: "El archivo de audio es demasiado grande. M√°ximo 10MB.",
         variant: "destructive",
       });
       return;
@@ -277,12 +277,12 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     audio.src = URL.createObjectURL(file);
 
     toast({
-      title: "Audio aÒadido",
-      description: `${file.name} listo para usar como m˙sica de fondo`,
+      title: "Audio a√±adido",
+      description: `${file.name} listo para usar como m√∫sica de fondo`,
     });
   };
 
-  // ≠Éƒ¡ Remove audio file
+  // ¬≠∆í√Ñ√Å Remove audio file
   const removeAudioFile = () => {
     setSelectedAudioFile(null);
     setAudioPreview('');
@@ -470,7 +470,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       if (!user) {
         toast({
           title: 'Error',
-          description: 'Debes iniciar sesiÛn para publicar',
+          description: 'Debes iniciar sesi√≥n para publicar',
           variant: 'destructive'
         });
         return;
@@ -524,7 +524,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           
           toast({
             title: 'Audio subido',
-            description: 'M˙sica de fondo aÒadida correctamente',
+            description: 'M√∫sica de fondo a√±adida correctamente',
           });
         } catch (error) {
           console.error('? Audio upload failed:', error);
@@ -581,7 +581,14 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         queryClient.invalidateQueries({ queryKey: ['feed-posts'] });
 
         onPublish?.(content, selectedPostType, selectedFiles[0] || null);
-        toast({ title: 'Publicado', description: 'Tu evento se creÛ correctamente' });
+        toast({ title: 'Publicado', description: 'Tu evento se cre√≥ correctamente' });
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('post:created'));
+          }
+        } catch {
+          // ignore
+        }
         onClose();
         return;
       }
@@ -606,7 +613,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         postData.media_urls = mediaUrls;
       }
 
-      // ≠Éƒ¡ Add audio data if uploaded
+      // ¬≠∆í√Ñ√Å Add audio data if uploaded
       if (audioUrl) {
         postData.audio_url = audioUrl;
         postData.audio_metadata = audioMetadata;
@@ -722,8 +729,15 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       onPublish?.(content, selectedPostType, selectedFiles[0] || null);
       toast({ 
         title: editingProject ? 'Proyecto actualizado' : 'Publicado', 
-        description: editingProject ? 'Tu proyecto se actualizÛ correctamente' : 'Tu publicaciÛn se creÛ correctamente' 
+        description: editingProject ? 'Tu proyecto se actualiz√≥ correctamente' : 'Tu publicaci√≥n se cre√≥ correctamente' 
       });
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('post:created'));
+        }
+      } catch {
+        // ignore
+      }
       onClose();
     } catch (error: any) {
       console.error('Error publishing from ModalPublicacionWeb:', error);
@@ -754,7 +768,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       e.target.value = '';
       toast({
         title: 'Archivo no permitido',
-        description: 'Solo se aceptan im+Ìgenes/videos (m+Ìx 20MB).',
+        description: 'Solo se aceptan im+√≠genes/videos (m+√≠x 20MB).',
         variant: 'destructive'
       });
       return;
@@ -860,7 +874,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 className="flex items-center rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
               >
                 <span className="text-primary">
-                  {privacy === 'P˙blico' ? (
+                  {privacy === 'P√∫blico' ? (
                     <span className="flex items-center">
                       <Globe className="mr-1 h-4 w-4" />
                     </span>
@@ -882,11 +896,11 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 <div className="absolute left-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 z-50">
                   <button
                     type="button"
-                    onClick={() => handlePrivacySelect('P˙blico')}
+                    onClick={() => handlePrivacySelect('P√∫blico')}
                     className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700"
                   >
                     <Globe className="mr-2 h-5 w-5 text-primary" />
-                    P˙blico
+                    P√∫blico
                   </button>
                   <button
                     type="button"
@@ -992,7 +1006,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               <input
                 value={youtubeUrl}
                 onChange={(e) => setYoutubeUrl(e.target.value)}
-                placeholder="Pega aquÌ el enlace del video (youtube.com / youtu.be)"
+                placeholder="Pega aqu√≠ el enlace del video (youtube.com / youtu.be)"
                 className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
                 inputMode="url"
                 autoComplete="url"
@@ -1000,7 +1014,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="DescripciÛn (opcional)"
+                placeholder="Descripci√≥n (opcional)"
                 rows={4}
                 className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
@@ -1012,13 +1026,13 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               <input
                 value={ideaTitle}
                 onChange={(e) => setIdeaTitle(e.target.value)}
-                placeholder="TÌtulo de la idea"
+                placeholder="T√≠tulo de la idea"
                 className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
               <textarea
                 value={ideaDescription}
                 onChange={(e) => setIdeaDescription(e.target.value)}
-                placeholder={`Problema:\nDescribe quÈ problema has identificado y por quÈ es importante.\n\nPara quiÈn:\nøA quiÈn afecta este problema? (estudiantes, empresas, comunidades, etc.)\n\nIdea / soluciÛn inicial:\nøQuÈ propones hacer para resolverlo? No tiene que estar perfecta.\n\nøQuÈ buscas ahora:\nøEquipo, feedback, validaciÛn, alguien con habilidades especÌficas?`}
+                placeholder={`Problema:\nDescribe qu√© problema has identificado y por qu√© es importante.\n\nPara qui√©n:\n¬øA qui√©n afecta este problema? (estudiantes, empresas, comunidades, etc.)\n\nIdea / soluci√≥n inicial:\n¬øQu√© propones hacer para resolverlo? No tiene que estar perfecta.\n\n¬øQu√© buscas ahora:\n¬øEquipo, feedback, validaci√≥n, alguien con habilidades espec√≠ficas?`}
                 rows={4}
                 className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
@@ -1046,13 +1060,13 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 Tipo: <span className="font-semibold">Servicios</span>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-100">CategorÌa del servicio</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-100">Categor√≠a del servicio</label>
                 <select
                   value={serviceCategory}
                   onChange={(e) => setServiceCategory(e.target.value)}
                   className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
                 >
-                  <option value="">Selecciona una categorÌa</option>
+                  <option value="">Selecciona una categor√≠a</option>
                   {serviceCategoryOptions.map((opt) => (
                     <option key={opt} value={opt}>
                       {opt}
@@ -1063,7 +1077,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Describe el servicio, precio (opcional), y cÛmo contactarte"
+                placeholder="Describe el servicio, precio (opcional), y c√≥mo contactarte"
                 rows={5}
                 className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
@@ -1075,7 +1089,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               <input
                 value={projectTitle}
                 onChange={(e) => setProjectTitle(e.target.value)}
-                placeholder="TÌtulo del proyecto"
+                placeholder="T√≠tulo del proyecto"
                 className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
               
@@ -1104,16 +1118,16 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 <textarea
                   value={projectObjectives}
                   onChange={(e) => setProjectObjectives(e.target.value)}
-                  placeholder="øCu·les son los objetivos principales de este proyecto? øQuÈ impacto esperas lograr?"
+                  placeholder="¬øCu√°les son los objetivos principales de este proyecto? ¬øQu√© impacto esperas lograr?"
                   rows={3}
                   className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 />
               </div>
               
-              {/* Campo TecnologÌas */}
+              {/* Campo Tecnolog√≠as */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  TecnologÌas utilizadas:
+                  Tecnolog√≠as utilizadas:
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {projectTechnologies.map((tech, index) => (
@@ -1168,7 +1182,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 </div>
                 {projectTechnologies.length >= 8 && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    M·ximo 8 tecnologÌas
+                    M√°ximo 8 tecnolog√≠as
                   </p>
                 )}
               </div>
@@ -1211,7 +1225,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                         }
                       }
                     }}
-                    placeholder="Ej: Ana GarcÌa, Carlos RodrÌguez..."
+                    placeholder="Ej: Ana Garc√≠a, Carlos Rodr√≠guez..."
                     className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
                   />
                   <Button
@@ -1231,7 +1245,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 </div>
                 {projectTeamMembers.length >= 5 && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    M·ximo 5 miembros
+                    M√°ximo 5 miembros
                   </p>
                 )}
               </div>
@@ -1269,9 +1283,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 onChange={(e) => setProjectDescription(e.target.value)}
                 placeholder={`Describe tu proyecto de forma clara y concisa:
 
-ï Objetivo principal
-ï Estado actual
-ï QuÈ buscas (colaboradores, feedback, etc.)`}
+‚Ä¢ Objetivo principal
+‚Ä¢ Estado actual
+‚Ä¢ Qu√© buscas (colaboradores, feedback, etc.)`}
                 rows={4}
                 className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
@@ -1296,7 +1310,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                       next[idx] = e.target.value;
                       setPollOptions(next);
                     }}
-                    placeholder={`OpciÛn ${idx + 1}`}
+                    placeholder={`Opci√≥n ${idx + 1}`}
                     className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
                   />
                 ))}
@@ -1308,7 +1322,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   className="h-8"
                   onClick={() => setPollOptions((prev) => [...prev, ''])}
                 >
-                  Agregar opciÛn
+                  Agregar opci√≥n
                 </Button>
                 {pollOptions.length > 2 && (
                   <Button
@@ -1317,7 +1331,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                     className="h-8"
                     onClick={() => setPollOptions((prev) => prev.slice(0, -1))}
                   >
-                    Quitar ˙ltima
+                    Quitar √∫ltima
                   </Button>
                 )}
               </div>
@@ -1329,13 +1343,13 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
               <input
                 value={eventTitle}
                 onChange={(e) => setEventTitle(e.target.value)}
-                placeholder="TÌtulo del evento"
+                placeholder="T√≠tulo del evento"
                 className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
               <textarea
                 value={eventDescription}
                 onChange={(e) => setEventDescription(e.target.value)}
-                placeholder="DescripciÛn del evento"
+                placeholder="Descripci√≥n del evento"
                 rows={3}
                 className="w-full resize-none rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
@@ -1361,7 +1375,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 >
                   <option value="presencial">Presencial</option>
                   <option value="virtual">Virtual</option>
-                  <option value="hÌbrido">HÌbrido</option>
+                  <option value="h√≠brido">H√≠brido</option>
                 </select>
                 <select
                   value={eventCategory}
@@ -1381,14 +1395,14 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 <input
                   value={eventMeetingLink}
                   onChange={(e) => setEventMeetingLink(e.target.value)}
-                  placeholder="Link de reuniÛn"
+                  placeholder="Link de reuni√≥n"
                   className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
                 />
               ) : (
                 <input
                   value={eventLocation}
                   onChange={(e) => setEventLocation(e.target.value)}
-                  placeholder="UbicaciÛn"
+                  placeholder="Ubicaci√≥n"
                   className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
                 />
               )}
@@ -1396,7 +1410,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                 type="number"
                 value={eventMaxAttendees}
                 onChange={(e) => setEventMaxAttendees(Number(e.target.value || 0))}
-                placeholder="M·ximo asistentes"
+                placeholder="M√°ximo asistentes"
                 className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
               />
             </div>
@@ -1468,12 +1482,12 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
             </div>
           )}
 
-          {/* ≠Éƒ¡ Audio File Section */}
+          {/* ¬≠∆í√Ñ√Å Audio File Section */}
           {(selectedAudioFile || selectedAudioData) && (
             <div className="mt-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">
-                  M˙sica de fondo
+                  M√∫sica de fondo
                 </span>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -1529,14 +1543,14 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
                   <div className="flex-1">
                     <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                       {selectedAudioData
-                        ? `${selectedAudioData.track.title} ï ${selectedAudioData.track.artist}`
+                        ? `${selectedAudioData.track.title} ‚Ä¢ ${selectedAudioData.track.artist}`
                         : (selectedAudioFile ? selectedAudioFile.name : '')}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       {selectedAudioData
                         ? `Clip: ${Math.floor(selectedAudioData.startTime)}s - ${Math.floor(selectedAudioData.endTime)}s (${Math.floor(selectedAudioData.endTime - selectedAudioData.startTime)}s)`
                         : (audioMetadata && selectedAudioFile
-                          ? `Clip: ${Math.floor(audioClipStart)}s - ${Math.floor(audioClipEnd)}s (${Math.floor(audioClipEnd - audioClipStart)}s) ï ${(selectedAudioFile.size / 1024 / 1024).toFixed(1)} MB`
+                          ? `Clip: ${Math.floor(audioClipStart)}s - ${Math.floor(audioClipEnd)}s (${Math.floor(audioClipEnd - audioClipStart)}s) ‚Ä¢ ${(selectedAudioFile.size / 1024 / 1024).toFixed(1)} MB`
                           : 'Procesando...')
                       }
                     </div>
@@ -1587,7 +1601,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
             <ImageIcon className="h-5 w-5" />
           </label>
           
-          {/* ≠Éƒ¡ Audio Upload Button */}
+          {/* ¬≠∆í√Ñ√Å Audio Upload Button */}
           <button
             type="button"
             onClick={() => setShowMusicSelector(true)}

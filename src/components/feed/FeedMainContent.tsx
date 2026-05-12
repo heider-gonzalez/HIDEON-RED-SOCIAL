@@ -5,7 +5,8 @@ import type { Post } from "@/types/post";
 import { FeedContent } from "./FeedContent";
 import { VirtualizedFeedContent } from "./VirtualizedFeedContent";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface FeedMainContentProps {
   userId?: string;
@@ -14,6 +15,9 @@ interface FeedMainContentProps {
   contentType?: 'regular' | 'idea' | 'project';
   posts: Post[];
   isLoading: boolean;
+  isError?: boolean;
+  error?: unknown;
+  refetch?: () => void;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
@@ -33,6 +37,9 @@ export function FeedMainContent({
   contentType,
   posts,
   isLoading,
+  isError,
+  error,
+  refetch,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
@@ -45,6 +52,16 @@ export function FeedMainContent({
   isPublicError,
 }: FeedMainContentProps) {
   const isMobile = useIsMobile();
+
+  const [timedOut, setTimedOut] = useState(false);
+  useEffect(() => {
+    if (!isLoading) {
+      setTimedOut(false);
+      return;
+    }
+    const t = window.setTimeout(() => setTimedOut(true), 10000);
+    return () => window.clearTimeout(t);
+  }, [isLoading]);
 
   // Enable virtualization for large feeds (more than 20 posts)
   const shouldVirtualize = useMemo(() => {
@@ -59,6 +76,24 @@ export function FeedMainContent({
       return <EmptyFeed />;
     }
     return <PublicFeedWall />;
+  }
+
+  if ((isError || timedOut) && posts.length === 0) {
+    return (
+      <div className="mx-auto max-w-xl p-6 text-center">
+        <div className="text-sm text-muted-foreground">No se pudo cargar el feed.</div>
+        <div className="mt-4">
+          <Button
+            onClick={() => {
+              setTimedOut(false);
+              refetch?.();
+            }}
+          >
+            Reintentar
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   if (isLoading && posts.length === 0) {

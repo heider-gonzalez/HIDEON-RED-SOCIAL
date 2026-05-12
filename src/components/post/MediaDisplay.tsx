@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { getHybridUrl } from "@/lib/hybrid-url";
 import { AudioWaveform, Film } from "lucide-react";
 import { MediaRenderer } from "@/components/media/MediaRenderer";
+import { isSupabaseStorageUrl } from "@/lib/block-supabase-storage";
 
 interface MediaDisplayProps {
   url: string;
@@ -35,20 +36,29 @@ export function MediaDisplay({
   const finalUrl = getHybridUrl(fallbackUrl || url || mediaUrl || '');
   const finalType = type || mediaType || '';
 
+  const originalUrl = url || mediaUrl || '';
+  const typeProbe = finalUrl || originalUrl;
+  const allowSupabase = String((import.meta as any)?.env?.VITE_ALLOW_SUPABASE_STORAGE || '').toLowerCase() === 'true';
+
   // Debug logging
-  console.log('MediaDisplay props:', { url, mediaUrl, type, mediaType, finalUrl, finalType });
+  if (import.meta.env.DEV) {
+    console.debug('MediaDisplay props:', { url, mediaUrl, type, mediaType, finalUrl, finalType });
+  }
 
   // Determine if media is image, video, or audio
-  const isImage = finalType?.startsWith('image') || finalUrl.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i);
-  const isVideo = finalType?.startsWith('video') || finalUrl.match(/\.(mp4|webm|ogg|mov)$/i);
-  const isAudio = finalType?.startsWith('audio') || finalUrl.match(/\.(mp3|wav|ogg|webm)$/i);
+  const isImage = finalType?.startsWith('image') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(typeProbe);
+  const isVideo = finalType?.startsWith('video') || /\.(mp4|webm|ogg|mov)$/i.test(typeProbe);
+  const isAudio = finalType?.startsWith('audio') || /\.(mp3|wav|ogg|webm)$/i.test(typeProbe);
+
+  const canLoadMedia = !!finalUrl && (!isSupabaseStorageUrl(finalUrl) || allowSupabase);
 
   const handleMediaError = () => {
-    const originalUrl = url || mediaUrl || '';
-    console.log('Error cargando media desde origen:', originalUrl);
+    if (import.meta.env.DEV) {
+      console.debug('Error cargando media desde origen:', originalUrl);
+    }
     // No hacemos fallback a Supabase para evitar egress; usar placeholder solo para imágenes
     if (!hasError) {
-      if (finalType?.startsWith('image') || originalUrl.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+      if (finalType?.startsWith('image') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(originalUrl)) {
         setFallbackUrl('/placeholder.svg');
       }
       setHasError(true);
@@ -65,7 +75,7 @@ export function MediaDisplay({
 
   return (
     <>
-      {isImage && (
+      {isImage && canLoadMedia && (
         <img 
           src={finalUrl} 
           alt="Media content" 
@@ -77,8 +87,18 @@ export function MediaDisplay({
           crossOrigin="anonymous"
         />
       )}
+
+      {isImage && !canLoadMedia && (
+        <img
+          src={allowSupabase && originalUrl ? originalUrl : "/placeholder.svg"}
+          alt="Media content"
+          loading="lazy"
+          decoding="async"
+          className={cn("w-full h-auto rounded-md max-h-96 object-contain bg-muted/30", className)}
+        />
+      )}
       
-      {isVideo && !hasError && (
+      {isVideo && !hasError && canLoadMedia && (
         <div className="relative">
           <MediaRenderer
             url={finalUrl}
@@ -99,7 +119,7 @@ export function MediaDisplay({
         </div>
       )}
       
-      {isAudio && !hasError && (
+      {isAudio && !hasError && canLoadMedia && (
         <div className="bg-primary/5 p-4 rounded-lg flex flex-col items-center">
           <AudioWaveform className="h-10 w-10 text-primary mb-3" />
           <div className="w-full">
@@ -129,7 +149,7 @@ export function MediaDisplay({
           <DialogDescription className="sr-only">
             Visualización de imagen o video en pantalla completa
           </DialogDescription>
-          {isImage && (
+          {isImage && canLoadMedia && (
             <img 
               src={finalUrl} 
               alt="Media content" 
@@ -137,7 +157,7 @@ export function MediaDisplay({
             />
           )}
           
-          {isVideo && (
+          {isVideo && canLoadMedia && (
             <MediaRenderer
               url={finalUrl}
               className="w-full"

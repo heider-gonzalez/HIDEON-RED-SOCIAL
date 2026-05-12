@@ -12,6 +12,10 @@ export function isSupabaseStorageUrl(url: string): boolean {
 
 export function installSupabaseStorageBlocker(): void {
   if (typeof window === 'undefined') return;
+
+  const allowSupabase = String((import.meta as any)?.env?.VITE_ALLOW_SUPABASE_STORAGE || '').toLowerCase() === 'true';
+  if (allowSupabase) return;
+
   const w = window as any;
   if (w.__hsocialSupabaseStorageBlockerInstalled) return;
   w.__hsocialSupabaseStorageBlockerInstalled = true;
@@ -41,12 +45,12 @@ export function installSupabaseStorageBlocker(): void {
   };
 
   const OriginalXhrOpen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function (method: string, url: string | URL, async?: boolean, user?: string | null, password?: string | null) {
+  XMLHttpRequest.prototype.open = function (method: string, url: string | URL, isAsync?: boolean, user?: string | null, password?: string | null) {
     const u = typeof url === 'string' ? url : url.toString();
     if (isSupabaseStorageUrl(u)) {
       throw new Error('Blocked XHR to Supabase Storage URL');
     }
-    return OriginalXhrOpen.call(this, method, url as any, async as any, user as any, password as any);
+    return (OriginalXhrOpen as any).apply(this, [method, url as any, isAsync, user, password]);
   };
 
   try {

@@ -53,6 +53,8 @@ export function usePersonalizedFeed(
   const {
     data,
     isLoading: postsLoading,
+    isError: postsIsError,
+    error: postsError,
     refetch,
     fetchNextPage,
     hasNextPage,
@@ -180,6 +182,8 @@ export function usePersonalizedFeed(
   return {
     posts: visiblePosts,
     isLoading: postsLoading,
+    isError: postsIsError,
+    error: postsError,
     isPersonalized,
     setIsPersonalized,
     refetch,

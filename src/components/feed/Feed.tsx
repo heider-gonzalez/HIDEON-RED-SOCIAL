@@ -42,6 +42,9 @@ export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
   const {
     posts,
     isLoading,
+    refetch,
+    isError,
+    error,
     trackPostView,
     trackPostInteraction,
     fetchNextPage,
@@ -55,7 +58,6 @@ export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
   const handleRefresh = useCallback(async () => {
     // Si estamos viendo un post, no hacer refresh para evitar cambios bruscos
     if (shouldPreventUpdates()) {
-      console.log('Feed establecido - previniendo refresh');
       return;
     }
     
@@ -69,6 +71,14 @@ export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
       refetchType: 'active'
     });
   }, [queryClient, shouldPreventUpdates, resetStability]);
+
+  useEffect(() => {
+    const handler = () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'], exact: false, refetchType: 'active' });
+    };
+    window.addEventListener('post:created', handler as any);
+    return () => window.removeEventListener('post:created', handler as any);
+  }, [queryClient]);
 
   const handleViewNewPosts = useCallback(() => {
     setNewPostsCount(0);
@@ -105,6 +115,9 @@ export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
           contentType={contentType}
           posts={posts}
           isLoading={isLoading}
+          refetch={refetch}
+          isError={!!isError}
+          error={error}
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
           fetchNextPage={fetchNextPage}

@@ -128,6 +128,13 @@ export async function createPost({
       }
 
       // Incognito mode disabled (table removed)
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('post:created', { detail: { postId: (post as any)?.id } }));
+        }
+      } catch {
+        // ignore
+      }
       return { success: true, post };
     } else {
       // Regular post creation
@@ -150,6 +157,14 @@ export async function createPost({
       if (postError) {
         console.error("Error creating regular post:", postError);
         throw postError;
+      }
+
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('post:created', { detail: { postId: (post as any)?.id } }));
+        }
+      } catch {
+        // ignore
       }
 
       return { success: true, post };

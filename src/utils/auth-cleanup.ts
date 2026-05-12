@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function cleanupAuthState() {
   try {
-    console.log('🧹 Cleaning up authentication state...');
+    const isDev = !!(import.meta as any)?.env?.DEV;
+    if (isDev) console.log('🧹 Cleaning up authentication state...');
     
     // Remove potentially corrupted tokens from localStorage
     const keysToRemove = [
@@ -23,12 +24,14 @@ export async function cleanupAuthState() {
     const { data, error } = await supabase.auth.refreshSession();
     
     if (error) {
-      console.log('🔄 Session refresh failed, signing out...', error);
+      const isDev = !!(import.meta as any)?.env?.DEV;
+      if (isDev) console.log('🔄 Session refresh failed, signing out...', error);
       await supabase.auth.signOut();
       return { success: false, error };
     }
     
-    console.log('✅ Authentication state cleaned successfully');
+    const isDev2 = !!(import.meta as any)?.env?.DEV;
+    if (isDev2) console.log('✅ Authentication state cleaned successfully');
     return { success: true, data };
     
   } catch (error) {
@@ -53,17 +56,20 @@ export async function verifyAuthState(): Promise<boolean> {
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error) {
-      console.log('🔍 Auth verification failed, cleaning up...', error);
+      const isDev = !!(import.meta as any)?.env?.DEV;
+      if (isDev) console.log('🔍 Auth verification failed, cleaning up...', error);
       await cleanupAuthState();
       return false;
     }
     
     if (!session) {
-      console.log('🔍 No active session found');
+      const isDev = !!(import.meta as any)?.env?.DEV;
+      if (isDev) console.log('🔍 No active session found');
       return false;
     }
     
-    console.log('✅ Auth state verified successfully');
+    const isDev2 = !!(import.meta as any)?.env?.DEV;
+    if (isDev2) console.log('✅ Auth state verified successfully');
     return true;
     
   } catch (error) {

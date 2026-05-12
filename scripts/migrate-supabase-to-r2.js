@@ -7,9 +7,16 @@ import { S3Client, PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/clien
 // Load environment variables
 dotenv.config({ path: '.env', override: true });
 
-// Fallback: hardcoded values (temporary solution)
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://wgbbaxvuuinubkgffpiq.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndnYmJheHZ1dWludWJrZ2ZmcGlxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczOTgxNzg2OCwiZXhwIjoyMDU1MzkzODY4fQ.aM-1OHoe5C08YoyS9Lw5NvUlCPJB5zYP6h4klpTuk';
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl) {
+  throw new Error('Missing env var VITE_SUPABASE_URL');
+}
+
+if (!supabaseServiceKey) {
+  throw new Error('Missing env var SUPABASE_SERVICE_ROLE_KEY');
+}
 
 const supabase = createClient(
   supabaseUrl,
@@ -18,14 +25,26 @@ const supabase = createClient(
 
 const r2 = new S3Client({
   region: 'auto',
-  endpoint: process.env.CLOUDFLARE_R2_API_URL || 'https://137569df68ffc80cc0977391324e77fc.r2.cloudflarestorage.com',
+  endpoint: process.env.CLOUDFLARE_R2_API_URL,
   credentials: {
-    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || 'f732d475284f962d821b7b4ad6ffeb0e',
-    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || '936ab27b07bd4f1cfd19155bdcdc9fce0326a8b3de6b1294875e2dae51f3b569',
+    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
   },
 });
 
 const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'hideon-media';
+
+if (!process.env.CLOUDFLARE_R2_API_URL) {
+  throw new Error('Missing env var CLOUDFLARE_R2_API_URL');
+}
+
+if (!process.env.CLOUDFLARE_R2_ACCESS_KEY_ID) {
+  throw new Error('Missing env var CLOUDFLARE_R2_ACCESS_KEY_ID');
+}
+
+if (!process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY) {
+  throw new Error('Missing env var CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+}
 
 async function listAllFiles(bucket, prefix = '') {
   const files = [];
