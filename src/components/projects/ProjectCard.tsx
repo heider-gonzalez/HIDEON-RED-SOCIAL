@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Eye, Heart, MessageCircle, Users, Calendar, X, ChevronLeft, ChevronRight, Edit, Trash2, MoreHorizontal, ExternalLink, ChevronUp, ChevronDown, Volume2, VolumeX, Volume1, Play, Pause, Maximize } from 'lucide-react';
+import { Eye, Heart, MessageCircle, Users, Calendar, X, ChevronLeft, ChevronRight, Edit, Trash2, MoreHorizontal, ExternalLink, ChevronUp, ChevronDown, Volume2, VolumeX, Volume1, Play, Pause, Maximize, Share2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -84,8 +84,20 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) return;
-      // Temporarily disable project views recording to avoid database errors
-      console.log('Project view recording disabled temporarily');
+      
+      try {
+        // Use RPC function to handle upsert and avoid 409 conflicts
+        const { error } = await (supabase as any).rpc('record_project_view', {
+          p_project_id: project.id,
+          p_viewer_id: user.id
+        });
+        
+        if (error) {
+          console.error('Error recording project view:', error);
+        }
+      } catch (error) {
+        console.error('Error in recordView mutation:', error);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-posts'], exact: false });
@@ -195,11 +207,8 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
 
   const { data: viewers = [], isLoading: isLoadingViewers } = useQuery({
     queryKey: ['project-viewers', project.id],
-    queryFn: async () => {
-      console.log('Project viewers query disabled temporarily');
-      return [];
-    },
-    enabled: false, // Temporarily disabled
+    queryFn: async () => [],
+    enabled: false
   });
   
   // Para imágenes: usar image_url si no hay imágenes en media_urls
@@ -369,6 +378,26 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
     if (projectImages.length > 0) {
       setShowImageGallery(true);
       setCurrentImageIndex(0);
+    }
+  };
+
+  const handleCopyLink = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const projectUrl = `${window.location.origin}/projects/${project.id}`;
+    
+    try {
+      await navigator.clipboard.writeText(projectUrl);
+      toast({
+        title: 'Enlace copiado',
+        description: 'El enlace del proyecto se ha copiado al portapapeles',
+      });
+    } catch (error) {
+      console.error('Error copying link:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo copiar el enlace',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -603,7 +632,7 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
           )}
 
           {/* Views count overlay - Bottom Right */}
-          <div className={`absolute right-3 z-50 ${primaryVideoUrl ? 'bottom-14' : 'bottom-3'}`}>
+          <div className={`absolute right-3 z-50 ${primaryVideoUrl ? 'bottom-14' : 'bottom-3'} flex gap-2`}>
             <button
               type="button"
               className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md rounded-full px-3 py-1.5 text-white text-xs font-medium hover:bg-black/70 transition-colors"
@@ -614,6 +643,14 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
             >
               <Eye size={12} className="opacity-80" />
               <span>{(project.views_count || 0).toLocaleString()}</span>
+            </button>
+            <button
+              type="button"
+              className="flex items-center justify-center w-8 h-8 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition-colors"
+              onClick={handleCopyLink}
+              title="Copiar enlace"
+            >
+              <Share2 size={14} />
             </button>
           </div>
         </div>

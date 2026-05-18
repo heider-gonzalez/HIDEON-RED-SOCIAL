@@ -159,10 +159,7 @@ export function PostCreatorCompact({
             {/* Enhanced Mood Picker - Separated to avoid conflicts */}
             <MoodPicker onSelect={handleMoodSelect}>
               <button
-                onClick={(e) => {
-                  console.log('Mood picker button clicked');
-                  e.stopPropagation();
-                }}
+                onClick={(e) => e.stopPropagation()}
                 className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-all duration-200 text-sm font-medium hover-scale group"
                 title="Añadir estado de ánimo o actividad"
                 type="button"

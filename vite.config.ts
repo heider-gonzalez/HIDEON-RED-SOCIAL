@@ -49,28 +49,48 @@ export default defineConfig(({ mode }) => ({
         entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
         chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
         assetFileNames: `assets/[name]-[hash]-${Date.now()}.[ext]`,
-        manualChunks: {
+        manualChunks: (id) => {
           // Core vendor libraries
-          vendor: ['react', 'react-dom'],
-          router: ['react-router-dom'],
+          if (id.includes('react') && id.includes('react-dom')) {
+            return 'vendor';
+          }
+          if (id.includes('react-router-dom')) {
+            return 'router';
+          }
           
           // Database and query management
-          supabase: ['@supabase/supabase-js'],
-          query: ['@tanstack/react-query'],
+          if (id.includes('@supabase/supabase-js')) {
+            return 'supabase';
+          }
+          if (id.includes('@tanstack/react-query')) {
+            return 'query';
+          }
           
           // UI component libraries
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-avatar'],
-          radix: ['@radix-ui/react-toast', '@radix-ui/react-tabs', '@radix-ui/react-select'],
+          if (id.includes('@radix-ui/react-dialog') || id.includes('@radix-ui/react-dropdown-menu') || id.includes('@radix-ui/react-avatar')) {
+            return 'ui';
+          }
+          if (id.includes('@radix-ui/react-toast') || id.includes('@radix-ui/react-tabs') || id.includes('@radix-ui/react-select')) {
+            return 'radix';
+          }
           
           // Animation and styling
-          animations: ['framer-motion'],
-          icons: ['lucide-react'],
+          if (id.includes('framer-motion')) {
+            return 'animations';
+          }
+          if (id.includes('lucide-react')) {
+            return 'icons';
+          }
           
           // Charts library - heavy, should be separate chunk
-          charts: ['recharts'],
+          if (id.includes('recharts')) {
+            return 'charts';
+          }
           
           // Utilities
-          utils: ['date-fns', 'lodash-es', 'clsx', 'class-variance-authority'],
+          if (id.includes('date-fns') || id.includes('lodash-es') || id.includes('clsx') || id.includes('class-variance-authority')) {
+            return 'utils';
+          }
         },
       },
     },

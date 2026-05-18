@@ -221,8 +221,6 @@ export function ProfileEditDialog({
         updateData.username = values.username;
       }
 
-      console.log("Enviando datos de actualización:", updateData);
-
       // Actualizar en Supabase
       const { data, error } = await (supabase as any)
         .from("profiles")
@@ -230,8 +228,6 @@ export function ProfileEditDialog({
         .eq("id", profile.id)
         .select()
         .single();
-
-      console.log("Respuesta de Supabase:", { data, error });
 
       if (error) {
         console.error("Error específico de Supabase:", error);
@@ -252,8 +248,6 @@ export function ProfileEditDialog({
           birth_date: profileData.birth_date,
           relationship_status: profileData.relationship_status
         };
-        
-        console.log("Perfil actualizado localmente:", updatedProfile);
         onUpdate(updatedProfile);
         
         // Invalidate profile queries para forzar recarga

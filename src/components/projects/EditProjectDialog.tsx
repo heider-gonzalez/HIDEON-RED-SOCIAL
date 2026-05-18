@@ -56,13 +56,7 @@ export function EditProjectDialog({ projectId, isOpen, onOpenChange, onSave }: E
             // Extraer datos del post_metadata si existe
             const metadata = data.post_metadata as any || {};
             const proyecto = metadata.proyecto || metadata.project || {};
-            
-            console.log('Datos del proyecto cargados:', {
-              metadata,
-              proyecto,
-              data
-            });
-            
+
             setProjectData({
               title: proyecto.title || data.content?.split('\n')[0] || "",
               description: proyecto.description || data.content || "",

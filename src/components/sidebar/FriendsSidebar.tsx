@@ -126,24 +126,17 @@ export function FriendsSidebar() {
         event: '*', 
         schema: 'public', 
         table: 'friendships' 
-      }, () => {
-        console.log("Friendships table changed, reloading friends");
-        loadFriends();
-      })
+      }, () => loadFriends())
       .subscribe();
       
     // Suscribirse a cambios en la tabla de messages
     const messagesChannel = supabase
       .channel('messages-changes')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'messages' 
-      }, () => {
-        console.log("New message detected, refreshing friends list");
-        loadFriends();
-      })
-      .subscribe();
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages'
+      }, () => loadFriends())
 
     return () => {
       supabase.removeChannel(friendshipsChannel);

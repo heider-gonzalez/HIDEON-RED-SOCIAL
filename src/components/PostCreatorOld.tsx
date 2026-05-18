@@ -704,8 +704,6 @@ export const PostCreator = React.memo(function PostCreator({
         throw postError;
       }
 
-      console.log('Post created successfully:', newPost);
-
       try {
         if (newPost && typeof newPost === 'object' && (newPost as any)?.id) {
           const mergedPost: any = {

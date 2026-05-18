@@ -256,9 +256,13 @@ function PostContentComponent({ post, postId, hideText = false }: PostContentPro
             src={`https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1`}
             title="YouTube video"
             className="w-full aspect-video rounded-xl shadow-sm"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             loading="lazy"
             frameBorder={0}
+            crossOrigin="anonymous"
+            sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
+            referrerPolicy="no-referrer-when-downgrade"
           />
         </div>
       )}

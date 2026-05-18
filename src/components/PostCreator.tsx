@@ -300,18 +300,13 @@ export function PostCreator({
 
   const handleSubmit = async () => {
     try {
-      console.log('🚀 Starting post creation...', { postType, isFormValid: isFormValid() });
-      
       // Pre-submission validation
       if (!isFormValid()) {
         console.error('❌ Form validation failed before submission');
         mobileToasts.error("Por favor completa todos los campos requeridos.");
         return;
       }
-      
-      // Enhanced authentication with comprehensive token cleanup
-      console.log('🔐 Verifying authentication...');
-      
+
       // First, try to get the current session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -330,18 +325,15 @@ export function PostCreator({
           keysToRemove.forEach(key => {
             localStorage.removeItem(key);
           });
-          
+
           await supabase.auth.signOut();
-          console.log('🧹 Auth tokens cleaned');
         } catch (cleanupError) {
-          console.error('❌ Failed to cleanup auth:', cleanupError);
+          console.error('Failed to cleanup auth:', cleanupError);
         }
         
         mobileToasts.error("Error de autenticación. Por favor inicia sesión nuevamente.");
         return;
       }
-      
-      console.log('✅ User authenticated:', { userId: session.user.id, email: session.user.email });
 
       if (!content.trim() && selectedFiles.length === 0 && postType === 'regular') {
         mobileToasts.validationError("Contenido o archivo");
@@ -361,8 +353,6 @@ export function PostCreator({
       const mediaTypes: string[] = [];
 
       if (selectedFiles.length > 0) {
-        console.log(`Uploading ${selectedFiles.length} file(s)...`);
-        
         try {
           // Subir todos los archivos en paralelo
           const uploadPromises = selectedFiles.map(async (file) => {
@@ -379,8 +369,6 @@ export function PostCreator({
               mediaTypes.push(type || 'image');
             }
           });
-          
-          console.log(`Files uploaded successfully: ${mediaUrls.length} files`);
         } catch (uploadError) {
           console.error('File upload failed:', uploadError);
           mobileToasts.error("Error al subir los archivos");
@@ -433,8 +421,6 @@ export function PostCreator({
         postData.project_status = 'idea'; // Mark as idea initially
       }
 
-      console.log("Creating post with data:", postData);
-      
       // Handle proyectos - store metadata in post_metadata
       if (postType === 'proyecto' && proyecto.title.trim()) {
         postData.post_metadata = {
@@ -561,26 +547,19 @@ export function PostCreator({
 
   const isFormValid = () => {
     try {
-      console.log('🔍 Validating form for postType:', postType);
-      
       if (postType === 'regular') {
         // For text-only posts with backgrounds, limit content length
         if (contentStyle.isTextOnly && content.length > 280) {
-          console.log('❌ Regular post validation failed: text too long for background');
           return false;
         }
-        const isValid = Boolean(content.trim() || selectedFiles.length > 0);
-        console.log('✅ Regular post validation:', { isValid, hasContent: !!content.trim(), hasFiles: selectedFiles.length });
-        return isValid;
+        return Boolean(content.trim() || selectedFiles.length > 0);
       } else if (postType === 'idea') {
         const validation = {
           hasTitle: idea.title.trim().length >= 5,
           hasDescription: idea.description.trim().length >= 10,
           validParticipants: idea.max_participants > 0 && idea.max_participants <= 50
         };
-        const isValid = validation.hasTitle && validation.hasDescription && validation.validParticipants;
-        console.log('💡 Idea validation:', { ...validation, isValid });
-        return isValid;
+        return validation.hasTitle && validation.hasDescription && validation.validParticipants;
       } else if (postType === 'proyecto') {
         const validationProyecto = {
           hasTitle: proyecto.title.trim().length >= 5,
@@ -912,14 +891,7 @@ export function PostCreator({
             className="w-full sm:w-auto px-6 py-3 sm:py-2 text-base sm:text-sm font-medium hover-scale touch-manipulation"
             size="lg"
             onMouseEnter={() => {
-              // Debug validation on hover
-              if (!isFormValid()) {
-                console.log('🔍 Button disabled - validation failed:', {
-                  postType,
-                  formValid: isFormValid(),
-                  uploading: isUploading
-                });
-              }
+              // Validation feedback removed
             }}
           >
             {isUploading ? (

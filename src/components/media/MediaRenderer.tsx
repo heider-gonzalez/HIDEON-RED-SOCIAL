@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { getHybridUrl } from "@/lib/hybrid-url";
 import type { KeyboardEvent, Ref, SyntheticEvent } from "react";
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import {
   inferIsCoarsePointer,
   shouldActivateOnKeyDown,
@@ -55,8 +55,15 @@ export function MediaRenderer({
   controls = false,
   playsInline = true,
 }: MediaRendererProps) {
-  // Convertir URL a URL híbrida
-  const hybridUrl = useMemo(() => getHybridUrl(url), [url]);
+  // Convertir URL a URL híbrida con fallback dinámico
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  
+  const hybridUrl = useMemo(() => {
+    if (fallbackUrl) return fallbackUrl;
+    return getHybridUrl(url);
+  }, [url, fallbackUrl]);
+  
   const safeHybridUrl = hybridUrl ?? "";
 
   const type = inferMediaType(safeHybridUrl);
@@ -87,20 +94,41 @@ export function MediaRenderer({
     resetOnPause,
   });
 
-  // Manejar errores de video simple (sin fallback ya que las URLs son originales)
+  // Manejar errores de video con fallback dinámico
   const handleVideoError = useCallback(async () => {
-    // Debug logging solo en desarrollo
-    if (import.meta.env.DEV && !videoError) {
-      console.debug("🔍 Video error en MediaRenderer:", safeHybridUrl);
-    }
-
     if (!videoError) {
       markVideoError(safeHybridUrl);
-      if (import.meta.env.DEV) {
-        console.debug("❌ Video no disponible en MediaRenderer:", safeHybridUrl);
+      
+      // Intentar fallback: si es URL de Supabase, intentar R2, y viceversa
+      if (retryCount < 1 && url) {
+        const originalUrl = url.toLowerCase();
+        let newFallbackUrl: string | null = null;
+        
+        // Si es Supabase, intentar R2
+        if (originalUrl.includes('supabase.co')) {
+          // Extraer el nombre del archivo y construir URL de R2
+          const fileName = originalUrl.split('/').pop();
+          if (fileName) {
+            newFallbackUrl = `https://pub-11aaf71a35c74d7da48843fdfc2c1e44.r2.dev/${fileName}`;
+          }
+        }
+        // Si es R2, intentar Supabase (para proyectos viejos)
+        else if (originalUrl.includes('r2.dev') || originalUrl.includes('cloudflare')) {
+          const fileName = originalUrl.split('/').pop();
+          if (fileName) {
+            // Intentar con el bucket de Supabase original
+            newFallbackUrl = `https://your-supabase-project.supabase.co/storage/v1/object/public/${fileName}`;
+          }
+        }
+        
+        if (newFallbackUrl) {
+          setFallbackUrl(newFallbackUrl);
+          setRetryCount(prev => prev + 1);
+          return;
+        }
       }
     }
-  }, [markVideoError, safeHybridUrl, videoError]);
+  }, [markVideoError, safeHybridUrl, videoError, url, retryCount]);
 
   if (!hybridUrl) return null;
 
@@ -137,6 +165,7 @@ export function MediaRenderer({
           controls={showCustomControls ? false : controls}
           playsInline={playsInline}
           preload="metadata"
+          crossOrigin="anonymous"
           onLoadedMetadata={onLoadedMetadata}
           onError={handleVideoError}
           onClick={(e) => {

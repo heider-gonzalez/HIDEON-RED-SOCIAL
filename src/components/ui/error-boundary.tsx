@@ -119,12 +119,9 @@ export class ErrorBoundary extends Component<Props, State> {
               </Button>
               
               {/* Temporarily disable page reload to prevent error loops */}
-              <Button 
+              <Button
                 variant="outline"
-                onClick={() => {
-                  console.log('Manual reload requested by user');
-                  window.location.reload();
-                }}
+                onClick={() => window.location.reload()}
                 size="sm"
                 disabled
               >

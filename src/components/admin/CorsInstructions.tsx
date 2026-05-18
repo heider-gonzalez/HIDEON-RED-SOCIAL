@@ -47,24 +47,19 @@ export function CorsInstructions() {
 {`[
   {
     "AllowedOrigins": [
-      "https://hsocial-app.onrender.com",
-      "https://*.lovable.app",
-      "http://localhost:8081",
-      "http://127.0.0.1:8081"
+      "*"
     ],
     "AllowedMethods": ["GET", "HEAD", "OPTIONS"],
     "AllowedHeaders": [
-      "Range",
-      "Content-Type",
-      "Authorization",
-      "Cache-Control",
-      "X-Requested-With"
+      "*"
     ],
     "ExposeHeaders": [
       "ETag", 
       "Content-Length",
       "Accept-Ranges",
-      "Content-Range"
+      "Content-Range",
+      "Content-Type",
+      "Last-Modified"
     ],
     "MaxAgeSeconds": 86400
   }
