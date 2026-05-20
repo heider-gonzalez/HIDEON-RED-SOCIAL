@@ -6,7 +6,7 @@ DELETE FROM public.idea_participants
 WHERE id IN (
   SELECT id FROM (
     SELECT id,
-      ROW_NUMBER() OVER (PARTITION BY user_id, post_id ORDER BY created_at DESC) as rn
+      ROW_NUMBER() OVER (PARTITION BY user_id, post_id ORDER BY id DESC) as rn
     FROM public.idea_participants
   ) t
   WHERE rn > 1
