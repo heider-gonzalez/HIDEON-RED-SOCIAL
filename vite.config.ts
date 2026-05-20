@@ -31,6 +31,9 @@ export default defineConfig(({ mode }) => ({
   // Ensure environment variables are properly loaded in production
   envPrefix: 'VITE_',
   envDir: './',
+  preview: {
+    allowedHosts: ['hsocial-app.onrender.com', 'localhost', '.onrender.com'],
+  },
   build: {
     // Production optimizations
     minify: 'terser',
