@@ -71,11 +71,8 @@ export default defineConfig(({ mode }) => ({
             return 'query';
           }
           
-          // UI component libraries
-          if (id.includes('@radix-ui/react-dialog') || id.includes('@radix-ui/react-dropdown-menu') || id.includes('@radix-ui/react-avatar')) {
-            return 'ui';
-          }
-          if (id.includes('@radix-ui/react-toast') || id.includes('@radix-ui/react-tabs') || id.includes('@radix-ui/react-select')) {
+          // UI component libraries - consolidate all Radix UI to avoid circular dependencies
+          if (id.includes('@radix-ui/')) {
             return 'radix';
           }
           
