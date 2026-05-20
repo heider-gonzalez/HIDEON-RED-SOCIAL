@@ -71,11 +71,6 @@ export default defineConfig(({ mode }) => ({
             return 'query';
           }
           
-          // UI component libraries - consolidate all Radix UI to avoid circular dependencies
-          if (id.includes('@radix-ui/')) {
-            return 'radix';
-          }
-          
           // Animation and styling
           if (id.includes('framer-motion')) {
             return 'animations';
