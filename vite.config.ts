@@ -33,6 +33,8 @@ export default defineConfig(({ mode }) => ({
   envDir: './',
   preview: {
     allowedHosts: ['hsocial-app.onrender.com', 'localhost', '.onrender.com'],
+    host: true,
+    port: 4173,
   },
   build: {
     // Production optimizations
