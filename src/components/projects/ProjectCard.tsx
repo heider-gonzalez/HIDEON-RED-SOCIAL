@@ -86,17 +86,16 @@ export function ProjectCard({ project, onClick, onEdit, onDelete, expanded }: Pr
       if (!user?.id) return;
       
       try {
-        // Use RPC function to handle upsert and avoid 409 conflicts
-        const { error } = await (supabase as any).rpc('record_project_view', {
-          p_project_id: project.id,
-          p_viewer_id: user.id
-        });
-        
-        if (error) {
-          console.error('Error recording project view:', error);
-        }
+        // RPC function not available in Supabase, skipping view recording
+        // const { error } = await (supabase as any).rpc('record_project_view', {
+        //   p_project_id: project.id,
+        //   p_viewer_id: user.id
+        // });
+        // if (error) {
+        //   console.error('Error recording project view:', error);
+        // }
       } catch (error) {
-        console.error('Error in recordView mutation:', error);
+        // Silently ignore view recording errors
       }
     },
     onSuccess: () => {

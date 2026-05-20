@@ -26,7 +26,7 @@ export function MobileBottomNavigation({
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
   const isVisible = useScrollDirection();
 
-  const { open: openComposer } = usePostComposer();
+  const { open: openComposer, isOpen: isComposerOpen } = usePostComposer();
   const { unreadMessages } = useUnreadMessages(currentUserId || undefined);
   const unreadMessagesCount = unreadMessages.reduce((total, msg) => total + msg.unread_count, 0);
 
@@ -67,7 +67,7 @@ export function MobileBottomNavigation({
     <>
       <nav className={cn(
           "fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/30 z-[60] md:hidden transition-transform duration-300",
-          isVisible ? "translate-y-0" : "translate-y-full"
+          isVisible && !isComposerOpen ? "translate-y-0" : "translate-y-full"
         )}>
         <div className="grid grid-cols-5 items-center h-16 px-2">
           {navItems.map((item) => {

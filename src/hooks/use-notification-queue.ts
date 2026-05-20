@@ -95,6 +95,7 @@ export function useNotificationQueue(options: QueueProcessingOptions = {}) {
         currentIntervalRef.current = interval;
       }
     } finally {
+      // Always reset processing flag, even on early returns
       isProcessingRef.current = false;
     }
   }, [interval, batchSize, maxRetries, backoffMultiplier]);

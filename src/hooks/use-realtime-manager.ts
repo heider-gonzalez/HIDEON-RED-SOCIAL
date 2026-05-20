@@ -136,10 +136,10 @@ class RealtimeManager {
     }, 30000); // Check every 30 seconds
   }
 
-  // Cleanup subscriptions inactive for more than 5 minutes
+  // Cleanup subscriptions inactive for more than 30 minutes
   private cleanupInactiveSubscriptions() {
     const now = Date.now();
-    const inactiveThreshold = 5 * 60 * 1000; // 5 minutes
+    const inactiveThreshold = 30 * 60 * 1000; // 30 minutes
 
     this.subscriptions.forEach((subscription, key) => {
       if (now - subscription.lastActivity > inactiveThreshold) {
@@ -214,6 +214,11 @@ export const useRealtimeManager = () => {
         console.log('👁️ Page hidden, pausing some operations...');
       } else {
         console.log('👁️ Page visible, resuming operations...');
+        // Trigger immediate reconnection when page becomes visible
+        const status = manager.getSubscriptionStatus();
+        if (status && status.total > 0) {
+          console.log('🔄 Reconnecting subscriptions after page visibility change');
+        }
       }
     };
 

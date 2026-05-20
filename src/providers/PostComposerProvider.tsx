@@ -15,6 +15,7 @@ type OpenParams = {
 type PostComposerContextValue = {
   open: (params?: OpenParams) => void;
   close: () => void;
+  isOpen: boolean;
 };
 
 const PostComposerContext = createContext<PostComposerContextValue | null>(null);
@@ -34,7 +35,7 @@ export function PostComposerProvider({ children }: { children: React.ReactNode }
     setParams({});
   }, []);
 
-  const value = useMemo(() => ({ open, close }), [open, close]);
+  const value = useMemo(() => ({ open, close, isOpen }), [open, close, isOpen]);
 
   const userAvatar = params.userAvatar || (user?.user_metadata as any)?.avatar_url;
 

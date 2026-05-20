@@ -34,6 +34,7 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 5;
   const baseReconnectDelay = 1000; // 1 second
+  const autoRetryTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     toastRef.current = toast;
@@ -174,7 +175,13 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
 
   const attemptReconnect = useCallback(() => {
     if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-      console.error("🔔 Max reconnection attempts reached, giving up");
+      console.error("🔔 Max reconnection attempts reached, scheduling automatic retry in 5 minutes");
+      // Schedule automatic retry after 5 minutes
+      autoRetryTimeoutRef.current = setTimeout(() => {
+        console.log("🔔 Attempting automatic reconnection after cooldown");
+        reconnectAttemptsRef.current = 0;
+        setupRealtimeSubscription();
+      }, 5 * 60 * 1000); // 5 minutes
       return;
     }
 
@@ -195,6 +202,9 @@ export function RealtimeNotificationHandler({ userId }: RealtimeNotificationHand
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (autoRetryTimeoutRef.current) {
+        clearTimeout(autoRetryTimeoutRef.current);
       }
     };
   }, [setupRealtimeSubscription]);

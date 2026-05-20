@@ -187,7 +187,7 @@ export function ProfileEditDialog({
       
       if (nameChanged && values.username.trim()) {
         // Usar la función especial para marcar el nombre como editado manualmente
-        const { error: nameError } = await supabase.rpc('mark_name_as_manually_edited', {
+        const { error: nameError } = await (supabase as any).rpc('mark_name_as_manually_edited', {
           p_user_id: profile.id,
           p_new_name: values.username.trim()
         });
