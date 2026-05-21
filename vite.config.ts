@@ -55,9 +55,9 @@ export default defineConfig(({ mode }) => ({
         chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
         assetFileNames: `assets/[name]-[hash]-${Date.now()}.[ext]`,
         manualChunks: (id) => {
-          // Core vendor libraries
-          if (id.includes('react') && id.includes('react-dom')) {
-            return 'vendor';
+          // CORRECCIÓN: Core vendor libraries (React centralizado)
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'react-core';
           }
           if (id.includes('react-router-dom')) {
             return 'router';
