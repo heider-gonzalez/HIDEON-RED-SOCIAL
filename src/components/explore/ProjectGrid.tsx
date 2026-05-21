@@ -29,40 +29,45 @@ export function ProjectGrid({
     );
   };
   
-  const { data: projects, isLoading } = useQuery<any[]>({
+  const { data: projects, isLoading, error, refetch } = useQuery<any[]>({
     queryKey: ['explore-projects', searchQuery, institutionName || ''],
     queryFn: async () => {
-      let query = supabase
-        .from('posts')
-        .select(`
-          id,
-          user_id,
-          created_at,
-          content,
-          idea,
-          project_status,
-          media_url,
-          media_type,
-          media_urls,
-          profiles:profiles(username, avatar_url, institution_name)
-        `)
-        .in('post_type', ['project', 'proyecto'])
-        .eq('visibility', 'public')
-        .order('created_at', { ascending: false })
-        .limit(20);
+      try {
+        let query = supabase
+          .from('posts')
+          .select(`
+            id,
+            user_id,
+            created_at,
+            content,
+            idea,
+            project_status,
+            media_url,
+            media_type,
+            media_urls,
+            profiles:profiles(username, avatar_url, institution_name)
+          `)
+          .in('post_type', ['project', 'proyecto'])
+          .eq('visibility', 'public')
+          .order('created_at', { ascending: false })
+          .limit(20);
 
-      if (institutionName) {
-        query = query.eq('profiles.institution_name', institutionName);
+        if (institutionName) {
+          query = query.eq('profiles.institution_name', institutionName);
+        }
+        
+        if (normalizedQuery) {
+          const q = normalizedQuery.replace(/,/g, ' ');
+          query = query.or(`content.ilike.%${q}%`);
+        }
+        
+        const { data, error } = await query;
+        if (error) throw error;
+        return data;
+      } catch (err) {
+        console.error("Error fetching projects:", err);
+        throw err;
       }
-      
-      if (normalizedQuery) {
-        const q = normalizedQuery.replace(/,/g, ' ');
-        query = query.or(`content.ilike.%${q}%`);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
     }
   });
 
@@ -70,6 +75,21 @@ export function ProjectGrid({
     return <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
       {[1,2,3,4].map(i => <div key={i} className="h-48 bg-muted animate-pulse rounded-lg" />)}
     </div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <FolderOpen className="h-12 w-12 text-destructive mb-4" />
+        <p className="text-muted-foreground mb-2">Error al cargar proyectos</p>
+        <p className="text-xs text-muted-foreground mb-4">
+          {error instanceof Error ? error.message : 'Hubo un problema al conectar con el servidor'}
+        </p>
+        <Button onClick={() => refetch()} variant="outline" size="sm">
+          Reintentar
+        </Button>
+      </div>
+    );
   }
 
   if (!projects || projects.length === 0) {

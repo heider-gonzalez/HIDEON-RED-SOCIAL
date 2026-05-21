@@ -19,23 +19,28 @@ export function UserGrid({ searchQuery }: { searchQuery: string }) {
   const navigate = useNavigate();
   const normalizedQuery = searchQuery.trim();
   
-  const { data: users, isLoading } = useQuery<ExploreUser[]>({
+  const { data: users, isLoading, error, refetch } = useQuery<ExploreUser[]>({
     queryKey: ['explore-users', searchQuery],
     queryFn: async () => {
-      let query = supabase
-        .from('profiles')
-        .select('id, username, google_name, avatar_url, career, updated_at')
-        .order('updated_at', { ascending: false })
-        .limit(20);
-      
-      if (normalizedQuery) {
-        const q = normalizedQuery.replace(/,/g, ' ');
-        query = query.or(`username.ilike.%${q}%,google_name.ilike.%${q}%,career.ilike.%${q}%`);
+      try {
+        let query = supabase
+          .from('profiles')
+          .select('id, username, google_name, avatar_url, career, updated_at')
+          .order('updated_at', { ascending: false })
+          .limit(20);
+        
+        if (normalizedQuery) {
+          const q = normalizedQuery.replace(/,/g, ' ');
+          query = query.or(`username.ilike.%${q}%,google_name.ilike.%${q}%,career.ilike.%${q}%`);
+        }
+        
+        const { data, error } = await query;
+        if (error) throw error;
+        return (data || []) as ExploreUser[];
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        throw err;
       }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data || []) as ExploreUser[];
     }
   });
 
@@ -43,6 +48,21 @@ export function UserGrid({ searchQuery }: { searchQuery: string }) {
     return <div className="grid grid-cols-2 gap-3">
       {[1,2,3,4].map(i => <div key={i} className="h-48 bg-muted animate-pulse rounded-lg" />)}
     </div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Users className="h-12 w-12 text-destructive mb-4" />
+        <p className="text-muted-foreground mb-2">Error al cargar usuarios</p>
+        <p className="text-xs text-muted-foreground mb-4">
+          {error instanceof Error ? error.message : 'Hubo un problema al conectar con el servidor'}
+        </p>
+        <Button onClick={() => refetch()} variant="outline" size="sm">
+          Reintentar
+        </Button>
+      </div>
+    );
   }
 
   if (!users || users.length === 0) {

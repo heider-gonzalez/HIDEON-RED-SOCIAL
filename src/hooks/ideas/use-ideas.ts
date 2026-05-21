@@ -24,38 +24,43 @@ export function useIdeas(params?: UseIdeasParams) {
   return useQuery({
     queryKey: ideasQueryKey({ searchQuery, institutionName, limit }),
     queryFn: async () => {
-      let query = supabase
-        .from("posts")
-        .select(
+      try {
+        let query = supabase
+          .from("posts")
+          .select(
+            `
+            *,
+            profiles!inner(username, avatar_url, institution_name)
           `
-          *,
-          profiles!inner(username, avatar_url, institution_name)
-        `
-        )
-        .eq("post_type", "idea")
-        .not("idea", "is", null)
-        .eq("visibility", "public")
-        .order("created_at", { ascending: false })
-        .limit(limit);
+          )
+          .eq("post_type", "idea")
+          .not("idea", "is", null)
+          .eq("visibility", "public")
+          .order("created_at", { ascending: false })
+          .limit(limit);
 
-      if (institutionName) {
-        query = query.eq("profiles.institution_name", institutionName);
+        if (institutionName) {
+          query = query.eq("profiles.institution_name", institutionName);
+        }
+
+        if (searchQuery) {
+          const q = searchQuery.replace(/,/g, " ").trim();
+          query = query.or(
+            [
+              `content.ilike.%${q}%`,
+              `idea->>title.ilike.%${q}%`,
+              `idea->>description.ilike.%${q}%`,
+            ].join(",")
+          );
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        console.error("Error fetching ideas:", error);
+        throw error;
       }
-
-      if (searchQuery) {
-        const q = searchQuery.replace(/,/g, " ").trim();
-        query = query.or(
-          [
-            `content.ilike.%${q}%`,
-            `idea->>title.ilike.%${q}%`,
-            `idea->>description.ilike.%${q}%`,
-          ].join(",")
-        );
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
     },
   });
 }

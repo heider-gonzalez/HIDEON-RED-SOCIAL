@@ -24,7 +24,7 @@ export function IdeaGrid({
   const [selectedPost, setSelectedPost] = useState<PostType | null>(null);
   const [showPostModal, setShowPostModal] = useState(false);
 
-  const { data: ideas, isLoading } = useIdeas({ searchQuery, institutionName, limit: 20 });
+  const { data: ideas, isLoading, error, refetch } = useIdeas({ searchQuery, institutionName, limit: 20 });
 
   const postIds = ideas?.map(idea => idea.id) || [];
   const { data: participantCounts } = useIdeaParticipantsCount(postIds);
@@ -33,6 +33,21 @@ export function IdeaGrid({
     return <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {[1,2,3,4].map(i => <div key={i} className="h-48 bg-muted animate-pulse rounded-lg" />)}
     </div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Lightbulb className="h-12 w-12 text-destructive mb-4" />
+        <p className="text-muted-foreground mb-2">Error al cargar ideas</p>
+        <p className="text-xs text-muted-foreground mb-4">
+          {error instanceof Error ? error.message : 'Hubo un problema al conectar con el servidor'}
+        </p>
+        <Button onClick={() => refetch()} variant="outline" size="sm">
+          Reintentar
+        </Button>
+      </div>
+    );
   }
 
   if (!ideas || ideas.length === 0) {

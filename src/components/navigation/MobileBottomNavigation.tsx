@@ -65,10 +65,14 @@ export function MobileBottomNavigation({
 
   return (
     <>
-      <nav className={cn(
+      <nav 
+        style={isComposerOpen ? { display: 'none' } : undefined} // Fuerza la desaparición absoluta en el DOM virtual
+        className={cn(
           "fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/30 z-[60] md:hidden transition-transform duration-300",
-          isVisible && !isComposerOpen ? "translate-y-0" : "translate-y-full"
-        )}>
+          isComposerOpen ? "hidden pointer-events-none opacity-0 select-none" : "",
+          !isComposerOpen && (isVisible ? "translate-y-0" : "translate-y-full")
+        )}
+      >
         <div className="grid grid-cols-5 items-center h-16 px-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || 

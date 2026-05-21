@@ -8,7 +8,7 @@ import { useGroupsOverview } from "@/hooks/groups/use-groups-overview";
 export function GroupGrid({ searchQuery }: { searchQuery: string }) {
   const navigate = useNavigate();
 
-  const { data, isLoading } = useGroupsOverview({ publicLimit: 50 });
+  const { data, isLoading, error, refetch } = useGroupsOverview({ publicLimit: 50 });
   const groups = data?.groups ?? [];
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -28,6 +28,21 @@ export function GroupGrid({ searchQuery }: { searchQuery: string }) {
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="h-48 bg-muted animate-pulse rounded-lg" />
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Users className="h-12 w-12 text-destructive mb-4" />
+        <p className="text-muted-foreground mb-2">Error al cargar grupos</p>
+        <p className="text-xs text-muted-foreground mb-4">
+          {error instanceof Error ? error.message : 'Hubo un problema al conectar con el servidor'}
+        </p>
+        <Button onClick={() => refetch()} variant="outline" size="sm">
+          Reintentar
+        </Button>
       </div>
     );
   }
