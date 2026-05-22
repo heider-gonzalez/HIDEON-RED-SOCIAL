@@ -194,6 +194,8 @@ const Notifications = () => {
                           onClick={() => handleNotificationClick(notification)}
                           onMarkAsRead={() => markAsRead([notification.id])}
                           onRemove={() => removeNotification(notification.id)}
+                          onHandleIdeaRequest={(notificationId, senderId, accept) => handleIdeaRequest(notification, accept)}
+                          onOpenChat={handleOpenChat}
                         />
                       ))}
                   </>
@@ -206,5 +208,7 @@ const Notifications = () => {
     </Layout>
   );
 };
+
+export default Notifications;
 
 export default Notifications;
