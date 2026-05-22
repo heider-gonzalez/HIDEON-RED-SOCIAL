@@ -43,14 +43,15 @@ interface ModalPublicacionWebProps {
 async function sendIdeaPublishedAutoMessage(recipientUserId: string) {
    try {
      if (!recipientUserId) return;
+     // RPC function may not exist in Supabase, wrap in try/catch to prevent blocking
      const { error } = await (supabase as any).rpc('send_idea_published_dm', {
        recipient_user_id: recipientUserId,
      });
      if (error) {
-       console.error('Error sending idea auto message via RPC:', error);
+       console.warn('RPC send_idea_published_dm not available or failed (non-blocking):', error);
      }
    } catch (error) {
-     console.error('Error sending idea auto message:', error);
+     console.warn('RPC send_idea_published_dm error (non-blocking):', error);
    }
 }
 

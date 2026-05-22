@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Rocket, CheckCircle2, ChevronDown } from "lucide-react";
 import { useConvertIdea } from "@/hooks/use-convert-idea";
+import { JoinIdeaButton } from "@/components/post/actions/join-idea/JoinIdeaButton";
 import type { Post } from "@/types/post";
 
 interface IdeaProjectActionsProps {
@@ -60,15 +61,12 @@ export function IdeaProjectActions({ post, isAuthor }: IdeaProjectActionsProps) 
   return (
     <div className="flex flex-col gap-3 px-4 pb-3">
       {!isAuthor && (
-        <>
-          {/* Botón Unirme - azul brillante estilo Instagram */}
-          <Button
-            className="w-full bg-[#0095f6] hover:bg-[#0081d9] text-white font-semibold"
-            size="lg"
-          >
-            Unirme
-          </Button>
-        </>
+        <JoinIdeaButton 
+          postId={post.id} 
+          variant="default" 
+          size="lg"
+          className="bg-[#0095f6] hover:bg-[#0081d9] text-white font-semibold"
+        />
       )}
       
       {isAuthor && currentStatus !== 'completed' && (

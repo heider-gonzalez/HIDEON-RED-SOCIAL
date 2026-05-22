@@ -1,11 +1,12 @@
 
 import { Button } from "@/components/ui/button";
-import { Loader2, LogOut, UserPlus, Clock, XCircle } from "lucide-react";
+import { Loader2, LogOut, UserPlus, Clock, XCircle, Settings } from "lucide-react";
 import { useJoinIdeaButton } from "@/hooks/post-mutations/idea-join/use-join-idea-button";
 import { useState, useEffect } from "react";
 import { JoinIdeaDialog } from "@/components/post/idea/JoinIdeaDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 interface JoinIdeaButtonProps {
   postId: string;
@@ -24,6 +25,9 @@ export function JoinIdeaButton({
 }: JoinIdeaButtonProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [profession, setProfession] = useState("");
+  const [isCreator, setIsCreator] = useState(false);
+  const [isLoadingCreator, setIsLoadingCreator] = useState(true);
+  const navigate = useNavigate();
   const {
     participantStatus,
     isParticipant,
@@ -35,6 +39,34 @@ export function JoinIdeaButton({
     handleJoinIdea,
     handleLeaveIdea
   } = useJoinIdeaButton({ postId });
+
+  // Verificar si el usuario es el creador de la idea
+  useEffect(() => {
+    const checkCreator = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsCreator(false);
+          return;
+        }
+
+        const { data: post } = await supabase
+          .from('posts')
+          .select('user_id')
+          .eq('id', postId)
+          .maybeSingle();
+
+        setIsCreator((post as any)?.user_id === user.id);
+      } catch (error) {
+        console.error("Error al verificar creador:", error);
+        setIsCreator(false);
+      } finally {
+        setIsLoadingCreator(false);
+      }
+    };
+
+    checkCreator();
+  }, [postId]);
 
   // Verificar si el usuario tiene una carrera registrada
   useEffect(() => {
@@ -63,7 +95,7 @@ export function JoinIdeaButton({
   }, [participantStatus]);
 
   // Handle loading state
-  if (isLoadingStatus || isJoining || isLeaving) {
+  if (isLoadingStatus || isJoining || isLeaving || isLoadingCreator) {
     return <LoadingButton size={size} />;
   }
 
@@ -111,6 +143,24 @@ export function JoinIdeaButton({
       >
         <XCircle className="h-4 w-4" />
         Solicitud Rechazada
+      </Button>
+    );
+  }
+
+  // If user is the creator, show admin button
+  if (isCreator) {
+    return (
+      <Button 
+        className={cn(
+          "flex items-center gap-2 w-full rounded-xl font-semibold border border-border bg-purple-500/10 text-purple-700 dark:text-purple-400",
+          className
+        )}
+        variant="outline"
+        size={size}
+        onClick={() => navigate(`/notifications`)}
+      >
+        <Settings className="h-4 w-4" />
+        Administrar Solicitudes
       </Button>
     );
   }
