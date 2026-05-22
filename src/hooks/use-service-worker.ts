@@ -16,6 +16,7 @@ export function useServiceWorker() {
   const [isRegistered, setIsRegistered] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [pushSubscriptionAttempted, setPushSubscriptionAttempted] = useState(false);
 
   // Check if service workers and push notifications are supported
   useEffect(() => {
@@ -101,6 +102,12 @@ export function useServiceWorker() {
 
   // Subscribe to push notifications
   const subscribeToPushNotifications = useCallback(async () => {
+    // Prevent infinite retry loops if VAPID key is not configured
+    if (pushSubscriptionAttempted) {
+      console.warn('🔔 Push subscription already attempted, skipping to prevent retry loop');
+      return null;
+    }
+
     if (!registration) {
       console.warn('Service Worker not registered');
       return null;
@@ -109,7 +116,7 @@ export function useServiceWorker() {
     try {
       console.log('🔔 Subscribing to push notifications...');
 
-      // You'll need to replace this with your actual VAPID public key from Supabase
+      // Validate VAPID public key from environment variable
       const rawVapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
       const vapidPublicKey = (rawVapidPublicKey ?? '')
         .toString()
@@ -117,9 +124,10 @@ export function useServiceWorker() {
         .replace(/^['"]|['"]$/g, '')
         .replace(/\s+/g, '');
 
-      // If no VAPID key is provided, skip push notifications
+      // If no VAPID key is provided, skip push notifications and mark as attempted
       if (!vapidPublicKey || vapidPublicKey === 'BKxQzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQ') {
-        console.warn('🔔 VAPID public key not configured, skipping push notifications');
+        console.warn('🔔 VAPID public key not configured. Set VITE_VAPID_PUBLIC_KEY in your .env file to enable push notifications.');
+        setPushSubscriptionAttempted(true);
         return null;
       }
 
@@ -136,6 +144,7 @@ export function useServiceWorker() {
         console.error('❌ Invalid VAPID public key (base64 decode failed)', {
           length: vapidPublicKey.length,
         });
+        setPushSubscriptionAttempted(true);
         return null;
       }
 
@@ -155,6 +164,7 @@ export function useServiceWorker() {
           decodedLength: applicationServerKey.byteLength,
           stringLength: vapidPublicKey.length,
         });
+        setPushSubscriptionAttempted(true);
         return null;
       }
 
@@ -197,11 +207,15 @@ export function useServiceWorker() {
       }
 
       return subscription;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Push subscription failed:', error);
+      // Mark as attempted to prevent infinite retry loops
+      setPushSubscriptionAttempted(true);
+      // Don't break the app flow, just log the error
+      console.warn('🔔 Push notifications disabled due to configuration error. App will continue to function without push notifications.');
       return null;
     }
-  }, [registration]);
+  }, [registration, pushSubscriptionAttempted]);
 
   // Send push notification (for testing)
   const sendTestNotification = useCallback(async (data: PushNotificationData) => {

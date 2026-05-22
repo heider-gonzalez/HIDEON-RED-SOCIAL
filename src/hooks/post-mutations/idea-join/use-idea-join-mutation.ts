@@ -90,13 +90,30 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
           return { success: false, message: participationError.message };
         }
         console.warn("⚠️ idea_participants blocked by policy; continuing with JSON update:", participationError);
+        // Reset loading state immediately when permission error occurs to prevent infinite loading
+        setIsJoining(false);
       }
       
       // Update post with participant info
-      await updateParticipantsJson(user.id, postId, profile);
+      try {
+        await updateParticipantsJson(user.id, postId, profile);
+      } catch (jsonError: any) {
+        console.error("Error updating participants JSON:", jsonError);
+        toast({
+          title: "Advertencia",
+          description: "Te uniste a la idea, pero hubo un error actualizando la lista de participantes",
+          variant: "destructive"
+        });
+        // Don't return error here - user already joined, just log the issue
+      }
       
       // Create notification
-      await createIdeaNotification(user.id, postId, profile?.username);
+      try {
+        await createIdeaNotification(user.id, postId, profile?.username);
+      } catch (notifError: any) {
+        console.error("Error creating notification:", notifError);
+        // Don't break the flow if notification fails
+      }
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["posts"] });
