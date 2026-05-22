@@ -15,9 +15,10 @@ export function useIdeaApprovalMutation({ postId, onSuccess }: UseIdeaApprovalMu
   const queryClient = useQueryClient();
 
   const approveParticipant = async (participantUserId: string): Promise<boolean> => {
+    setIsApproving(true);
+    
     try {
-      setIsApproving(true);
-      
+      // @ts-ignore - Supabase type inference issue with update
       const { error } = await supabase
         .from("idea_participants")
         .update({ status: "approved" })
@@ -31,7 +32,6 @@ export function useIdeaApprovalMutation({ postId, onSuccess }: UseIdeaApprovalMu
           description: "No se pudo aprobar al participante",
           variant: "destructive"
         });
-        setIsApproving(false);
         return false;
       }
 
@@ -44,7 +44,6 @@ export function useIdeaApprovalMutation({ postId, onSuccess }: UseIdeaApprovalMu
         description: "El usuario ahora es parte de la idea",
       });
 
-      setIsApproving(false);
       if (onSuccess) onSuccess();
       return true;
     } catch (error: any) {
@@ -54,15 +53,17 @@ export function useIdeaApprovalMutation({ postId, onSuccess }: UseIdeaApprovalMu
         description: error.message || "No se pudo aprobar al participante",
         variant: "destructive"
       });
-      setIsApproving(false);
       return false;
+    } finally {
+      setIsApproving(false);
     }
   };
 
   const rejectParticipant = async (participantUserId: string): Promise<boolean> => {
+    setIsRejecting(true);
+    
     try {
-      setIsRejecting(true);
-      
+      // @ts-ignore - Supabase type inference issue with update
       const { error } = await supabase
         .from("idea_participants")
         .update({ status: "rejected" })
@@ -76,7 +77,6 @@ export function useIdeaApprovalMutation({ postId, onSuccess }: UseIdeaApprovalMu
           description: "No se pudo rechazar al participante",
           variant: "destructive"
         });
-        setIsRejecting(false);
         return false;
       }
 
@@ -89,7 +89,6 @@ export function useIdeaApprovalMutation({ postId, onSuccess }: UseIdeaApprovalMu
         description: "La solicitud de unión ha sido rechazada",
       });
 
-      setIsRejecting(false);
       if (onSuccess) onSuccess();
       return true;
     } catch (error: any) {
@@ -99,8 +98,9 @@ export function useIdeaApprovalMutation({ postId, onSuccess }: UseIdeaApprovalMu
         description: error.message || "No se pudo rechazar al participante",
         variant: "destructive"
       });
-      setIsRejecting(false);
       return false;
+    } finally {
+      setIsRejecting(false);
     }
   };
 

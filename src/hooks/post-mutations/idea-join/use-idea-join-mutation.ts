@@ -31,8 +31,10 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
   };
 
   const joinIdeaFn = async (profession: string, callbacks?: JoinIdeaCallbacks): Promise<JoinIdeaResult> => {
+    setIsJoining(true);
+    let result: JoinIdeaResult = { success: false, message: "" };
+    
     try {
-      setIsJoining(true);
       // Get user profile to use their career
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -41,7 +43,6 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
           description: "Debes iniciar sesión para unirte",
           variant: "destructive"
         });
-        setIsJoining(false);
         return { success: false, message: "User not logged in" };
       }
       
@@ -54,14 +55,13 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
       // Check if user is already a participant
       const { data: existingParticipation } = await supabase
         .from("idea_participants")
-        .select("id")
+        .select("id, status")
         .eq("user_id", user.id)
         .eq("post_id", postId)
         .maybeSingle();
       
       if (existingParticipation) {
-        setIsJoining(false);
-        const result: JoinIdeaResult = { success: true, alreadyJoined: true, message: "Ya eres parte de esta idea" };
+        result = { success: true, alreadyJoined: true, message: "Ya tienes una solicitud para esta idea" };
         if (callbacks?.onSuccess) callbacks.onSuccess(result);
         return result;
       }
@@ -87,13 +87,11 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
             description: "No se pudo guardar tu participación",
             variant: "destructive"
           });
-          setIsJoining(false);
+          result = { success: false, message: participationError.message };
           if (callbacks?.onError) callbacks.onError(new Error(participationError.message));
-          return { success: false, message: participationError.message };
+          return result;
         }
         console.warn("⚠️ idea_participants blocked by policy; continuing with JSON update:", participationError);
-        // Reset loading state immediately when permission error occurs to prevent infinite loading
-        setIsJoining(false);
       }
       
       // Update post with participant info
@@ -127,10 +125,9 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
           : "Tu solicitud de unión ha sido enviada. Espera la aprobación del creador.",
       });
       
-      setIsJoining(false);
       if (onSuccess) onSuccess();
       
-      const result: JoinIdeaResult = { success: true, message: "Te has unido a la idea con éxito" };
+      result = { success: true, message: "Solicitud de unión enviada con éxito" };
       if (callbacks?.onSuccess) callbacks.onSuccess(result);
       return result;
     } catch (error: any) {
@@ -140,16 +137,19 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
         description: error.message || "No se pudo unir a la idea",
         variant: "destructive"
       });
-      setIsJoining(false);
+      result = { success: false, message: error.message };
       if (callbacks?.onError) callbacks.onError(error);
-      return { success: false, message: error.message };
+      return result;
+    } finally {
+      setIsJoining(false);
     }
   };
 
   // Add leaveIdea function
   const leaveIdeaFn = async (): Promise<boolean> => {
+    setIsLeaving(true);
+    
     try {
-      setIsLeaving(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -157,7 +157,6 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
           description: "Debes iniciar sesión para abandonar la idea",
           variant: "destructive"
         });
-        setIsLeaving(false);
         return false;
       }
       
@@ -175,7 +174,6 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
           description: "No se pudo abandonar la idea",
           variant: "destructive"
         });
-        setIsLeaving(false);
         return false;
       }
       
@@ -187,7 +185,6 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
         description: "Ya no eres participante de esta idea",
       });
       
-      setIsLeaving(false);
       if (onSuccess) onSuccess();
       return true;
     } catch (error: any) {
@@ -197,8 +194,9 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
         description: error.message || "No se pudo abandonar la idea",
         variant: "destructive"
       });
-      setIsLeaving(false);
       return false;
+    } finally {
+      setIsLeaving(false);
     }
   };
 

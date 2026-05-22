@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Loader2, LogOut, UserPlus } from "lucide-react";
+import { Loader2, LogOut, UserPlus, Clock, XCircle } from "lucide-react";
 import { useJoinIdeaButton } from "@/hooks/post-mutations/idea-join/use-join-idea-button";
 import { useState, useEffect } from "react";
 import { JoinIdeaDialog } from "@/components/post/idea/JoinIdeaDialog";
@@ -25,7 +25,11 @@ export function JoinIdeaButton({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [profession, setProfession] = useState("");
   const {
+    participantStatus,
     isParticipant,
+    isPending,
+    isRejected,
+    isLoadingStatus,
     isJoining,
     isLeaving,
     handleJoinIdea,
@@ -53,13 +57,13 @@ export function JoinIdeaButton({
       }
     };
     
-    if (!isParticipant) {
+    if (!participantStatus) {
       getUserCareer();
     }
-  }, [isParticipant]);
+  }, [participantStatus]);
 
   // Handle loading state
-  if (isJoining || isLeaving) {
+  if (isLoadingStatus || isJoining || isLeaving) {
     return <LoadingButton size={size} />;
   }
 
@@ -75,7 +79,43 @@ export function JoinIdeaButton({
     return success;
   };
 
-  // If user is already a participant, show leave button
+  // If user has a pending request, show disabled button
+  if (isPending) {
+    return (
+      <Button 
+        className={cn(
+          "flex items-center gap-2 w-full rounded-xl font-semibold border border-border bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
+          className
+        )}
+        variant="outline"
+        size={size}
+        disabled
+      >
+        <Clock className="h-4 w-4" />
+        Solicitud Pendiente
+      </Button>
+    );
+  }
+
+  // If user was rejected, show disabled button
+  if (isRejected) {
+    return (
+      <Button 
+        className={cn(
+          "flex items-center gap-2 w-full rounded-xl font-semibold border border-border bg-red-500/10 text-red-700 dark:text-red-400",
+          className
+        )}
+        variant="outline"
+        size={size}
+        disabled
+      >
+        <XCircle className="h-4 w-4" />
+        Solicitud Rechazada
+      </Button>
+    );
+  }
+
+  // If user is already approved as participant, show leave button
   if (isParticipant) {
     return (
       <Button 
@@ -88,7 +128,7 @@ export function JoinIdeaButton({
         onClick={handleLeaveIdea}
       >
         <LogOut className="h-4 w-4" />
-        Ya unido
+        Unido
       </Button>
     );
   }

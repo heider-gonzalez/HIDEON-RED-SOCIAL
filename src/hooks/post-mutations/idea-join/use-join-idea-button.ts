@@ -10,35 +10,45 @@ export interface UseJoinIdeaButtonProps {
   showConfirmation?: boolean;
 }
 
+export type ParticipantStatus = 'pending' | 'approved' | 'rejected' | null;
+
 export function useJoinIdeaButton({
   postId,
   showConfirmation = true,
 }: UseJoinIdeaButtonProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [profession, setProfession] = useState("");
-  const [isParticipant, setIsParticipant] = useState(false);
+  const [participantStatus, setParticipantStatus] = useState<ParticipantStatus>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const { joinIdea, leaveIdea, isJoining, isLeaving } = useIdeaJoinMutation({
     postId,
     onSuccess: () => checkParticipantStatus()
   });
   
-  // Verificar si el usuario ya es participante
+  // Verificar el estado real del participante desde la base de datos
   const checkParticipantStatus = async () => {
     try {
+      setIsLoadingStatus(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setParticipantStatus(null);
+        return;
+      }
       
-      // Verificar en la tabla idea_participants
+      // Verificar en la tabla idea_participants con el campo status
       const { data: participant } = await supabase
         .from("idea_participants")
-        .select("id")
+        .select("status")
         .eq("post_id", postId)
         .eq("user_id", user.id)
         .maybeSingle();
         
-      setIsParticipant(!!participant);
+      setParticipantStatus(participant?.status as ParticipantStatus || null);
     } catch (error) {
       console.error("Error checking participant status:", error);
+      setParticipantStatus(null);
+    } finally {
+      setIsLoadingStatus(false);
     }
   };
   
@@ -70,15 +80,13 @@ export function useJoinIdeaButton({
       const result = await joinIdea(professionValue);
       
       if (result.success) {
-        toast({
-          title: "¡Te has unido a la idea!",
-          description: "Ahora podrás colaborar con otros participantes",
-        });
+        // No mostramos toast aquí, la mutación ya muestra el mensaje correcto
+        // Solo refrescamos el estado real desde la base de datos
         await checkParticipantStatus();
       } else if (result.alreadyJoined) {
         toast({
-          title: "Ya eres participante",
-          description: "Ya formas parte de esta idea",
+          title: "Ya tienes una solicitud",
+          description: "Ya has solicitado unirte a esta idea",
         });
       }
       
@@ -87,7 +95,7 @@ export function useJoinIdeaButton({
       console.error("Error joining idea:", error);
       toast({
         title: "Error",
-        description: "No se pudo unir a la idea",
+        description: "No se pudo enviar la solicitud",
         variant: "destructive",
       });
       return false;
@@ -127,7 +135,11 @@ export function useJoinIdeaButton({
     setProfession,
     handleJoinIdea,
     handleLeaveIdea,
-    isParticipant,
+    participantStatus,
+    isParticipant: participantStatus === 'approved',
+    isPending: participantStatus === 'pending',
+    isRejected: participantStatus === 'rejected',
+    isLoadingStatus,
     isJoining,
     isLeaving,
   };
