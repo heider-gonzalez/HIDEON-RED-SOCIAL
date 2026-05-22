@@ -455,7 +455,7 @@ export function GlobalChat() {
       </AlertDialog>
 
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border shrink-0">
         <h2 className="text-xl font-semibold text-foreground">Chat Global</h2>
         <p className="text-sm text-muted-foreground">
           Un espacio para conversar con la comunidad
@@ -463,7 +463,7 @@ export function GlobalChat() {
       </div>
 
       {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 min-h-0">
         <div className="space-y-4">
           {messages.map((message) => (
             <MessageRow
@@ -478,7 +478,7 @@ export function GlobalChat() {
       </ScrollArea>
 
       {/* Input Area */}
-      <form onSubmit={handleSendMessage} className="p-4 border-t border-border">
+      <form onSubmit={handleSendMessage} className="p-4 border-t border-border shrink-0">
         <div className="relative" ref={containerRef}>
           <div className="flex gap-2">
             <Button

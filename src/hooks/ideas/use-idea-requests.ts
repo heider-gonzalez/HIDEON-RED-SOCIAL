@@ -169,7 +169,7 @@ export function useAcceptIdeaRequest() {
         .maybeSingle();
 
       if (existingError) throw existingError;
-      if (existing && (existing as any).channel_id) return (existing as any).channel_id;
+      if (existing && existing.channel_id) return existing.channel_id as any;
 
       const { data: post, error: postError } = await supabase
         .from('posts')
@@ -402,8 +402,8 @@ export function useUserRequestStatus(postId: string, ideaOwnerId?: string) {
         .in('type', ['idea_accepted', 'idea_rejected'])
         .order('created_at', { ascending: false })
         .limit(1);
-( as any)
-      const lastDecision = decisionNotifs?.[0]?.type;
+
+      const lastDecision = (decisionNotifs as any)?.[0]?.type;
       if (lastDecision === 'idea_rejected') return 'rejected' as const;
       if (lastDecision === 'idea_accepted') return 'accepted' as const;
 
@@ -414,6 +414,7 @@ export function useUserRequestStatus(postId: string, ideaOwnerId?: string) {
           .select('id')
           .eq('sender_id', user.id)
           .eq('receiver_id', ideaOwnerId)
+          // @ts-ignore - Supabase type inference issue
           .eq('type', 'idea_request')
           .eq('post_id', postId)
           .limit(1);
@@ -425,5 +426,4 @@ export function useUserRequestStatus(postId: string, ideaOwnerId?: string) {
     },
     enabled: !!postId
   });
-}
 }
