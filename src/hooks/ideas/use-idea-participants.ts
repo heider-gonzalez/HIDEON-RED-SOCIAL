@@ -7,18 +7,26 @@ interface IdeaParticipant {
   joined_at: string;
   username: string | null;
   avatar_url: string | null;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
-export function useIdeaParticipants(postId: string) {
+export function useIdeaParticipants(postId: string, statusFilter?: 'pending' | 'approved' | 'rejected' | 'all') {
   return useQuery({
-    queryKey: ['idea-participants', postId],
+    queryKey: ['idea-participants', postId, statusFilter],
     queryFn: async (): Promise<IdeaParticipant[]> => {
       if (!postId) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('idea_participants')
-        .select('user_id, profession, joined_at')
+        .select('user_id, profession, joined_at, status')
         .eq('post_id', postId);
+
+      // Apply status filter if provided
+      if (statusFilter && statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching idea participants:', error);
@@ -54,6 +62,7 @@ export function useIdeaParticipants(postId: string) {
           joined_at: p.joined_at,
           username: profile?.username ?? null,
           avatar_url: profile?.avatar_url ?? null,
+          status: p.status || 'pending',
         };
       });
     },

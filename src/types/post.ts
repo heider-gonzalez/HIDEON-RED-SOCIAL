@@ -136,6 +136,7 @@ export interface IdeaParticipant {
   username?: string;
   avatar_url?: string;
   career?: string;
+  status?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface Marketplace {

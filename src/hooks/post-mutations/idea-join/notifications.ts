@@ -31,9 +31,9 @@ export async function createIdeaNotification(userId: string, postId: string, use
         .insert({
           receiver_id: postData.user_id,
           sender_id: userId,
-          type: "idea_join",
+          type: "join_request",
           post_id: postId,
-          message: `${username || "Usuario"} se ha unido a tu idea: "${ideaTitle}"`,
+          message: `${username || "Usuario"} solicitó unirse a tu idea: "${ideaTitle}"`,
         });
     }
   } catch (error) {

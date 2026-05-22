@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Users } from "lucide-react";
+import { ChevronLeft, Users, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IdeaParticipant } from "@/types/post";
 import { useToast } from "@/hooks/use-toast";
+import { useIdeaApprovalMutation } from "@/hooks/post-mutations/idea-join/use-idea-approval-mutation";
 
 export default function IdeaParticipants() {
   const { postId } = useParams();
@@ -16,7 +17,14 @@ export default function IdeaParticipants() {
   const [loading, setLoading] = useState(true);
   const [ideaTitle, setIdeaTitle] = useState("");
   const [participants, setParticipants] = useState<IdeaParticipant[]>([]);
+  const [isCreator, setIsCreator] = useState(false);
   const { toast } = useToast();
+  const { approveParticipant, rejectParticipant, isApproving, isRejecting } = useIdeaApprovalMutation({ 
+    postId: postId || "",
+    onSuccess: () => {
+      // Refresh participants after approval/rejection
+    }
+  });
 
   useEffect(() => {
     const fetchIdeaAndParticipants = async () => {
@@ -29,6 +37,7 @@ export default function IdeaParticipants() {
         setLoading(true);
         
         // 1. Get post and idea data
+        const { data: { user } } = await supabase.auth.getUser();
         const { data: post, error: postError } = await supabase
           .from("posts")
           .select("idea, user_id")
@@ -47,6 +56,11 @@ export default function IdeaParticipants() {
 
         console.log("Post data:", post);
         
+        // Check if current user is the creator
+        if (user && post?.user_id === user.id) {
+          setIsCreator(true);
+        }
+        
         // Extract idea title
         let ideaTitle = "Idea";
         if (post?.idea && typeof post.idea === 'object' && 'title' in post.idea) {
@@ -57,7 +71,7 @@ export default function IdeaParticipants() {
         // 2. Get participants with profiles in a single optimized query
         const { data: participantsData, error: participantsError } = await supabase
           .from("idea_participants")
-          .select("user_id, profession, joined_at")
+          .select("user_id, profession, joined_at, status")
           .eq("post_id", postId);
           
         if (participantsError) {
@@ -101,6 +115,7 @@ export default function IdeaParticipants() {
               joined_at: participant.joined_at,
               username: profile?.username || "Usuario",
               avatar_url: profile?.avatar_url,
+              status: participant.status || 'pending',
             });
           });
         }
@@ -226,7 +241,7 @@ export default function IdeaParticipants() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [postId, toast]);
+  }, [postId, toast, approveParticipant, rejectParticipant, isApproving, isRejecting]);
 
   const handleBack = () => {
     navigate(-1);
@@ -265,7 +280,7 @@ export default function IdeaParticipants() {
             ) : (
               <ul className="space-y-4">
                 {participants.map((participant, index) => (
-                  <li key={`participant-${participant.user_id || index}`} className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/50">
+                  <li key={`participant-${participant.user_id || index}`} className="flex items-start gap-3 p-3 rounded-md hover:bg-muted/50">
                     <Avatar className="h-10 w-10">
                       {participant.avatar_url ? (
                         <AvatarImage src={participant.avatar_url} alt={participant.username || "Usuario"} />
@@ -275,8 +290,18 @@ export default function IdeaParticipants() {
                         </AvatarFallback>
                       )}
                     </Avatar>
-                    <div className="flex flex-col gap-1">
-                      <span className="font-medium">{participant.username || 'Usuario'}</span>
+                    <div className="flex flex-col gap-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{participant.username || 'Usuario'}</span>
+                        {participant.status && (
+                          <Badge 
+                            variant={participant.status === 'approved' ? 'default' : participant.status === 'rejected' ? 'destructive' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {participant.status === 'approved' ? '✓ Aprobado' : participant.status === 'rejected' ? '✗ Rechazado' : '⏳ Pendiente'}
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex flex-wrap gap-1">
                         {participant.career && participant.career !== 'No especificado' && (
                           <Badge variant="secondary" className="text-xs">
@@ -290,6 +315,28 @@ export default function IdeaParticipants() {
                         )}
                       </div>
                     </div>
+                    {isCreator && participant.status === 'pending' && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => approveParticipant(participant.user_id)}
+                          disabled={isApproving}
+                          className="h-8"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => rejectParticipant(participant.user_id)}
+                          disabled={isRejecting}
+                          className="h-8"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

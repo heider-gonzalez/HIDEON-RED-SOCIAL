@@ -67,12 +67,14 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
       }
       
       // Create new participation record - make sure to save the profession
+      // Status is 'pending' by default, requiring creator approval
       const { error: participationError } = await supabase
         .from("idea_participants")
         .insert({
           user_id: user.id,
           post_id: postId,
-          profession: profession || profile?.career || "No especificado"
+          profession: profession || profile?.career || "No especificado",
+          status: "pending"
         });
       
       if (participationError) {
@@ -119,10 +121,10 @@ export function useIdeaJoinMutation({ postId, onSuccess }: UseIdeaJoinMutationPr
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       
       toast({
-        title: "¡Te has unido!",
+        title: "¡Solicitud enviada!",
         description: participationError
-          ? "Ahora eres parte de esta idea. (Algunas funciones pueden requerir ajustes de permisos)"
-          : "Ahora eres parte de esta idea colaborativa",
+          ? "Tu solicitud de unión ha sido enviada. Espera la aprobación del creador. (Algunas funciones pueden requerir ajustes de permisos)"
+          : "Tu solicitud de unión ha sido enviada. Espera la aprobación del creador.",
       });
       
       setIsJoining(false);
