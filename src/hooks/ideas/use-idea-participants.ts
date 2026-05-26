@@ -77,6 +77,7 @@ export function useIdeaParticipants(postId: string, statusFilter?: 'pending' | '
     },
     enabled: !!postId,
     retry: 1,
-    staleTime: 30000,
+    staleTime: 60000, // Increase cache time to 1 minute
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 }

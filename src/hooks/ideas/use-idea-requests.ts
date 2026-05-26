@@ -23,7 +23,9 @@ export function useIdeaRequests(postId: string) {
       // We return an empty list and rely on notifications + participants instead.
       return [];
     },
-    enabled: !!postId
+    enabled: !!postId,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 120000, // Keep in cache for 2 minutes
   });
 }
 
