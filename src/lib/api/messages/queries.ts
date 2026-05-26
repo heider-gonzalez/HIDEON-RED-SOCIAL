@@ -103,16 +103,44 @@ export const fetchConversations = async (currentUserId: string): Promise<Convers
   const conversationsData = await Promise.all(
     privateChannels.map(async (memberChannel: any) => {
       const channelId = memberChannel.id_canal;
+      const channelName = memberChannel.canales?.nombre || "Chat";
 
-      const { data: otherMembers, error: membersError } = await (supabase as any)
+      const { data: allMembers, error: membersError } = await (supabase as any)
         .from("miembros_canal")
         .select("id_usuario")
-        .eq("id_canal", channelId)
-        .neq("id_usuario", currentUserId);
+        .eq("id_canal", channelId);
 
-      if (membersError || !otherMembers || otherMembers.length === 0) return null;
+      if (membersError || !allMembers || allMembers.length === 0) return null;
 
-      const otherUserId = (otherMembers as any)[0].id_usuario;
+      // Check if this is a group chat (more than 2 members)
+      const isGroupChat = allMembers.length > 2;
+
+      if (isGroupChat) {
+        // Group chat - use channel name
+        const { data: lastMessage } = await (supabase as any)
+          .from("mensajes")
+          .select("id, contenido, created_at")
+          .eq("id_canal", channelId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        return {
+          id: channelId,
+          username: channelName,
+          avatar_url: null,
+          last_message: (lastMessage as any)?.contenido || "Inicia una conversación",
+          last_message_at: (lastMessage as any)?.created_at || new Date().toISOString(),
+          unread_count: 0,
+          channel_id: channelId,
+          is_group: true,
+        };
+      }
+
+      // Private chat - get the other user
+      const otherUserId = (allMembers as any).find((m: any) => m.id_usuario !== currentUserId)?.id_usuario;
+
+      if (!otherUserId) return null;
 
       const { data: profile, error: profileError } = await (supabase as any)
         .from("profiles")
