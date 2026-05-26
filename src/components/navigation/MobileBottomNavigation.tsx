@@ -2,7 +2,7 @@ import { Home, Compass, MessageCircle, Bell, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { supabase } from "@/integrations/supabase/client";
 import { usePostComposer } from "@/providers/PostComposerProvider";
@@ -129,3 +129,6 @@ export function MobileBottomNavigation({
     </>
   );
 }
+
+const MobileBottomNavigationMemo = memo(MobileBottomNavigation);
+export default MobileBottomNavigationMemo;

@@ -73,8 +73,8 @@ export function usePersonalizedFeed(
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage?.nextCursor,
     enabled: true,
-    staleTime: 1000 * 60 * 5, // 5 minutos en lugar de 2
-    gcTime: 1000 * 60 * 15, // 15 minutos en lugar de 10
+    staleTime: 1000 * 60 * 10, // 10 minutos para mejor rendimiento
+    gcTime: 1000 * 60 * 30, // 30 minutos para mantener cache más tiempo
     refetchOnMount: false,
     refetchOnReconnect: false,
     refetchOnWindowFocus: false, // Evitar refetch al cambiar de ventana

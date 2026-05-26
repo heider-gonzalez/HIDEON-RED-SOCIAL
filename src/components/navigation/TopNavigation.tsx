@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigation } from "./use-navigation";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
-import { useState, useEffect, useReducer } from "react";
+import { useState, useEffect, useReducer, memo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -307,3 +307,6 @@ export function TopNavigation({ pendingRequestsCount }: TopNavigationProps) {
     </nav>
   );
 }
+
+const TopNavigationMemo = memo(TopNavigation);
+export default TopNavigationMemo;
