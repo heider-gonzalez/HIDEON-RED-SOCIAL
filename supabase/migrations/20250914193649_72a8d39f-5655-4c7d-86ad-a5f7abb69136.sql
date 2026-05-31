@@ -1,16 +1,21 @@
--- Optimización 1: Arreglar política de notifications para mejor performance
--- Eliminar política actual con problema de performance
-DROP POLICY IF EXISTS "Users can delete their own notifications" ON public.notifications;
+-- Optimización 1: Arreglar política de notifications para mejor performance (only if table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'notifications') THEN
+        -- Eliminar política actual con problema de performance
+        DROP POLICY IF EXISTS "Users can delete their own notifications" ON public.notifications;
 
--- Crear nueva política optimizada que evalúa auth.uid() una sola vez por statement
-CREATE POLICY "Users can delete their own notifications - optimized" 
-ON public.notifications 
-FOR DELETE 
-TO authenticated 
-USING ((SELECT auth.uid()) = receiver_id);
+        -- Crear nueva política optimizada que evalúa auth.uid() una sola vez por statement
+        CREATE POLICY "Users can delete their own notifications - optimized" 
+        ON public.notifications 
+        FOR DELETE 
+        TO authenticated 
+        USING ((SELECT auth.uid()) = receiver_id);
 
--- Agregar índice para mejorar performance de queries en notifications
-CREATE INDEX IF NOT EXISTS idx_notifications_receiver_id ON public.notifications(receiver_id);
+        -- Agregar índice para mejorar performance de queries en notifications
+        CREATE INDEX IF NOT EXISTS idx_notifications_receiver_id ON public.notifications(receiver_id);
+    END IF;
+END $$;
 
 -- Optimización 2: Consolidar políticas múltiples en user_reputation
 -- Primero verificar si la tabla user_reputation existe

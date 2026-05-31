@@ -1,13 +1,19 @@
 -- Prioridad del nombre editado manualmente sobre Google OAuth
 -- Agrega campo para controlar si el nombre fue editado y evitar sobreescribir
 
--- 1. Agregar campo para controlar si el nombre fue editado manualmente
-ALTER TABLE public.profiles 
-ADD COLUMN IF NOT EXISTS name_manually_edited BOOLEAN DEFAULT FALSE;
+-- Only apply if profiles table exists
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
+        -- 1. Agregar campo para controlar si el nombre fue editado manualmente
+        ALTER TABLE public.profiles 
+        ADD COLUMN IF NOT EXISTS name_manually_edited BOOLEAN DEFAULT FALSE;
 
--- 2. Agregar campo para guardar el nombre original de Google (opcional)
-ALTER TABLE public.profiles 
-ADD COLUMN IF NOT EXISTS google_name TEXT;
+        -- 2. Agregar campo para guardar el nombre original de Google (opcional)
+        ALTER TABLE public.profiles 
+        ADD COLUMN IF NOT EXISTS google_name TEXT;
+    END IF;
+END $$;
 
 -- 3. Crear función para manejar actualizaciones de Google OAuth
 CREATE OR REPLACE FUNCTION public.handle_google_oauth_update()
@@ -56,12 +62,17 @@ FOR EACH ROW
 WHEN (OLD.raw_user_meta_data IS DISTINCT FROM NEW.raw_user_meta_data)
 EXECUTE FUNCTION public.handle_google_oauth_update();
 
--- 5. Actualizar trigger de inserción para manejar nombres
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-BEFORE INSERT ON auth.users
-FOR EACH ROW
-EXECUTE FUNCTION public.handle_new_user();
+-- 5. Actualizar trigger de inserción para manejar nombres (only if function exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_proc WHERE proname = 'handle_new_user' AND pronamespace = 'public'::regnamespace) THEN
+        DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+        CREATE TRIGGER on_auth_user_created
+        BEFORE INSERT ON auth.users
+        FOR EACH ROW
+        EXECUTE FUNCTION public.handle_new_user();
+    END IF;
+END $$;
 
 -- 6. Actualizar función handle_new_user para guardar google_name
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -120,6 +131,11 @@ $$;
 -- 8. Dar permisos para la función de edición manual
 GRANT EXECUTE ON FUNCTION public.mark_name_as_manually_edited(UUID, TEXT) TO authenticated;
 
--- 9. Crear índices para mejor rendimiento
-CREATE INDEX IF NOT EXISTS idx_profiles_name_manually_edited ON public.profiles(name_manually_edited);
-CREATE INDEX IF NOT EXISTS idx_profiles_google_name ON public.profiles(google_name);
+-- 9. Crear índices para mejor rendimiento (only if profiles table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
+        CREATE INDEX IF NOT EXISTS idx_profiles_name_manually_edited ON public.profiles(name_manually_edited);
+        CREATE INDEX IF NOT EXISTS idx_profiles_google_name ON public.profiles(google_name);
+    END IF;
+END $$;

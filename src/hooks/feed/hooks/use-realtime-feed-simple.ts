@@ -67,6 +67,7 @@ export function useRealtimeFeedSimple(userId?: string) {
 
         // Posts channel - only listen to INSERT events to reduce load
         postsChannel = supabase
+
           .channel(`posts_feed${channelSuffix}`)
 
           .on(
@@ -77,7 +78,44 @@ export function useRealtimeFeedSimple(userId?: string) {
               table: 'posts'
             },
             (payload) => {
-              // Debounced invalidation
+              // Inserción optimista: agregar el nuevo post al principio del feed local
+              const newPost = payload.new;
+              // Actualiza todos los queries de posts (infinite y paginados)
+              queryClient.setQueriesData({ queryKey: ["posts"], exact: false }, (oldData: any) => {
+                if (!oldData) return oldData;
+                // Soporta useInfiniteQuery y useQuery
+                if (oldData.pages && Array.isArray(oldData.pages)) {
+                  // Para useInfiniteQuery
+                  const firstPage = oldData.pages[0];
+                  if (firstPage && Array.isArray(firstPage.posts)) {
+                    // Evita duplicados
+                    if (firstPage.posts.find((p: any) => p.id === newPost.id)) return oldData;
+                    const updatedFirstPage = {
+                      ...firstPage,
+                      posts: [
+                        { ...newPost, _fadeIn: true },
+                        ...firstPage.posts
+                      ]
+                    };
+                    return {
+                      ...oldData,
+                      pages: [updatedFirstPage, ...oldData.pages.slice(1)]
+                    };
+                  }
+                } else if (Array.isArray(oldData.posts)) {
+                  // Para useQuery
+                  if (oldData.posts.find((p: any) => p.id === newPost.id)) return oldData;
+                  return {
+                    ...oldData,
+                    posts: [
+                      { ...newPost, _fadeIn: true },
+                      ...oldData.posts
+                    ]
+                  };
+                }
+                return oldData;
+              });
+              // Dispara invalidación para sincronización posterior
               if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
               debounceTimeoutRef.current = setTimeout(() => {
                 if (cancelled) return;

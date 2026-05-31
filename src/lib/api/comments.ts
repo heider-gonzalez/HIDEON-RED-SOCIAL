@@ -77,7 +77,10 @@ export async function getComments(postId: string) {
     .eq('post_id', postId)
     .order('created_at', { ascending: true });
 
-  if (commentsError) throw commentsError;
+  if (commentsError) {
+    console.error('Error fetching comments:', commentsError);
+    throw commentsError;
+  }
   
   let comments = (commentsData || []).map((comment: any) => {
     return {
@@ -98,29 +101,31 @@ export async function getComments(postId: string) {
     const commentIds = comments.map(comment => comment.id);
     
     if (commentIds.length > 0) {
-      const { data: userReactions } = await (supabase as any)
-        .from('reactions')
-        .select('comment_id, reaction_type')
-        .eq('user_id', currentUser.id)
-        .in('comment_id', commentIds);
+      // Parallelize the two reaction queries
+      const [userReactions, allReactions] = await Promise.all([
+        (supabase as any)
+          .from('reactions')
+          .select('comment_id, reaction_type')
+          .eq('user_id', currentUser.id)
+          .in('comment_id', commentIds),
+        (supabase as any)
+          .from('reactions')
+          .select('comment_id')
+          .in('comment_id', commentIds)
+      ]);
       
       const reactionsByCommentId = new Map();
-      if (userReactions) {
-        (userReactions as any[]).forEach((reaction: any) => {
+      if (userReactions.data) {
+        (userReactions.data as any[]).forEach((reaction: any) => {
           reactionsByCommentId.set(reaction.comment_id, reaction.reaction_type);
         });
       }
       
       const countByCommentId = new Map();
       
-      const { data: allReactions } = await (supabase as any)
-        .from('reactions')
-        .select('comment_id')
-        .in('comment_id', commentIds);
-      
-      if (allReactions) {
+      if (allReactions.data) {
         const counts: Record<string, number> = {};
-        (allReactions as any[]).forEach((reaction: any) => {
+        (allReactions.data as any[]).forEach((reaction: any) => {
           const cid = String(reaction.comment_id || '');
           if (!cid) return;
           if (!counts[cid]) {

@@ -8,19 +8,24 @@ CREATE TABLE IF NOT EXISTS public.followers (
   UNIQUE(follower_id, following_id)
 );
 
--- Migrar datos existentes de friendships aceptadas a followers
-INSERT INTO public.followers (follower_id, following_id, created_at)
-SELECT user_id, friend_id, created_at 
-FROM public.friendships 
-WHERE status = 'accepted'
-ON CONFLICT (follower_id, following_id) DO NOTHING;
+-- Migrar datos existentes de friendships aceptadas a followers (only if friendships table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'friendships') THEN
+        INSERT INTO public.followers (follower_id, following_id, created_at)
+        SELECT user_id, friend_id, created_at 
+        FROM public.friendships 
+        WHERE status = 'accepted'
+        ON CONFLICT (follower_id, following_id) DO NOTHING;
 
--- Migrar datos inversos para mantener seguimientos bidireccionales
-INSERT INTO public.followers (follower_id, following_id, created_at)
-SELECT friend_id, user_id, created_at 
-FROM public.friendships 
-WHERE status = 'accepted'
-ON CONFLICT (follower_id, following_id) DO NOTHING;
+        -- Migrar datos inversos para mantener seguimientos bidireccionales
+        INSERT INTO public.followers (follower_id, following_id, created_at)
+        SELECT friend_id, user_id, created_at 
+        FROM public.friendships 
+        WHERE status = 'accepted'
+        ON CONFLICT (follower_id, following_id) DO NOTHING;
+    END IF;
+END $$;
 
 -- Habilitar RLS
 ALTER TABLE public.followers ENABLE ROW LEVEL SECURITY;

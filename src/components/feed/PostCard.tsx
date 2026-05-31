@@ -491,19 +491,20 @@ export function PostCard({ post }: PostCardProps) {
       {/* Footer - Interaction */}
       <div className="px-4 py-3">
         {/* Like, Comment, Share */}
-        <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
+        <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 gap-1">
           <LikeButton 
             postId={post.id} 
             userId={user?.id} 
             className="flex-1 justify-start" 
           />
           <Button 
-            variant="ghost" 
-            className="flex items-center gap-1"
+            variant="ghost"
+            className="flex items-center gap-1 group/comment transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/60 hover:bg-blue-50 dark:hover:bg-blue-900/20"
             onClick={() => setShowComments(!showComments)}
+            aria-pressed={showComments}
           >
-            <MessageCircle className="h-5 w-5" />
-            <span className="text-sm">
+            <MessageCircle className="h-5 w-5 transition-all duration-200 group-hover/comment:scale-110 group-active/comment:scale-95" />
+            <span className="text-sm font-medium transition-colors duration-200 group-hover/comment:text-blue-500">
               {commentCount > 0 ? commentCount : ''} Comentar
             </span>
             {showComments ? (
@@ -512,9 +513,12 @@ export function PostCard({ post }: PostCardProps) {
               <ChevronDown className="h-4 w-4 ml-1" />
             )}
           </Button>
-          <Button variant="ghost" className="flex items-center gap-1">
-            <Share2 className="h-5 w-5" />
-            <span className="text-sm">Compartir</span>
+          <Button 
+            variant="ghost"
+            className="flex items-center gap-1 group/share transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/60 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+          >
+            <Share2 className="h-5 w-5 transition-all duration-200 group-hover/share:scale-110 group-active/share:scale-95" />
+            <span className="text-sm font-medium transition-colors duration-200 group-hover/share:text-emerald-500">Compartir</span>
           </Button>
         </div>
       </div>

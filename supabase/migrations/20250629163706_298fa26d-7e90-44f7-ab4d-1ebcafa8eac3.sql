@@ -28,15 +28,20 @@ CREATE TABLE public.premium_hearts (
   UNIQUE(user_id)
 );
 
--- Crear tabla para publicaciones incógnitas premium
-CREATE TABLE public.premium_incognito_posts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id UUID REFERENCES posts(id) ON DELETE CASCADE NOT NULL,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  anonymous_name TEXT NOT NULL DEFAULT 'Usuario Premium',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(post_id)
-);
+-- Crear tabla para publicaciones incógnitas premium (only if posts table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'posts') THEN
+        CREATE TABLE public.premium_incognito_posts (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          post_id UUID REFERENCES posts(id) ON DELETE CASCADE NOT NULL,
+          user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+          anonymous_name TEXT NOT NULL DEFAULT 'Usuario Premium',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          UNIQUE(post_id)
+        );
+    END IF;
+END $$;
 
 -- Crear tabla para tracking de pagos con Nequi
 CREATE TABLE public.nequi_payments (
@@ -55,7 +60,12 @@ CREATE TABLE public.nequi_payments (
 -- Habilitar RLS en todas las tablas
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.premium_hearts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.premium_incognito_posts ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'premium_incognito_posts') THEN
+        ALTER TABLE public.premium_incognito_posts ENABLE ROW LEVEL SECURITY;
+    END IF;
+END $$;
 ALTER TABLE public.nequi_payments ENABLE ROW LEVEL SECURITY;
 
 -- Políticas para subscriptions
@@ -90,16 +100,21 @@ CREATE POLICY "System can manage premium hearts"
   FOR ALL 
   WITH CHECK (true);
 
--- Políticas para premium_incognito_posts
-CREATE POLICY "Anyone can view incognito posts" 
-  ON public.premium_incognito_posts 
-  FOR SELECT 
-  USING (true);
+-- Políticas para premium_incognito_posts (only if table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'premium_incognito_posts') THEN
+        CREATE POLICY "Anyone can view incognito posts" 
+          ON public.premium_incognito_posts 
+          FOR SELECT 
+          USING (true);
 
-CREATE POLICY "Users can create their own incognito posts" 
-  ON public.premium_incognito_posts 
-  FOR INSERT 
-  WITH CHECK (auth.uid() = user_id);
+        CREATE POLICY "Users can create their own incognito posts" 
+          ON public.premium_incognito_posts 
+          FOR INSERT 
+          WITH CHECK (auth.uid() = user_id);
+    END IF;
+END $$;
 
 -- Políticas para nequi_payments
 CREATE POLICY "Users can view their own payments" 

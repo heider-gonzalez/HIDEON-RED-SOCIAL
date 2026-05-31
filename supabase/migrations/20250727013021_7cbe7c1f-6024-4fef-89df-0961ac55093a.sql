@@ -1,15 +1,17 @@
--- Primero verificar si existen los campos
+-- Primero verificar si existen los campos (only if profiles table exists)
 DO $$
 BEGIN
-    -- Agregar campos de estado de conexión si no existen
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'profiles' AND column_name = 'last_seen') THEN
-        ALTER TABLE public.profiles ADD COLUMN last_seen timestamp with time zone;
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'profiles' AND column_name = 'status') THEN
-        ALTER TABLE public.profiles ADD COLUMN status text CHECK (status IN ('online', 'offline', 'away')) DEFAULT 'offline';
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
+        -- Agregar campos de estado de conexión si no existen
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'profiles' AND column_name = 'last_seen') THEN
+            ALTER TABLE public.profiles ADD COLUMN last_seen timestamp with time zone;
+        END IF;
+        
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'profiles' AND column_name = 'status') THEN
+            ALTER TABLE public.profiles ADD COLUMN status text CHECK (status IN ('online', 'offline', 'away')) DEFAULT 'offline';
+        END IF;
     END IF;
 END $$;
 

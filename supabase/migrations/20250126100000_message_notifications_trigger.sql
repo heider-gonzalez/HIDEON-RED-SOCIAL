@@ -62,12 +62,17 @@ BEGIN
 END;
 $$;
 
--- Create trigger for message notifications
-DROP TRIGGER IF EXISTS on_message_insert_notification ON public.mensajes;
-CREATE TRIGGER on_message_insert_notification
-AFTER INSERT ON public.mensajes
-FOR EACH ROW
-EXECUTE FUNCTION public.create_message_notification();
+-- Create trigger for message notifications (only if table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'mensajes') THEN
+        DROP TRIGGER IF EXISTS on_message_insert_notification ON public.mensajes;
+        CREATE TRIGGER on_message_insert_notification
+        AFTER INSERT ON public.mensajes
+        FOR EACH ROW
+        EXECUTE FUNCTION public.create_message_notification();
+    END IF;
+END $$;
 
 -- Grant necessary permissions
 GRANT EXECUTE ON FUNCTION public.create_message_notification() TO authenticated;

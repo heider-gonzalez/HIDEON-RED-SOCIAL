@@ -95,8 +95,14 @@ CREATE POLICY "Users can insert messages in their channels" ON public.mensajes
 
 -- 9. Trigger for push notifications (linked to notification_queue system)
 -- This uses the queue_push_notification function defined in push_notifications.sql
-DROP TRIGGER IF EXISTS queue_push_notification_trigger ON public.mensajes;
-CREATE TRIGGER queue_push_notification_trigger
-    AFTER INSERT ON public.mensajes
-    FOR EACH ROW
-    EXECUTE FUNCTION public.queue_push_notification();
+-- Only create the trigger if the function exists
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'queue_push_notification' AND pronamespace = 'public'::regnamespace) THEN
+        DROP TRIGGER IF EXISTS queue_push_notification_trigger ON public.mensajes;
+        CREATE TRIGGER queue_push_notification_trigger
+            AFTER INSERT ON public.mensajes
+            FOR EACH ROW
+            EXECUTE FUNCTION public.queue_push_notification();
+    END IF;
+END $$;

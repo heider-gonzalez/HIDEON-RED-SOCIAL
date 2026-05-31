@@ -2,34 +2,18 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Enhanced error validation with detailed debugging information
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  const errorDetails = {
-    environment: import.meta.env.MODE,
-    supabaseUrl: SUPABASE_URL ? 'SET' : 'MISSING',
-    supabaseKey: SUPABASE_PUBLISHABLE_KEY ? 'SET' : 'MISSING',
-    allEnvVars: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
-  };
-  
-  console.error('Supabase Configuration Error:', errorDetails);
-  
-  throw new Error(
-    `Missing Supabase environment variables. ` +
-    `VITE_SUPABASE_URL: ${SUPABASE_URL ? 'SET' : 'MISSING'}, ` +
-    `VITE_SUPABASE_ANON_KEY: ${SUPABASE_PUBLISHABLE_KEY ? 'SET' : 'MISSING'}. ` +
-    `Environment: ${import.meta.env.MODE}. ` +
-    `Available VITE_ variables: ${errorDetails.allEnvVars.join(', ')}. ` +
-    `Please ensure these variables are set in your deployment platform (Render).`
-  );
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || (import.meta.env.DEV ? 'https://wgbbaxvuuinubkgffpiq.supabase.co' : undefined);
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || (import.meta.env.DEV ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndnYmJheHZ1dWludWJrZ2ZmcGlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4MTc4NjgsImV4cCI6MjA1NTM5Mzg2OH0.B_LIb8OHoe5C08YoyS9Lw5NvUlCPJB5zYP6h4klpTuk' : undefined);
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Faltan las credenciales de Supabase.');
 }
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: localStorage,
     persistSession: true,

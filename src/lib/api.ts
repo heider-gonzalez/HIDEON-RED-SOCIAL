@@ -6,13 +6,14 @@ import { getMultiplePostViewsCounts } from "@/lib/api/posts/queries/views";
 import { checkColumnExists } from "@/lib/api/posts/retrieve/utils/column-check";
 import { getMediaType, uploadMediaFile } from "@/lib/api/posts/storage";
 import { getAuthUser, requireAuthUser } from "@/lib/auth/auth-store";
+import { checkColumnExistsWithCache } from "@/lib/api/posts/retrieve/utils/column-cache";
 
 let cachedHasSharedFields: boolean | null = null;
 async function getHasSharedFields(): Promise<boolean> {
   if (cachedHasSharedFields != null) return cachedHasSharedFields;
   try {
-    const hasSharedPostId = await checkColumnExists('posts', 'shared_post_id');
-    const hasSharedFrom = await checkColumnExists('posts', 'shared_from');
+    const hasSharedPostId = await checkColumnExistsWithCache('posts', 'shared_post_id', () => checkColumnExists('posts', 'shared_post_id'));
+    const hasSharedFrom = await checkColumnExistsWithCache('posts', 'shared_from', () => checkColumnExists('posts', 'shared_from'));
     cachedHasSharedFields = hasSharedPostId || hasSharedFrom;
   } catch {
     // Assume modern schema to avoid blocking the feed
@@ -53,7 +54,7 @@ async function enrichPosts(
       }
     }
   } catch (e) {
-    // ignore (e.g. poll_votes table not deployed yet)
+    console.warn('Failed to fetch poll votes:', e);
     pollVotesMap = {};
   }
 
@@ -67,94 +68,29 @@ async function enrichPosts(
     )
   ) as string[];
 
-  const sharesCountsByPostId = uniquePostIds.length
-    ? await getMultiplePostSharesCounts(uniquePostIds)
-    : {};
-
-  const viewsCountsByPostId = uniquePostIds.length
-    ? await getMultiplePostViewsCounts(uniquePostIds)
-    : {};
-
-  // Fetch reactions breakdown for all posts in one query (count + by_type)
-  const reactionsByPostId: Record<string, { count: number; by_type: Record<string, number> }> = {};
-  try {
-    if (postIds.length > 0) {
-      const { data: reactionsRows, error: reactionsError } = await supabase
-        .from("reactions")
-        .select("post_id, reaction_type")
-        .in("post_id", postIds);
-
-      if (reactionsError) throw reactionsError;
-
-      (reactionsRows || []).forEach((r: any) => {
-        const pid = String(r.post_id);
-        const type = String(r.reaction_type || '');
-        if (!pid || !type) return;
-
-        if (!reactionsByPostId[pid]) {
-          reactionsByPostId[pid] = { count: 0, by_type: {} };
-        }
-
-        reactionsByPostId[pid].count += 1;
-        reactionsByPostId[pid].by_type[type] = (reactionsByPostId[pid].by_type[type] || 0) + 1;
-      });
-    }
-  } catch (e) {
-    // ignore
-  }
-
-  // Hydrate shared posts in batch to preserve previous UI shape
-  const sharedPostById: Record<string, any> = {};
-  try {
-    if (hasSharedFields) {
-      const sharedIds = Array.from(
-        new Set((data || []).map((p: any) => p?.shared_post_id).filter(Boolean))
-      ) as string[];
-
-      if (sharedIds.length > 0) {
-        const { data: sharedPosts, error: sharedPostsError } = await (supabase as any)
-          .from('posts')
-          .select(`
-            *,
-            profiles:profiles(*),
-            comments:comments(count),
-            media_urls
-          `)
-          .in('id', sharedIds);
-
-        if (sharedPostsError) throw sharedPostsError;
-
-        (sharedPosts || []).forEach((sp: any) => {
-          if (!sp?.id) return;
-          sharedPostById[String(sp.id)] = sp;
-        });
-      }
-    }
-  } catch (e) {
-    // ignore
-  }
-
-  // Fetch current user's reactions for all posts in one query
-  const userReactionByPostId: Record<string, string> = {};
-  try {
-    if (user && postIds.length > 0) {
-      const { data: userReactions, error: userReactionsError } = await supabase
-        .from("reactions")
-        .select("post_id, reaction_type")
-        .eq("user_id", user.id)
-        .in("post_id", postIds);
-
-      if (userReactionsError) throw userReactionsError;
-
-      (userReactions || []).forEach((r: any) => {
-        if (r?.post_id && r?.reaction_type) {
-          userReactionByPostId[String(r.post_id)] = String(r.reaction_type);
-        }
-      });
-    }
-  } catch (e) {
-    // ignore
-  }
+  // Parallelize all enrichment queries for better performance
+  const [sharesCountsByPostId, viewsCountsByPostId, reactionsByPostId, sharedPostById, userReactionByPostId] = await Promise.all([
+    uniquePostIds.length ? getMultiplePostSharesCounts(uniquePostIds).catch(e => {
+      console.warn('Failed to fetch shares counts:', e);
+      return {};
+    }) : Promise.resolve({}),
+    uniquePostIds.length ? getMultiplePostViewsCounts(uniquePostIds).catch(e => {
+      console.warn('Failed to fetch views counts:', e);
+      return {};
+    }) : Promise.resolve({}),
+    fetchReactionsByPostId(postIds).catch(e => {
+      console.warn('Failed to fetch reactions:', e);
+      return {};
+    }),
+    fetchSharedPosts(hasSharedFields, data).catch(e => {
+      console.warn('Failed to fetch shared posts:', e);
+      return {};
+    }),
+    user ? fetchUserReactions(user.id, postIds).catch(e => {
+      console.warn('Failed to fetch user reactions:', e);
+      return {};
+    }) : Promise.resolve({})
+  ]);
 
   const postsWithUserReactions = await Promise.all((data || []).map(async (post: any) => {
     const postWithExtras = { ...post };
@@ -179,7 +115,7 @@ async function enrichPosts(
           userVote: pollVotesMap[String(postWithExtras.id)],
         };
       } catch (e) {
-        // ignore
+        console.warn('Failed to add poll vote:', e);
       }
     }
 
@@ -213,13 +149,94 @@ async function enrichPosts(
   return postsWithUserReactions;
 }
 
+// Helper function to fetch reactions for multiple posts
+async function fetchReactionsByPostId(postIds: string[]): Promise<Record<string, { count: number; by_type: Record<string, number> }>> {
+  if (postIds.length === 0) return {};
+  
+  const { data: reactionsRows, error: reactionsError } = await supabase
+    .from("reactions")
+    .select("post_id, reaction_type")
+    .in("post_id", postIds);
+
+  if (reactionsError) throw reactionsError;
+
+  const reactionsByPostId: Record<string, { count: number; by_type: Record<string, number> }> = {};
+  (reactionsRows || []).forEach((r: any) => {
+    const pid = String(r.post_id);
+    const type = String(r.reaction_type || '');
+    if (!pid || !type) return;
+
+    if (!reactionsByPostId[pid]) {
+      reactionsByPostId[pid] = { count: 0, by_type: {} };
+    }
+
+    reactionsByPostId[pid].count += 1;
+    reactionsByPostId[pid].by_type[type] = (reactionsByPostId[pid].by_type[type] || 0) + 1;
+  });
+
+  return reactionsByPostId;
+}
+
+// Helper function to fetch shared posts
+async function fetchSharedPosts(hasSharedFields: boolean, data: any[]): Promise<Record<string, any>> {
+  if (!hasSharedFields) return {};
+  
+  const sharedIds = Array.from(
+    new Set((data || []).map((p: any) => p?.shared_post_id).filter(Boolean))
+  ) as string[];
+
+  if (sharedIds.length === 0) return {};
+
+  const { data: sharedPosts, error: sharedPostsError } = await (supabase as any)
+    .from('posts')
+    .select(`
+      *,
+      profiles:profiles(*),
+      comments:comments(count),
+      media_urls
+    `)
+    .in('id', sharedIds);
+
+  if (sharedPostsError) throw sharedPostsError;
+
+  const sharedPostById: Record<string, any> = {};
+  (sharedPosts || []).forEach((sp: any) => {
+    if (!sp?.id) return;
+    sharedPostById[String(sp.id)] = sp;
+  });
+
+  return sharedPostById;
+}
+
+// Helper function to fetch user reactions
+async function fetchUserReactions(userId: string, postIds: string[]): Promise<Record<string, string>> {
+  if (postIds.length === 0) return {};
+  
+  const { data: userReactions, error: userReactionsError } = await supabase
+    .from("reactions")
+    .select("post_id, reaction_type")
+    .eq("user_id", userId)
+    .in("post_id", postIds);
+
+  if (userReactionsError) throw userReactionsError;
+
+  const userReactionByPostId: Record<string, string> = {};
+  (userReactions || []).forEach((r: any) => {
+    if (r?.post_id && r?.reaction_type) {
+      userReactionByPostId[String(r.post_id)] = String(r.reaction_type);
+    }
+  });
+
+  return userReactionByPostId;
+}
+
 export async function getPosts(userId?: string, groupId?: string, companyId?: string) {
   try {
     const hasSharedFields = await getHasSharedFields();
 
     const [hasAudioUrl, hasAudioMetadata] = await Promise.all([
-      checkColumnExists('posts', 'audio_url'),
-      checkColumnExists('posts', 'audio_metadata'),
+      checkColumnExistsWithCache('posts', 'audio_url', () => checkColumnExists('posts', 'audio_url')),
+      checkColumnExistsWithCache('posts', 'audio_metadata', () => checkColumnExists('posts', 'audio_metadata')),
     ]);
 
     const selectFields: string[] = [
@@ -349,17 +366,17 @@ export async function getPostsPage(params: {
     hasAudioUrl,
     hasAudioMetadata,
   ] = await Promise.all([
-    checkColumnExists('posts', 'group_id'),
-    checkColumnExists('posts', 'company_id'),
-    checkColumnExists('posts', 'media_urls'),
-    checkColumnExists('posts', 'post_type'),
-    checkColumnExists('posts', 'project_status'),
-    checkColumnExists('posts', 'technologies'),
-    checkColumnExists('posts', 'demo_url'),
-    checkColumnExists('posts', 'idea'),
-    checkColumnExists('posts', 'post_metadata'),
-    checkColumnExists('posts', 'audio_url'),
-    checkColumnExists('posts', 'audio_metadata'),
+    checkColumnExistsWithCache('posts', 'group_id', () => checkColumnExists('posts', 'group_id')),
+    checkColumnExistsWithCache('posts', 'company_id', () => checkColumnExists('posts', 'company_id')),
+    checkColumnExistsWithCache('posts', 'media_urls', () => checkColumnExists('posts', 'media_urls')),
+    checkColumnExistsWithCache('posts', 'post_type', () => checkColumnExists('posts', 'post_type')),
+    checkColumnExistsWithCache('posts', 'project_status', () => checkColumnExists('posts', 'project_status')),
+    checkColumnExistsWithCache('posts', 'technologies', () => checkColumnExists('posts', 'technologies')),
+    checkColumnExistsWithCache('posts', 'demo_url', () => checkColumnExists('posts', 'demo_url')),
+    checkColumnExistsWithCache('posts', 'idea', () => checkColumnExists('posts', 'idea')),
+    checkColumnExistsWithCache('posts', 'post_metadata', () => checkColumnExists('posts', 'post_metadata')),
+    checkColumnExistsWithCache('posts', 'audio_url', () => checkColumnExists('posts', 'audio_url')),
+    checkColumnExistsWithCache('posts', 'audio_metadata', () => checkColumnExists('posts', 'audio_metadata')),
   ]);
 
   const selectFields: string[] = [

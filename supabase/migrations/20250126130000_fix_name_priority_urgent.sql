@@ -57,14 +57,19 @@ FOR EACH ROW
 WHEN (OLD.raw_user_meta_data IS DISTINCT FROM NEW.raw_user_meta_data)
 EXECUTE FUNCTION public.handle_google_oauth_update_strict();
 
--- 4. Verificar y corregir el usuario específico mencionado
-UPDATE public.profiles 
-SET 
-    name_manually_edited = TRUE,
-    username = 'heider.gonzalez',
-    updated_at = NOW()
-WHERE id = 'abdde3cb-0ac4-454f-b2c7-54a8a84ba512'
-AND name_manually_edited = FALSE;
+-- 4. Verificar y corregir el usuario específico mencionado (only if profiles table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
+        UPDATE public.profiles 
+        SET 
+            name_manually_edited = TRUE,
+            username = 'heider.gonzalez',
+            updated_at = NOW()
+        WHERE id = 'abdde3cb-0ac4-454f-b2c7-54a8a84ba512'
+        AND name_manually_edited = FALSE;
+    END IF;
+END $$;
 
 -- 5. Añadir comentario de seguridad
 COMMENT ON FUNCTION public.handle_google_oauth_update_strict() IS 'Versión estricta que NUNCA sobreescribe nombres editados manualmente';

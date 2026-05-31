@@ -1,7 +1,12 @@
 -- Corregir advertencias de RLS después de la optimización anterior
 
--- Issue 1: Eliminar política problemática de notifications que aún existe
-DROP POLICY IF EXISTS "Allow users to delete their own notifications" ON public.notifications;
+-- Issue 1: Eliminar política problemática de notifications que aún existe (only if table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'notifications') THEN
+        DROP POLICY IF EXISTS "Allow users to delete their own notifications" ON public.notifications;
+    END IF;
+END $$;
 
 -- Issue 2: Corregir múltiples políticas permisivas en user_reputation
 DO $$ 

@@ -27,13 +27,23 @@ CREATE TABLE public.group_members (
   UNIQUE(group_id, user_id)
 );
 
--- Add group_id to existing posts table (nullable for general posts)
-ALTER TABLE public.posts 
-ADD COLUMN group_id UUID;
+-- Add group_id to existing posts table (nullable for general posts) - only if posts table exists
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'posts') THEN
+        ALTER TABLE public.posts 
+        ADD COLUMN IF NOT EXISTS group_id UUID;
+    END IF;
+END $$;
 
--- Add group_id to existing group_messages table (not nullable, will be set later)
-ALTER TABLE public.group_messages 
-ADD COLUMN group_id UUID;
+-- Add group_id to existing group_messages table (not nullable, will be set later) - only if group_messages table exists
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'group_messages') THEN
+        ALTER TABLE public.group_messages 
+        ADD COLUMN IF NOT EXISTS group_id UUID;
+    END IF;
+END $$;
 
 -- Enable RLS on new tables
 ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
@@ -113,56 +123,84 @@ ON public.group_members
 FOR DELETE 
 USING (auth.uid() = user_id);
 
--- RLS Policies for posts with group_id
-CREATE POLICY "Group posts are viewable by group members" 
-ON public.posts 
-FOR SELECT 
-USING (
-  group_id IS NULL OR 
-  EXISTS (
-    SELECT 1 FROM public.group_members 
-    WHERE group_id = posts.group_id AND user_id = auth.uid()
-  )
-);
+-- RLS Policies for posts with group_id (only if posts table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'posts') THEN
+        DROP POLICY IF EXISTS "Group posts are viewable by group members" ON public.posts;
+        CREATE POLICY "Group posts are viewable by group members" 
+        ON public.posts 
+        FOR SELECT 
+        USING (
+          group_id IS NULL OR 
+          EXISTS (
+            SELECT 1 FROM public.group_members 
+            WHERE group_id = posts.group_id AND user_id = auth.uid()
+          )
+        );
 
-CREATE POLICY "Group members can create posts in their groups" 
-ON public.posts 
-FOR INSERT 
-WITH CHECK (
-  auth.uid() = user_id AND 
-  (group_id IS NULL OR EXISTS (
-    SELECT 1 FROM public.group_members 
-    WHERE group_id = posts.group_id AND user_id = auth.uid()
-  ))
-);
+        DROP POLICY IF EXISTS "Group members can create posts in their groups" ON public.posts;
+        CREATE POLICY "Group members can create posts in their groups" 
+        ON public.posts 
+        FOR INSERT 
+        WITH CHECK (
+          auth.uid() = user_id AND 
+          (group_id IS NULL OR EXISTS (
+            SELECT 1 FROM public.group_members 
+            WHERE group_id = posts.group_id AND user_id = auth.uid()
+          ))
+        );
+    END IF;
+END $$;
 
--- RLS Policies for group_messages with group_id
-CREATE POLICY "Group messages are viewable by group members" 
-ON public.group_messages 
-FOR SELECT 
-USING (EXISTS (
-  SELECT 1 FROM public.group_members 
-  WHERE group_id = group_messages.group_id AND user_id = auth.uid()
-));
+-- RLS Policies for group_messages with group_id (only if group_messages table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'group_messages') THEN
+        DROP POLICY IF EXISTS "Group messages are viewable by group members" ON public.group_messages;
+        CREATE POLICY "Group messages are viewable by group members" 
+        ON public.group_messages 
+        FOR SELECT 
+        USING (EXISTS (
+          SELECT 1 FROM public.group_members 
+          WHERE group_id = group_messages.group_id AND user_id = auth.uid()
+        ));
 
-CREATE POLICY "Group members can send messages" 
-ON public.group_messages 
-FOR INSERT 
-WITH CHECK (
-  auth.uid() = sender_id AND 
-  EXISTS (
-    SELECT 1 FROM public.group_members 
-    WHERE group_id = group_messages.group_id AND user_id = auth.uid()
-  )
-);
+        DROP POLICY IF EXISTS "Group members can send messages" ON public.group_messages;
+        CREATE POLICY "Group members can send messages" 
+        ON public.group_messages 
+        FOR INSERT 
+        WITH CHECK (
+          auth.uid() = sender_id AND 
+          EXISTS (
+            SELECT 1 FROM public.group_members 
+            WHERE group_id = group_messages.group_id AND user_id = auth.uid()
+          )
+        );
+    END IF;
+END $$;
 
 -- Create indexes for performance
 CREATE INDEX idx_groups_slug ON public.groups(slug);
 CREATE INDEX idx_groups_is_private ON public.groups(is_private);
 CREATE INDEX idx_group_members_group_id ON public.group_members(group_id);
 CREATE INDEX idx_group_members_user_id ON public.group_members(user_id);
-CREATE INDEX idx_posts_group_id ON public.posts(group_id) WHERE group_id IS NOT NULL;
-CREATE INDEX idx_group_messages_group_id ON public.group_messages(group_id);
+
+-- Index for posts (only if posts table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'posts') THEN
+        CREATE INDEX IF NOT EXISTS idx_posts_group_id ON public.posts(group_id) WHERE group_id IS NOT NULL;
+    END IF;
+END $$;
+
+-- Index for group_messages (only if group_messages table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'group_messages') THEN
+        CREATE INDEX IF NOT EXISTS idx_group_messages_group_id ON public.group_messages(group_id);
+    END IF;
+END $$;
 
 -- Create trigger for updating updated_at on groups
 CREATE TRIGGER update_groups_updated_at
@@ -181,11 +219,21 @@ VALUES (
   'general'
 );
 
--- Update all existing group_messages to belong to Red H group
-UPDATE public.group_messages 
-SET group_id = (SELECT id FROM public.groups WHERE slug = 'red-h')
-WHERE group_id IS NULL;
+-- Update all existing group_messages to belong to Red H group (only if group_messages table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'group_messages') THEN
+        UPDATE public.group_messages 
+        SET group_id = (SELECT id FROM public.groups WHERE slug = 'red-h')
+        WHERE group_id IS NULL;
+    END IF;
+END $$;
 
--- Make group_id NOT NULL in group_messages after migration
-ALTER TABLE public.group_messages 
-ALTER COLUMN group_id SET NOT NULL;
+-- Make group_id NOT NULL in group_messages after migration (only if group_messages table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'group_messages') THEN
+        ALTER TABLE public.group_messages 
+        ALTER COLUMN group_id SET NOT NULL;
+    END IF;
+END $$;

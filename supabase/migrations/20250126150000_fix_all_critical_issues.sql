@@ -52,22 +52,32 @@ BEFORE INSERT ON auth.users
 FOR EACH ROW
 EXECUTE FUNCTION public.handle_new_user_final();
 
--- 4. Forzar estado correcto para usuario específico
-UPDATE public.profiles 
-SET 
-    name_manually_edited = TRUE,
-    username = 'heider.gonzalez',
-    updated_at = NOW()
-WHERE id = 'abdde3cb-0ac4-454f-b2c7-54a8a84ba512';
+-- 4. Forzar estado correcto para usuario específico (only if profiles table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
+        UPDATE public.profiles 
+        SET 
+            name_manually_edited = TRUE,
+            username = 'heider.gonzalez',
+            updated_at = NOW()
+        WHERE id = 'abdde3cb-0ac4-454f-b2c7-54a8a84ba512';
+    END IF;
+END $$;
 
 -- ===========================================
 -- MEJORAS PARA PUBLICACIONES
 -- ===========================================
 
--- 5. Añadir índices para mejor rendimiento de publicaciones
-CREATE INDEX IF NOT EXISTS idx_posts_user_id_created_at ON public.posts(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_posts_post_type ON public.posts(post_type);
-CREATE INDEX IF NOT EXISTS idx_posts_visibility ON public.posts(visibility);
+-- 5. Añadir índices para mejor rendimiento de publicaciones (only if posts table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'posts') THEN
+        CREATE INDEX IF NOT EXISTS idx_posts_user_id_created_at ON public.posts(user_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_posts_post_type ON public.posts(post_type);
+        CREATE INDEX IF NOT EXISTS idx_posts_visibility ON public.posts(visibility);
+    END IF;
+END $$;
 
 -- 6. Optimizar consulta de posts para feed
 CREATE OR REPLACE FUNCTION public.get_feed_posts(p_user_id UUID, p_limit INTEGER DEFAULT 20, p_offset INTEGER DEFAULT 0)
@@ -119,21 +129,26 @@ GRANT EXECUTE ON FUNCTION public.get_feed_posts(UUID, INTEGER, INTEGER) TO authe
 -- CORRECCIÓN PARA PROYECTOS E IMÁGENES
 -- ===========================================
 
--- 8. Asegurar que los proyectos puedan tener imágenes
-ALTER TABLE public.posts 
-ADD COLUMN IF NOT EXISTS project_status TEXT DEFAULT 'En desarrollo';
+-- 8. Asegurar que los proyectos puedan tener imágenes (only if posts table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'posts') THEN
+        ALTER TABLE public.posts 
+        ADD COLUMN IF NOT EXISTS project_status TEXT DEFAULT 'En desarrollo';
 
--- 9. Actualizar constraint para permitir valores en español
-ALTER TABLE public.posts DROP CONSTRAINT IF EXISTS posts_project_status_check;
-ALTER TABLE public.posts 
-ADD CONSTRAINT posts_project_status_check 
-CHECK (
-    project_status IN (
-        'idea', 'in_progress', 'completed', 'paused', 'cancelled',
-        'En desarrollo', 'Completado', 'Pausado', 'Cancelado', 'Idea'
-    ) 
-    OR project_status IS NULL
-);
+        -- 9. Actualizar constraint para permitir valores en español
+        ALTER TABLE public.posts DROP CONSTRAINT IF EXISTS posts_project_status_check;
+        ALTER TABLE public.posts 
+        ADD CONSTRAINT posts_project_status_check 
+        CHECK (
+            project_status IN (
+                'idea', 'in_progress', 'completed', 'paused', 'cancelled',
+                'En desarrollo', 'Completado', 'Pausado', 'Cancelado', 'Idea'
+            ) 
+            OR project_status IS NULL
+        );
+    END IF;
+END $$;
 
 -- 10. Trigger para actualizar timestamp de posts
 CREATE OR REPLACE FUNCTION public.update_post_timestamp()
@@ -149,12 +164,17 @@ BEGIN
 END;
 $$;
 
--- 11. Aplicar trigger a posts
-DROP TRIGGER IF EXISTS update_post_timestamp_trigger ON public.posts;
-CREATE TRIGGER update_post_timestamp_trigger
-BEFORE UPDATE ON public.posts
-FOR EACH ROW
-EXECUTE FUNCTION public.update_post_timestamp();
+-- 11. Aplicar trigger a posts (only if posts table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'posts') THEN
+        DROP TRIGGER IF EXISTS update_post_timestamp_trigger ON public.posts;
+        CREATE TRIGGER update_post_timestamp_trigger
+        BEFORE UPDATE ON public.posts
+        FOR EACH ROW
+        EXECUTE FUNCTION public.update_post_timestamp();
+    END IF;
+END $$;
 
 -- ===========================================
 -- LIMPIEZA Y OPTIMIZACIÓN
@@ -163,11 +183,19 @@ EXECUTE FUNCTION public.update_post_timestamp();
 -- 12. Limpiar sesiones antiguas (opcional)
 -- DELETE FROM public.sessions WHERE created_at < NOW() - INTERVAL '30 days';
 
--- 13. Actualizar estadísticas de la tabla
-ANALYZE public.posts;
-ANALYZE public.profiles;
-ANALYZE public.comments;
+-- 13. Actualizar estadísticas de la tabla (only if tables exist)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'posts') THEN
+        ANALYZE public.posts;
+    END IF;
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
+        ANALYZE public.profiles;
+    END IF;
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'comments') THEN
+        ANALYZE public.comments;
+    END IF;
+END $$;
 
--- 14. Comentarios de seguridad
-COMMENT ON FUNCTION public.handle_new_user_final() IS 'Versión final: solo crea perfiles nuevos, nunca actualiza existentes';
-COMMENT ON FUNCTION public.get_feed_posts() IS 'Función optimizada para feed de publicaciones';
+-- 14. Comentarios de seguridad (only if functions exist)
+-- Skipping comments to avoid migration order issues

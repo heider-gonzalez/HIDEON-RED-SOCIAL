@@ -18,7 +18,7 @@ export function LikeButton({ postId, userId, className = '' }: LikeButtonProps) 
     <Button
       variant="ghost"
       size="sm"
-      className={`flex items-center gap-1 ${className}`}
+      className={`flex items-center gap-1 group/like transition-all duration-200 ${className} focus-visible:ring-2 focus-visible:ring-primary/60 hover:bg-red-50 dark:hover:bg-red-900/20`}
       onClick={(e) => {
         e.stopPropagation();
         handleReaction('love' as any);
@@ -27,11 +27,11 @@ export function LikeButton({ postId, userId, className = '' }: LikeButtonProps) 
       aria-label={isLiked ? 'Quitar me gusta' : 'Me gusta'}
     >
       <Heart
-        className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'}`}
+        className={`h-5 w-5 transition-all duration-200 group-hover/like:scale-110 group-active/like:scale-95 ${isLiked ? 'fill-red-500 text-red-500 drop-shadow-glow' : 'text-gray-500'}`}
         fill={isLiked ? 'currentColor' : 'none'}
       />
       {likeCount > 0 && (
-        <span className={`text-sm ${isLiked ? 'text-red-500' : 'text-gray-500'}`}>
+        <span className={`text-sm font-medium transition-colors duration-200 ${isLiked ? 'text-red-500' : 'text-gray-500 group-hover/like:text-red-400'}`}>
           {likeCount}
         </span>
       )}

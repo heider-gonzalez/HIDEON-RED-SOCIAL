@@ -19,8 +19,15 @@ export function UnifiedPostCard({
   
   // Solo mostramos posts regulares (texto, foto, video, ideas)
   // Oportunidades eliminadas
+  // Fade-in animación para posts nuevos
+  const fadeIn = (post as any)._fadeIn;
   return (
-    <div className="mb-0 w-full">
+    <div
+      className={
+        `mb-0 w-full transition-opacity duration-700 ${fadeIn ? 'opacity-0 animate-fadein' : 'opacity-100'}`
+      }
+      style={fadeIn ? { animation: 'fadein 0.7s forwards' } : {}}
+    >
       {isInFeed ? (
         <PostCardWithTracking
           post={post}

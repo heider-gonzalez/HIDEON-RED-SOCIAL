@@ -4,6 +4,7 @@ CREATE TABLE public.post_shares (
   post_id UUID NOT NULL,
   user_id UUID NOT NULL,
   shared_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  share_date DATE NOT NULL DEFAULT CURRENT_DATE, -- For unique daily constraint
   share_type TEXT NOT NULL DEFAULT 'profile', -- 'profile', 'link', 'external'
   share_comment TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
@@ -35,4 +36,4 @@ CREATE INDEX idx_post_shares_shared_at ON public.post_shares(shared_at);
 
 -- Create unique constraint to prevent duplicate shares of the same post by the same user on the same day
 CREATE UNIQUE INDEX idx_post_shares_unique_daily 
-ON public.post_shares(post_id, user_id, DATE(shared_at));
+ON public.post_shares(post_id, user_id, share_date);

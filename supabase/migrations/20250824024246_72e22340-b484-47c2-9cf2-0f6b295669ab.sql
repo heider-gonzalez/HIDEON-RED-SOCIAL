@@ -10,17 +10,20 @@ CREATE TABLE IF NOT EXISTS public.saved_posts (
 -- Enable Row Level Security
 ALTER TABLE public.saved_posts ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies
+-- Create RLS policies (drop if exists first)
+DROP POLICY IF EXISTS "Users can view their own saved posts" ON public.saved_posts;
 CREATE POLICY "Users can view their own saved posts" 
 ON public.saved_posts 
 FOR SELECT 
 USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own saved posts" ON public.saved_posts;
 CREATE POLICY "Users can insert their own saved posts" 
 ON public.saved_posts 
 FOR INSERT 
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own saved posts" ON public.saved_posts;
 CREATE POLICY "Users can delete their own saved posts" 
 ON public.saved_posts 
 FOR DELETE 

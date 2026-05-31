@@ -12,7 +12,7 @@ begin
   create or replace function public.normalize_media_url_to_r2(input_url text)
   returns text
   language plpgsql
-  as $$
+  as $func$
   declare
     r2_base text := 'https://pub-11aaf71a35c74d7da48843fdfc2c1e44.r2.dev';
     base_slash text;
@@ -42,7 +42,7 @@ begin
 
     return out_url;
   end;
-  $$;
+  $func$;
 
   -- Repair already-stored malformed URLs in common tables (if they exist)
   if to_regclass('public.posts') is not null then

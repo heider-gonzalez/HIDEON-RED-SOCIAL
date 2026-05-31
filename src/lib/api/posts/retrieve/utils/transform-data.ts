@@ -1,11 +1,12 @@
 
 import type { Post } from "@/types/post";
+import type { PostWithProfile } from "./type-helpers";
 
-export function transformPostsData(posts: any[]): Post[] {
+export function transformPostsData(posts: PostWithProfile[]): Post[] {
   return posts.map(transformPostData);
 }
 
-export function transformPostData(post: any): Post {
+export function transformPostData(post: PostWithProfile): Post {
   const academicEventRow = Array.isArray(post?.academic_events)
     ? post.academic_events[0]
     : (post?.academic_events ?? null);
@@ -61,7 +62,7 @@ export function transformPostData(post: any): Post {
     visibility: post.visibility,
     is_pinned: post.is_pinned,
     // If there's a shared post, transform it too
-    shared_post: sharedPostRow ? transformPostData(sharedPostRow) : undefined
+    shared_post: sharedPostRow ? transformPostData(sharedPostRow as PostWithProfile) : undefined
   };
 }
 

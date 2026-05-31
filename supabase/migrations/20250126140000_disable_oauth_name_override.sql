@@ -58,30 +58,40 @@ BEFORE INSERT ON auth.users
 FOR EACH ROW
 EXECUTE FUNCTION public.handle_new_user_safe();
 
--- 4. Forzar el estado correcto para el usuario específico
-UPDATE public.profiles 
-SET 
-    name_manually_edited = TRUE,
-    username = 'heider.gonzalez',
-    updated_at = NOW()
-WHERE id = 'abdde3cb-0ac4-454f-b2c7-54a8a84ba512';
+-- 4. Forzar el estado correcto para el usuario específico (only if profiles table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
+        UPDATE public.profiles 
+        SET 
+            name_manually_edited = TRUE,
+            username = 'heider.gonzalez',
+            updated_at = NOW()
+        WHERE id = 'abdde3cb-0ac4-454f-b2c7-54a8a84ba512';
+    END IF;
+END $$;
 
--- 5. Crear política RLS para proteger nombres editados
-DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
-CREATE POLICY "Users can update their own profile" 
-ON public.profiles FOR UPDATE 
-TO authenticated 
-USING (auth.uid() = id)
-WITH CHECK (
-    -- Permitir actualizar cualquier campo EXCEPTO name_manually_edited a FALSE
-    -- y proteger username si name_manually_edited = TRUE
-    CASE 
-        WHEN name_manually_edited = TRUE THEN 
-            username IS NOT NULL -- Solo permitir cambiar username si ya está editado
-        ELSE 
-            TRUE -- Permitir cualquier cambio si no ha sido editado
-    END
-);
+-- 5. Crear política RLS para proteger nombres editados (only if profiles table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
+        DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+        CREATE POLICY "Users can update their own profile" 
+        ON public.profiles FOR UPDATE 
+        TO authenticated 
+        USING (auth.uid() = id)
+        WITH CHECK (
+            -- Permitir actualizar cualquier campo EXCEPTO name_manually_edited a FALSE
+            -- y proteger username si name_manually_edited = TRUE
+            CASE 
+                WHEN name_manually_edited = TRUE THEN 
+                    username IS NOT NULL -- Solo permitir cambiar username si ya está editado
+                ELSE 
+                    TRUE -- Permitir cualquier cambio si no ha sido editado
+            END
+        );
+    END IF;
+END $$;
 
 -- 6. Añadir comentario de seguridad
 COMMENT ON FUNCTION public.handle_new_user_safe() IS 'Versión segura que solo crea perfiles nuevos, nunca actualiza existentes';

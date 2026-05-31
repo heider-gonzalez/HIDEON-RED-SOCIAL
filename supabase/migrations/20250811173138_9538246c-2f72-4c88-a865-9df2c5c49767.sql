@@ -11,16 +11,19 @@ CREATE TABLE IF NOT EXISTS public.post_reports (
 ALTER TABLE public.post_reports ENABLE ROW LEVEL SECURITY;
 
 -- Policies
+DROP POLICY IF EXISTS "Anyone can view post reports" ON public.post_reports;
 CREATE POLICY "Anyone can view post reports"
 ON public.post_reports
 FOR SELECT
 USING (true);
 
+DROP POLICY IF EXISTS "Users can create their own post reports" ON public.post_reports;
 CREATE POLICY "Users can create their own post reports"
 ON public.post_reports
 FOR INSERT
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own post reports" ON public.post_reports;
 CREATE POLICY "Users can delete their own post reports"
 ON public.post_reports
 FOR DELETE

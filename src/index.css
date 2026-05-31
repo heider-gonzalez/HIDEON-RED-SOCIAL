@@ -2,6 +2,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import "./styles/fadein.css";
 
 @layer base {
   :root {

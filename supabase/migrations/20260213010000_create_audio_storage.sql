@@ -17,7 +17,7 @@ CREATE POLICY "Users can upload audio files" ON storage.objects
 FOR INSERT WITH CHECK (
   bucket_id = 'post-audio' AND
   auth.role() = 'authenticated' AND
-  (storage.foldername(name))[1] = auth.uid()
+  (storage.foldername(name))[1]::text = auth.uid()::text
 );
 
 -- Allow public access to audio files
@@ -31,7 +31,7 @@ CREATE POLICY "Users can delete their own audio files" ON storage.objects
 FOR DELETE USING (
   bucket_id = 'post-audio' AND
   auth.role() = 'authenticated' AND
-  (storage.foldername(name))[1] = auth.uid()
+  (storage.foldername(name))[1]::text = auth.uid()::text
 );
 
 -- Grant access to storage functions

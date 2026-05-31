@@ -12,32 +12,83 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
   const { user } = useAuth();
   const [profile, setProfile] = useState<{ avatar_url: string | null; username: string } | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const { open } = usePostComposer();
 
   useEffect(() => {
     if (!user?.id) return;
-
+    setLoading(true);
+    setError(false);
     const fetchProfile = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('avatar_url, username, created_at')
-        .eq('id', user.id)
-        .single();
-      
-      if (data) {
-        setProfile(data);
-        // Check if user is new (less than 24 hours old)
-        const createdAt = new Date((data as any).created_at);
-        const now = new Date();
-        const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-        setIsNewUser(hoursDiff < 24);
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('profiles')
+          .select('avatar_url, username, created_at')
+          .eq('id', user.id)
+          .single();
+        if (data) {
+          setProfile(data);
+          // Check if user is new (less than 24 hours old)
+          const createdAt = new Date((data as any).created_at);
+          const now = new Date();
+          const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+          setIsNewUser(hoursDiff < 24);
+        } else {
+          setError(true);
+        }
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
       }
     };
-
     fetchProfile();
   }, [user?.id]);
 
-  if (!user || !profile) return null;
+
+  if (!user) return null;
+
+  // Skeleton/placeholder mientras carga el perfil
+  if (loading) {
+    return (
+      <div className="mx-auto w-full max-w-[680px] animate-pulse">
+        <div className="mb-3 overflow-hidden w-full rounded-16px border border-border/30 bg-card shadow-md h-[56px] flex items-center gap-3 px-4 py-3">
+          <div className="h-10 w-10 rounded-full bg-muted/60" />
+          <div className="flex-1 h-8 rounded-full bg-muted/40" />
+          <div className="w-16 h-8 rounded-full bg-muted/30" />
+          <div className="w-20 h-8 rounded-full bg-muted/30" />
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback si falla la carga del perfil
+  if (error || !profile) {
+    return (
+      <div className="mx-auto w-full max-w-[680px]">
+        <Card className="mb-3 overflow-hidden w-full rounded-16px border border-border/30 bg-card shadow-md transition-colors duration-200 ease-out hover:bg-muted/[0.18] dark:border-white/10 relative">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <Avatar className="h-10 w-10 shrink-0">
+              <AvatarFallback className="bg-muted text-muted-foreground font-medium">?</AvatarFallback>
+            </Avatar>
+            <button
+              className="flex-1 px-4 py-2.5 text-left rounded-full border border-border bg-muted/30 text-muted-foreground text-sm cursor-not-allowed"
+              disabled
+            >
+              ¿Qué idea tienes en mente?
+            </button>
+            <Button size="sm" variant="ghost" className="h-8 px-3 rounded-full text-xs opacity-60" disabled>
+              <Lightbulb className="h-3 w-3 mr-1" /> Idea
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 px-3 rounded-full text-xs opacity-60" disabled>
+              <Rocket className="h-3 w-3 mr-1" /> Proyecto
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <TooltipProvider>

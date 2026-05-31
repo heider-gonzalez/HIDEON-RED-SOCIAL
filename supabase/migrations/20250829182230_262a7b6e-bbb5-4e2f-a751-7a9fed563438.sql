@@ -103,12 +103,17 @@ BEGIN
 END;
 $$;
 
--- Create trigger to auto-join users to university groups
-DROP TRIGGER IF EXISTS trigger_auto_join_university_group ON public.profiles;
-CREATE TRIGGER trigger_auto_join_university_group
-  AFTER INSERT OR UPDATE OF institution_name ON public.profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION auto_join_university_group();
+-- Create trigger to auto-join users to university groups (only if profiles table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
+        DROP TRIGGER IF EXISTS trigger_auto_join_university_group ON public.profiles;
+        CREATE TRIGGER trigger_auto_join_university_group
+          AFTER INSERT OR UPDATE OF institution_name ON public.profiles
+          FOR EACH ROW
+          EXECUTE FUNCTION auto_join_university_group();
+    END IF;
+END $$;
 
 -- Enhanced friend suggestions with university priority
 CREATE OR REPLACE FUNCTION get_university_friend_suggestions(user_id_param uuid, limit_param integer DEFAULT 20)

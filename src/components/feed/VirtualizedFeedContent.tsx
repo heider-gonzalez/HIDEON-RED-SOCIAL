@@ -65,7 +65,11 @@ export const VirtualizedFeedContent = memo(function VirtualizedFeedContent({
   });
 
   return (
-    <div ref={parentRef} className="h-full overflow-auto">
+    <div
+      ref={parentRef}
+      className="h-full overflow-auto bg-background/80"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
       <div
         style={{
           height: `${rowVirtualizer.getTotalSize()}px`,
@@ -75,7 +79,6 @@ export const VirtualizedFeedContent = memo(function VirtualizedFeedContent({
       >
         {rowVirtualizer.getVirtualItems().map((virtualItem) => {
           const item = items[virtualItem.index];
-          
           return (
             <div
               key={virtualItem.index}
@@ -86,7 +89,11 @@ export const VirtualizedFeedContent = memo(function VirtualizedFeedContent({
                 width: '100%',
                 height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
+                padding: isMobile ? '8px 0' : '16px 0',
+                transition: 'box-shadow 0.2s, background 0.2s',
               }}
+              className="group/feed-item focus-within:ring-2 focus-within:ring-primary/40 hover:bg-muted/40 transition-colors duration-200"
+              tabIndex={0}
             >
               {item.type === 'post' && (
                 <div className="w-full h-full">

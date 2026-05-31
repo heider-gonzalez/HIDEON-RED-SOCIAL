@@ -45,11 +45,15 @@ export function PostCardWithTracking({
     trackPostInteraction?.(post.id, 'share');
   };
 
+  // Fade-in animación para posts nuevos
+  const fadeIn = (post as any)._fadeIn;
   return (
-    <div ref={ref} className="post-tracking-wrapper">
-      <PostComponent
-        post={post}
-      />
+    <div
+      ref={ref}
+      className={`post-tracking-wrapper transition-opacity duration-700 ${fadeIn ? 'opacity-0 animate-fadein' : 'opacity-100'}`}
+      style={fadeIn ? { animation: 'fadein 0.7s forwards' } : {}}
+    >
+      <PostComponent post={post} />
     </div>
   );
 }
