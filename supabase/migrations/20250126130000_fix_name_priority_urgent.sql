@@ -51,11 +51,19 @@ END;
 $$;
 
 -- 3. Crear nuevo trigger con la función estricta
-CREATE TRIGGER on_auth_user_update_strict
-BEFORE UPDATE ON auth.users
-FOR EACH ROW
-WHEN (OLD.raw_user_meta_data IS DISTINCT FROM NEW.raw_user_meta_data)
-EXECUTE FUNCTION public.handle_google_oauth_update_strict();
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger 
+        WHERE tgname = 'on_auth_user_update_strict'
+    ) THEN
+        CREATE TRIGGER on_auth_user_update_strict
+        BEFORE UPDATE ON auth.users
+        FOR EACH ROW
+        WHEN (OLD.raw_user_meta_data IS DISTINCT FROM NEW.raw_user_meta_data)
+        EXECUTE FUNCTION public.handle_google_oauth_update_strict();
+    END IF;
+END $$;
 
 -- 4. Verificar y corregir el usuario específico mencionado (only if profiles table exists)
 DO $$

@@ -1,108 +1,173 @@
 -- User Streaks System
-CREATE TABLE public.user_streaks (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL,
-  streak_type TEXT NOT NULL, -- 'login', 'story', 'post', 'interaction'
-  current_streak INTEGER NOT NULL DEFAULT 0,
-  longest_streak INTEGER NOT NULL DEFAULT 0,
-  last_activity_date DATE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'user_streaks') THEN
+    CREATE TABLE public.user_streaks (
+      id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id UUID NOT NULL,
+      streak_type TEXT NOT NULL, -- 'login', 'story', 'post', 'interaction'
+      current_streak INTEGER NOT NULL DEFAULT 0,
+      longest_streak INTEGER NOT NULL DEFAULT 0,
+      last_activity_date DATE,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+    );
+  END IF;
+END $$;
 
 -- User Achievements System
-CREATE TABLE public.user_achievements (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL,
-  achievement_type TEXT NOT NULL, -- 'first_post', 'social_butterfly', 'popular_creator', etc.
-  achievement_data JSONB,
-  earned_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  UNIQUE(user_id, achievement_type)
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'user_achievements') THEN
+    CREATE TABLE public.user_achievements (
+      id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id UUID NOT NULL,
+      achievement_type TEXT NOT NULL, -- 'first_post', 'social_butterfly', 'popular_creator', etc.
+      achievement_data JSONB,
+      earned_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+      UNIQUE(user_id, achievement_type)
+    );
+  END IF;
+END $$;
 
 -- Real-time Engagement Metrics
-CREATE TABLE public.engagement_metrics (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL,
-  profile_views_today INTEGER NOT NULL DEFAULT 0,
-  profile_views_total INTEGER NOT NULL DEFAULT 0,
-  posts_engagement_score NUMERIC NOT NULL DEFAULT 0,
-  social_score NUMERIC NOT NULL DEFAULT 0,
-  last_reset_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  UNIQUE(user_id)
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'engagement_metrics') THEN
+    CREATE TABLE public.engagement_metrics (
+      id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id UUID NOT NULL,
+      profile_views_today INTEGER NOT NULL DEFAULT 0,
+      profile_views_total INTEGER NOT NULL DEFAULT 0,
+      posts_engagement_score NUMERIC NOT NULL DEFAULT 0,
+      social_score NUMERIC NOT NULL DEFAULT 0,
+      last_reset_date DATE NOT NULL DEFAULT CURRENT_DATE,
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+      UNIQUE(user_id)
+    );
+  END IF;
+END $$;
 
 -- Profile Views Tracking
-CREATE TABLE public.profile_views (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  profile_id UUID NOT NULL,
-  viewer_id UUID,
-  viewed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  ip_address INET
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profile_views') THEN
+    CREATE TABLE public.profile_views (
+      id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      profile_id UUID NOT NULL,
+      viewer_id UUID,
+      viewed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+      ip_address INET
+    );
+  END IF;
+END $$;
 
 -- Enable RLS on all tables
-ALTER TABLE public.user_streaks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_achievements ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.engagement_metrics ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.profile_views ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'user_streaks') THEN
+    ALTER TABLE public.user_streaks ENABLE ROW LEVEL SECURITY;
+  END IF;
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'user_achievements') THEN
+    ALTER TABLE public.user_achievements ENABLE ROW LEVEL SECURITY;
+  END IF;
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'engagement_metrics') THEN
+    ALTER TABLE public.engagement_metrics ENABLE ROW LEVEL SECURITY;
+  END IF;
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profile_views') THEN
+    ALTER TABLE public.profile_views ENABLE ROW LEVEL SECURITY;
+  END IF;
+END $$;
 
 -- RLS Policies for user_streaks
-CREATE POLICY "Users can view their own streaks" 
-ON public.user_streaks 
-FOR SELECT 
-USING (auth.uid() = user_id);
-
-CREATE POLICY "System can manage streaks" 
-ON public.user_streaks 
-FOR ALL 
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'user_streaks') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_streaks' AND policyname = 'Users can view their own streaks') THEN
+      CREATE POLICY "Users can view their own streaks" 
+      ON public.user_streaks 
+      FOR SELECT 
+      USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_streaks' AND policyname = 'System can manage streaks') THEN
+      CREATE POLICY "System can manage streaks" 
+      ON public.user_streaks 
+      FOR ALL 
+      USING (true)
+      WITH CHECK (true);
+    END IF;
+  END IF;
+END $$;
 
 -- RLS Policies for user_achievements
-CREATE POLICY "Users can view their own achievements" 
-ON public.user_achievements 
-FOR SELECT 
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Anyone can view achievements for public profiles" 
-ON public.user_achievements 
-FOR SELECT 
-USING (true);
-
-CREATE POLICY "System can manage achievements" 
-ON public.user_achievements 
-FOR INSERT 
-WITH CHECK (true);
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'user_achievements') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_achievements' AND policyname = 'Users can view their own achievements') THEN
+      CREATE POLICY "Users can view their own achievements" 
+      ON public.user_achievements 
+      FOR SELECT 
+      USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_achievements' AND policyname = 'Anyone can view achievements for public profiles') THEN
+      CREATE POLICY "Anyone can view achievements for public profiles" 
+      ON public.user_achievements 
+      FOR SELECT 
+      USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_achievements' AND policyname = 'System can manage achievements') THEN
+      CREATE POLICY "System can manage achievements" 
+      ON public.user_achievements 
+      FOR INSERT 
+      WITH CHECK (true);
+    END IF;
+  END IF;
+END $$;
 
 -- RLS Policies for engagement_metrics
-CREATE POLICY "Users can view their own metrics" 
-ON public.engagement_metrics 
-FOR SELECT 
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Anyone can view basic metrics" 
-ON public.engagement_metrics 
-FOR SELECT 
-USING (true);
-
-CREATE POLICY "System can manage metrics" 
-ON public.engagement_metrics 
-FOR ALL 
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'engagement_metrics') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'engagement_metrics' AND policyname = 'Users can view their own metrics') THEN
+      CREATE POLICY "Users can view their own metrics" 
+      ON public.engagement_metrics 
+      FOR SELECT 
+      USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'engagement_metrics' AND policyname = 'Anyone can view basic metrics') THEN
+      CREATE POLICY "Anyone can view basic metrics" 
+      ON public.engagement_metrics 
+      FOR SELECT 
+      USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'engagement_metrics' AND policyname = 'System can manage metrics') THEN
+      CREATE POLICY "System can manage metrics" 
+      ON public.engagement_metrics 
+      FOR ALL 
+      USING (true)
+      WITH CHECK (true);
+    END IF;
+  END IF;
+END $$;
 
 -- RLS Policies for profile_views
-CREATE POLICY "Users can view their profile views" 
-ON public.profile_views 
-FOR SELECT 
-USING (auth.uid() = profile_id);
-
-CREATE POLICY "System can track views" 
-ON public.profile_views 
-FOR INSERT 
-WITH CHECK (true);
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profile_views') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'profile_views' AND policyname = 'Users can view their profile views') THEN
+      CREATE POLICY "Users can view their profile views" 
+      ON public.profile_views 
+      FOR SELECT 
+      USING (auth.uid() = profile_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'profile_views' AND policyname = 'System can track views') THEN
+      CREATE POLICY "System can track views" 
+      ON public.profile_views 
+      FOR INSERT 
+      WITH CHECK (true);
+    END IF;
+  END IF;
+END $$;
 
 -- Functions for streak management
 CREATE OR REPLACE FUNCTION public.update_user_streak(
