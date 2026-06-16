@@ -49,20 +49,6 @@ export function QuickPostBox({ initialContent = '', initialMedia = null, initial
 
   if (!user) return null;
 
-  // Skeleton/placeholder mientras carga el perfil
-  if (loading) {
-    return (
-      <div className="mx-auto w-full max-w-[680px] animate-pulse">
-        <div className="mb-3 overflow-hidden w-full rounded-16px border border-border/30 bg-card shadow-md h-[56px] flex items-center gap-3 px-4 py-3">
-          <div className="h-10 w-10 rounded-full bg-muted/60" />
-          <div className="flex-1 h-8 rounded-full bg-muted/40" />
-          <div className="w-16 h-8 rounded-full bg-muted/30" />
-          <div className="w-20 h-8 rounded-full bg-muted/30" />
-        </div>
-      </div>
-    );
-  }
-
   // Fallback si falla la carga del perfil
   if (error || !profile) {
     return (
