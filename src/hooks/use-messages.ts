@@ -13,8 +13,8 @@ export const useMessages = (channelId: string | null, enabled: boolean = true) =
     },
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: enabled && !!channelId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes - faster updates
+    gcTime: 10 * 60 * 1000, // 10 minutes - less memory
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
   });
@@ -28,8 +28,8 @@ export const useConversations = (currentUserId: string | null) => {
       return fetchConversations(currentUserId);
     },
     enabled: !!currentUserId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes - faster updates
+    gcTime: 10 * 60 * 1000, // 10 minutes - less memory
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
   });
