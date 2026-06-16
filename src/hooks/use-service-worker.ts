@@ -108,6 +108,11 @@ export function useServiceWorker() {
 
   // Subscribe to push notifications
   const subscribeToPushNotifications = useCallback(async () => {
+    // Prevent infinite retry loops if already attempted - check FIRST
+    if (pushSubscriptionAttempted) {
+      return null;
+    }
+
     // Check VAPID key FIRST before any other checks to prevent retry loops
     const rawVapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
     const vapidPublicKey = (rawVapidPublicKey ?? '')
@@ -117,16 +122,14 @@ export function useServiceWorker() {
       .replace(/\s+/g, '');
 
     // If no VAPID key is provided, skip push notifications and mark as attempted
-    if (!vapidPublicKey || vapidPublicKey === 'BKxQzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQ') {
-      console.warn('🔔 VAPID public key not configured. Set VITE_VAPID_PUBLIC_KEY in your .env file to enable push notifications.');
+    if (!vapidPublicKey || vapidPublicKey === 'BKxQzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqk') {
+      // Only show warning once
+      if (!sessionStorage.getItem('vapidWarningShown')) {
+        console.warn('🔔 VAPID public key not configured. Set VITE_VAPID_PUBLIC_KEY in your .env file to enable push notifications.');
+        sessionStorage.setItem('vapidWarningShown', 'true');
+      }
       setPushSubscriptionAttempted(true);
       sessionStorage.setItem('pushSubscriptionAttempted', 'true');
-      return null;
-    }
-
-    // Prevent infinite retry loops if already attempted
-    if (pushSubscriptionAttempted) {
-      console.warn('🔔 Push subscription already attempted, skipping to prevent retry loop');
       return null;
     }
 

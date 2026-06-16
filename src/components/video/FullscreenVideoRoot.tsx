@@ -47,7 +47,7 @@ export function FullscreenVideoRoot() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-      <DialogContent className="p-0 w-screen h-[100svh] max-w-none border-none rounded-none bg-black [&>button]:hidden">
+      <DialogContent className="p-0 w-screen h-[100svh] max-w-none border-none rounded-none bg-black [&>button]:hidden" aria-describedby={undefined}>
         <DialogTitle className="sr-only">Visor de video</DialogTitle>
         <DialogDescription className="sr-only">Visor fullscreen para videos estilo Reels/Cine</DialogDescription>
 

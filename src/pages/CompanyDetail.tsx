@@ -389,7 +389,7 @@ export default function CompanyDetail() {
         </div>
 
         <Dialog open={manageOpen} onOpenChange={setManageOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>Administrar miembros</DialogTitle>
             </DialogHeader>
@@ -468,7 +468,7 @@ export default function CompanyDetail() {
         </Dialog>
 
         <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>Editar perfil de empresa</DialogTitle>
             </DialogHeader>

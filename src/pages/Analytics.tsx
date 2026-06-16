@@ -423,7 +423,7 @@ export default function Analytics() {
           </Tabs>
 
           <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-            <DialogContent className="max-w-3xl">
+            <DialogContent className="max-w-3xl" aria-describedby={undefined}>
               <DialogHeader>
                 <DialogTitle>{selectedProject?.title || "Proyecto"}</DialogTitle>
               </DialogHeader>
@@ -521,7 +521,6 @@ export default function Analytics() {
                   )}
                 </CardContent>
               </Card>
-              <DialogDescription className="sr-only">Descripción del diálogo</DialogDescription>
 </DialogContent>
           </Dialog>
         </>
