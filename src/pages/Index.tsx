@@ -2,7 +2,6 @@ import React from "react";
 import { Feed } from "@/components/feed/Feed";
 import { SimpleOnboardingModal } from "@/components/onboarding/SimpleOnboardingModal";
 import { useOnboarding } from "@/hooks/use-onboarding";
-import { QuickPostBox } from "@/components/feed/QuickPostBox";
 import { useAuth } from "@/providers/AuthProvider";
 
 export default function Index() {
@@ -12,7 +11,6 @@ export default function Index() {
   return (
     <>
       <div className="w-full bg-background">
-        {isAuthenticated && <QuickPostBox />}
         <Feed />
       </div>
 

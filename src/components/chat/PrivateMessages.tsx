@@ -896,11 +896,6 @@ export function PrivateMessages() {
                   <button
                     key={conv.id}
                     onClick={() => setSelectedConversation(conv.id)}
-                    onMouseDown={() => !conv.is_global && handleChatLongPress(conv.id)}
-                    onMouseUp={handleChatPressEnd}
-                    onMouseLeave={handleChatPressEnd}
-                    onTouchStart={() => !conv.is_global && handleChatLongPress(conv.id)}
-                    onTouchEnd={handleChatPressEnd}
                     className={cn(
                       "w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left",
                       selectedConversation === conv.id && "bg-muted"
