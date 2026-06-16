@@ -500,10 +500,6 @@ export function PrivateMessages() {
       conv.last_message.toLowerCase().includes(searchLower)
     );
 
-    if (activeInboxTab === 'archived') {
-      return filtered.filter(conv => archivedChats.has(conv.id));
-    }
-    
     const isRequest = (conv: Conversation) => {
       if (conv.is_global) return false;
       if (acceptedRequests.has(conv.id)) return false;
@@ -511,14 +507,14 @@ export function PrivateMessages() {
     };
 
     if (activeInboxTab === 'requests') {
-      return filtered.filter(conv => !conv.is_global && isRequest(conv) && !archivedChats.has(conv.id));
+      return filtered.filter(conv => !conv.is_global && isRequest(conv));
     }
 
     // Tab 'inbox' (predeterminado)
     return filtered.filter(conv => 
-      (conv.is_global || !isRequest(conv)) && !archivedChats.has(conv.id)
+      conv.is_global || !isRequest(conv)
     );
-  }, [conversations, searchQuery, activeInboxTab, archivedChats, acceptedRequests, mutualFollowMap]);
+  }, [conversations, searchQuery, activeInboxTab, acceptedRequests, mutualFollowMap]);
 
   const selectedConv = conversations.find(c => c.id === selectedConversation);
   const selectedChannelId = useMemo(() => {
@@ -623,7 +619,6 @@ export function PrivateMessages() {
         authorId: currentUserId,
       });
 
-      playUiSound('message_sent');
       setNewMessage("");
       // stopTyping(); // Stop typing when message is sent
 
@@ -969,47 +964,6 @@ export function PrivateMessages() {
                         >
                           Aceptar
                         </span>
-                        {archivedChats.has(conv.id) ? (
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUnarchiveChat(conv.id);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleUnarchiveChat(conv.id);
-                              }
-                            }}
-                          >
-                            Desarchivar
-                          </span>
-                        ) : (
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleChatLongPress(conv.id);
-                              setTimeout(() => handleChatPressEnd(), 0);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleChatLongPress(conv.id);
-                                setTimeout(() => handleChatPressEnd(), 0);
-                              }
-                            }}
-                          >
-                            Archivar
-                          </span>
-                        )}
                       </div>
                     )}
 
@@ -1025,11 +979,6 @@ export function PrivateMessages() {
                 <button
                   key={conv.id}
                   onClick={() => setSelectedConversation(conv.id)}
-                  onMouseDown={() => !conv.is_global && handleChatLongPress(conv.id)}
-                  onMouseUp={handleChatPressEnd}
-                  onMouseLeave={handleChatPressEnd}
-                  onTouchStart={() => !conv.is_global && handleChatLongPress(conv.id)}
-                  onTouchEnd={handleChatPressEnd}
                   className={cn(
                     "w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left border-b border-border/50",
                     selectedConversation === conv.id && "bg-muted"
@@ -1108,47 +1057,6 @@ export function PrivateMessages() {
                       >
                         Aceptar
                       </span>
-                      {archivedChats.has(conv.id) ? (
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleUnarchiveChat(conv.id);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleUnarchiveChat(conv.id);
-                            }
-                          }}
-                        >
-                          Desarchivar
-                        </span>
-                      ) : (
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleChatLongPress(conv.id);
-                            setTimeout(() => handleChatPressEnd(), 0);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleChatLongPress(conv.id);
-                              setTimeout(() => handleChatPressEnd(), 0);
-                            }
-                          }}
-                        >
-                          Archivar
-                        </span>
-                      )}
                     </div>
                   )}
 
