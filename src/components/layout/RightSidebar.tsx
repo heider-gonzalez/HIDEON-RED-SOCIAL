@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { 
   User, 
   UserPlus, 
@@ -183,47 +184,44 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
   return (
     <div className="h-full bg-muted/40">
       <div className="px-4 py-4">
-        {/* Engagement Tracker */}
-        <div className="mb-6">
-          {/* Engagement sidebar removed for performance */}
-        </div>
-
-        <div className="mb-3">
+        {/* Search Bar */}
+        <div className="mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={contactsQuery}
               onChange={(e) => setContactsQuery(e.target.value)}
               placeholder="Buscar contactos..."
-              className="pl-10 pr-4 rounded-full h-10 bg-muted/60 border-border/40"
+              className="pl-10 pr-4 rounded-full h-9 bg-background border-border/50"
             />
           </div>
         </div>
 
-        {/* Online Friends */}
+        {/* Online Friends Section */}
         <div className="mb-6">
           <div className="pb-2">
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                  <User className="h-4 w-4" />
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <User className="h-3.5 w-3.5" />
                 </span>
                 Contactos
               </div>
-              <span className="text-xs px-2.5 py-1 rounded-full bg-violet-600/10 text-violet-700 dark:text-violet-300 font-semibold">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                 {onlineCount} en línea
               </span>
             </div>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {filteredContacts.length > 0 ? (
               filteredContacts.map((friend) => {
                 const isFriendOnline = Boolean(contactMeta.get(friend.id)?.showOnline && isOnline(friend.id));
                 return (
                   <div
                     key={friend.id}
-                    className="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-muted/60 transition-colors group"
+                    className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors group cursor-pointer"
+                    onClick={() => openChat(friend.id, friend.username, friend.avatar_url)}
                   >
                     <div className="relative">
                       <Avatar className="h-9 w-9">
@@ -233,25 +231,19 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
                         </AvatarFallback>
                       </Avatar>
                       {isFriendOnline && (
-                        <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-muted/40" />
+                        <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-background" />
                       )}
                     </div>
 
-                    <div
-                      className="flex-1 min-w-0 cursor-pointer"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => openChat(friend.id, friend.username, friend.avatar_url)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          openChat(friend.id, friend.username, friend.avatar_url);
-                        }
-                      }}
-                    >
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate text-foreground">
                         {friend.username}
                       </p>
+                      {contactMeta.get(friend.id)?.label && (
+                        <p className="text-xs text-muted-foreground">
+                          {contactMeta.get(friend.id)?.label}
+                        </p>
+                      )}
                     </div>
 
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -259,6 +251,7 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
                         to={`/profile/${friend.id}`}
                         className="p-1.5 rounded-full hover:bg-muted/70 transition-colors"
                         title="Ver perfil"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <User className="h-4 w-4 text-muted-foreground" />
                       </Link>
@@ -267,32 +260,34 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
                 );
               })
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-6">
+              <p className="text-sm text-muted-foreground text-center py-4">
                 No tienes contactos activos
               </p>
             )}
           </div>
         </div>
 
-        {/* Friend Suggestions */}
-        <div className="mb-6">
-          <div className="pb-2 text-sm font-medium flex items-center gap-2 text-foreground">
+        <Separator className="my-4 opacity-50" />
+
+        {/* Friend Suggestions Section */}
+        <div>
+          <div className="pb-2 text-sm font-semibold flex items-center gap-2 text-foreground">
             <UserPlus className="h-4 w-4" />
             Personas que podrías conocer
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             {visibleSuggestions.length > 0 ? (
               visibleSuggestions.map((suggestion) => (
-                <div key={suggestion.id} className="space-y-2">
+                <div key={suggestion.id} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors">
                   <Link
                     to={`/profile/${suggestion.id}`}
-                    className="flex items-center space-x-3 px-2 py-2 rounded-2xl hover:bg-muted/60 transition-colors"
+                    className="flex items-center gap-3 flex-1"
                   >
-                    <Avatar className="h-6 w-6">
+                    <Avatar className="h-9 w-9">
                       <AvatarImage src={suggestion.avatar_url || undefined} />
                       <AvatarFallback>
-                        {suggestion.username?.[0]?.toUpperCase() || <User className="h-3 w-3" />}
+                        {suggestion.username?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
@@ -305,36 +300,22 @@ export function RightSidebar({ currentUserId }: RightSidebarProps) {
                     </div>
                   </Link>
 
-                  <div className="flex gap-2 px-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 h-7 text-xs"
-                      disabled={isFollowLoading(suggestion.id)}
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const result = await followUser(suggestion.id);
-                        if (result.success) {
-                          updateFollowingStatus(suggestion.id, true);
-                          setFriendSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
-                        }
-                      }}
-                    >
-                      Seguir
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="flex-1 h-7 text-xs"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
+                  <Button
+                    size="sm"
+                    className="h-8 px-3 text-xs"
+                    disabled={isFollowLoading(suggestion.id)}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const result = await followUser(suggestion.id);
+                      if (result.success) {
+                        updateFollowingStatus(suggestion.id, true);
                         setFriendSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
-                      }}
-                    >
-                      Eliminar
-                    </Button>
-                  </div>
+                      }
+                    }}
+                  >
+                    Seguir
+                  </Button>
                 </div>
               ))
             ) : (

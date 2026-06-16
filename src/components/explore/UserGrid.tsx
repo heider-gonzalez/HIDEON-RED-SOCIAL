@@ -27,7 +27,7 @@ export function UserGrid({ searchQuery }: { searchQuery: string }) {
           .from('profiles')
           .select('id, username, google_name, avatar_url, career, updated_at')
           .order('updated_at', { ascending: false })
-          .limit(20);
+          .limit(50);
         
         if (normalizedQuery) {
           const q = normalizedQuery.replace(/,/g, ' ');

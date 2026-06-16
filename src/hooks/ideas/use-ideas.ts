@@ -29,15 +29,20 @@ export function useIdeas(params?: UseIdeasParams) {
           .from("posts")
           .select(
             `
-            *,
+            id,
+            user_id,
+            created_at,
+            content,
+            post_type,
+            media_url,
+            idea,
             profiles!inner(username, avatar_url, institution_name)
           `
           )
           .eq("post_type", "idea")
-          .not("idea", "is", null)
           .eq("visibility", "public")
           .order("created_at", { ascending: false })
-          .limit(limit);
+          .limit(Math.min(limit, 50));
 
         if (institutionName) {
           query = query.eq("profiles.institution_name", institutionName);

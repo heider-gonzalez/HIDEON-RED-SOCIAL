@@ -466,7 +466,16 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
     if (!isFormValid) return;
 
     setIsPublishingInternal(true);
+    
+    // Add timeout to prevent infinite loading
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Tiempo de espera agotado. Verifica tu conexión.')), 30000);
+    });
+    
     try {
+      // Race between actual publish and timeout
+      await Promise.race([
+        (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -474,6 +483,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
           description: 'Debes iniciar sesión para publicar',
           variant: 'destructive'
         });
+        setIsPublishingInternal(false);
         return;
       }
 
@@ -483,9 +493,20 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
 
       // Upload media files (images/videos)
       if (selectedFiles.length > 0) {
-        for (const f of selectedFiles) {
-          const url = await uploadMediaFile(f);
-          if (url) mediaUrls.push(url);
+        try {
+          for (const f of selectedFiles) {
+            const url = await uploadMediaFile(f);
+            if (url) mediaUrls.push(url);
+          }
+        } catch (uploadError) {
+          console.error('Error uploading media:', uploadError);
+          toast({
+            title: 'Error al subir archivo',
+            description: 'No se pudo subir el archivo multimedia',
+            variant: 'destructive'
+          });
+          setIsPublishingInternal(false);
+          return;
         }
       }
 
@@ -580,6 +601,8 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         queryClient.invalidateQueries({ queryKey: ['posts'] });
         queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
         queryClient.invalidateQueries({ queryKey: ['feed-posts'] });
+        queryClient.invalidateQueries({ queryKey: ['ideas'] });
+        queryClient.invalidateQueries({ queryKey: ['project-posts'] });
 
         onPublish?.(content, selectedPostType, selectedFiles[0] || null);
         toast({ title: 'Publicado', description: 'Tu evento se creó correctamente' });
@@ -590,6 +613,7 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         } catch {
           // ignore
         }
+        setIsPublishingInternal(false);
         onClose();
         return;
       }
@@ -629,7 +653,8 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         };
         postData.project_status = 'idea';
       } else if (selectedPostType === 'proyecto') {
-        postData.post_type = 'project';
+        postData.post_type = 'proyecto';
+        console.log('Publishing project with post_type:', postData.post_type);
         postData.idea = {
           title: projectTitle.trim(),
           description: projectDescription.trim(),
@@ -726,6 +751,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
       queryClient.invalidateQueries({ queryKey: ['posts', undefined, undefined, undefined, 'infinite'] });
+      queryClient.invalidateQueries({ queryKey: ['ideas'] });
+      queryClient.invalidateQueries({ queryKey: ['project-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['explore-projects'] });
 
       onPublish?.(content, selectedPostType, selectedFiles[0] || null);
       toast({ 
@@ -740,6 +768,9 @@ const ModalPublicacionWeb: React.FC<ModalPublicacionWebProps> = ({
         // ignore
       }
       onClose();
+        })(),
+        timeoutPromise
+      ]);
     } catch (error: any) {
       console.error('Error publishing from ModalPublicacionWeb:', error);
       toast({

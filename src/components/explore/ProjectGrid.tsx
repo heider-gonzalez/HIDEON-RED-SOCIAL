@@ -47,10 +47,10 @@ export function ProjectGrid({
             media_urls,
             profiles:profiles(username, avatar_url, institution_name)
           `)
-          .in('post_type', ['project', 'proyecto'])
+          .eq('post_type', 'proyecto')
           .eq('visibility', 'public')
           .order('created_at', { ascending: false })
-          .limit(20);
+          .limit(50);
 
         if (institutionName) {
           query = query.eq('profiles.institution_name', institutionName);

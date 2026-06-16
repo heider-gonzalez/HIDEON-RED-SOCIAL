@@ -29,6 +29,12 @@ export function useServiceWorker() {
     };
 
     checkSupport();
+
+    // Restore push subscription attempt state from sessionStorage
+    const savedAttempt = sessionStorage.getItem('pushSubscriptionAttempted');
+    if (savedAttempt === 'true') {
+      setPushSubscriptionAttempted(true);
+    }
   }, []);
 
   // Register service worker
@@ -102,7 +108,23 @@ export function useServiceWorker() {
 
   // Subscribe to push notifications
   const subscribeToPushNotifications = useCallback(async () => {
-    // Prevent infinite retry loops if VAPID key is not configured
+    // Check VAPID key FIRST before any other checks to prevent retry loops
+    const rawVapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+    const vapidPublicKey = (rawVapidPublicKey ?? '')
+      .toString()
+      .trim()
+      .replace(/^['"]|['"]$/g, '')
+      .replace(/\s+/g, '');
+
+    // If no VAPID key is provided, skip push notifications and mark as attempted
+    if (!vapidPublicKey || vapidPublicKey === 'BKxQzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQ') {
+      console.warn('🔔 VAPID public key not configured. Set VITE_VAPID_PUBLIC_KEY in your .env file to enable push notifications.');
+      setPushSubscriptionAttempted(true);
+      sessionStorage.setItem('pushSubscriptionAttempted', 'true');
+      return null;
+    }
+
+    // Prevent infinite retry loops if already attempted
     if (pushSubscriptionAttempted) {
       console.warn('🔔 Push subscription already attempted, skipping to prevent retry loop');
       return null;
@@ -115,21 +137,6 @@ export function useServiceWorker() {
 
     try {
       console.log('🔔 Subscribing to push notifications...');
-
-      // Validate VAPID public key from environment variable
-      const rawVapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-      const vapidPublicKey = (rawVapidPublicKey ?? '')
-        .toString()
-        .trim()
-        .replace(/^['"]|['"]$/g, '')
-        .replace(/\s+/g, '');
-
-      // If no VAPID key is provided, skip push notifications and mark as attempted
-      if (!vapidPublicKey || vapidPublicKey === 'BKxQzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQkQ8QzAkQF0R2W9t4t7bzqkQ') {
-        console.warn('🔔 VAPID public key not configured. Set VITE_VAPID_PUBLIC_KEY in your .env file to enable push notifications.');
-        setPushSubscriptionAttempted(true);
-        return null;
-      }
 
       console.log('🔔 VAPID key info:', {
         stringLength: vapidPublicKey.length,
@@ -145,6 +152,7 @@ export function useServiceWorker() {
           length: vapidPublicKey.length,
         });
         setPushSubscriptionAttempted(true);
+        sessionStorage.setItem('pushSubscriptionAttempted', 'true');
         return null;
       }
 
@@ -165,6 +173,7 @@ export function useServiceWorker() {
           stringLength: vapidPublicKey.length,
         });
         setPushSubscriptionAttempted(true);
+        sessionStorage.setItem('pushSubscriptionAttempted', 'true');
         return null;
       }
 
@@ -211,6 +220,7 @@ export function useServiceWorker() {
       console.error('❌ Push subscription failed:', error);
       // Mark as attempted to prevent infinite retry loops
       setPushSubscriptionAttempted(true);
+      sessionStorage.setItem('pushSubscriptionAttempted', 'true');
       // Don't break the app flow, just log the error
       console.warn('🔔 Push notifications disabled due to configuration error. App will continue to function without push notifications.');
       return null;

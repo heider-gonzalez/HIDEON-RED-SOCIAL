@@ -1,6 +1,7 @@
 import { FeedHeader } from "./FeedHeader";
 import { FeedPullToRefresh } from "./FeedPullToRefresh";
 import { FeedMainContent } from "./FeedMainContent";
+import { FeedOrderSelector } from "./FeedOrderSelector";
 import { usePersonalizedFeed } from "@/hooks/feed/use-personalized-feed";
 import { useRealtimeFeedSimple } from "@/hooks/feed/hooks/use-realtime-feed-simple";
 import { useFeedStability } from "@/hooks/feed/use-feed-stability";
@@ -17,12 +18,15 @@ interface FeedProps {
   contentType?: 'regular' | 'idea' | 'project';
 }
 
+type FeedOrder = 'relevant' | 'recent';
+
 export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
   const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuth();
 
   const [newPostsCount, setNewPostsCount] = useState(0);
   const [isViewingPost, setIsViewingPost] = useState(false);
+  const [feedOrder, setFeedOrder] = useState<FeedOrder>('relevant');
   const loaderRef = useRef<HTMLDivElement>(null);
 
   // Hook de estabilidad para prevenir cambios bruscos
@@ -49,8 +53,15 @@ export function Feed({ userId, groupId, companyId, contentType }: FeedProps) {
     trackPostInteraction,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage
+    isFetchingNextPage,
+    isPersonalized,
+    setIsPersonalized
   } = usePersonalizedFeed(userId, groupId, companyId, contentType);
+
+  // Sync feed order with personalization state
+  useEffect(() => {
+    setIsPersonalized(feedOrder === 'relevant');
+  }, [feedOrder, setIsPersonalized]);
 
   // Real-time updates for authenticated users
   useRealtimeFeedSimple(user?.id || '');

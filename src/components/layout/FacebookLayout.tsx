@@ -179,7 +179,7 @@ export function FacebookLayout({
         <div className="pt-16 h-svh w-full">
           <div
             className="grid h-[calc(100svh-4rem)] w-full overflow-hidden"
-            style={{ gridTemplateColumns: "300px 1fr 300px" }}
+            style={{ gridTemplateColumns: "360px minmax(0, 1fr) 360px" }}
           >
             {/* Left Sidebar */}
             <aside className="hidden lg:block h-full">
@@ -193,7 +193,7 @@ export function FacebookLayout({
             {/* Center Content */}
             <main className="h-full overflow-y-auto scrollbar-hide bg-muted/10">
               <div className="w-full min-h-full px-3 sm:px-6 py-4 lg:py-7">
-                <div className={isWideCenterPage ? "mx-auto w-full max-w-[1400px]" : "mx-auto w-full max-w-[900px]"}>
+                <div className={isWideCenterPage ? "mx-auto w-full max-w-[1400px]" : "mx-auto w-full max-w-[680px]"}>
                   {currentUserId && <NotificationPermissionBanner />}
                   {children}
                   {!hideLegalFooter && <AppLegalFooter />}

@@ -49,6 +49,8 @@ export class ErrorBoundary extends Component<Props, State> {
     if (error.message.includes('insertBefore') || error.message.includes('removeChild') || error.message.includes('appendChild')) {
       console.warn('⚠️ DOM manipulation error detected - preventing potential infinite loop');
       // Don't reload on DOM manipulation errors to prevent loops
+      // Reset state to allow recovery without page reload
+      this.setState({ hasError: false, error: null, errorId: '' });
       return;
     }
     

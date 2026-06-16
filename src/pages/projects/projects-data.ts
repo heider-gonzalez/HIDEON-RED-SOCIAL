@@ -11,7 +11,19 @@ export async function fetchProjectPosts({ selectedStatus, institutionName }: Fet
     .from('posts')
     .select(
       `
-          *,
+          id,
+          user_id,
+          created_at,
+          updated_at,
+          content,
+          post_type,
+          project_status,
+          media_url,
+          media_urls,
+          idea,
+          post_metadata,
+          project_showcases,
+          video_url,
           profiles!posts_user_id_fkey (
             id,
             username,
@@ -20,8 +32,10 @@ export async function fetchProjectPosts({ selectedStatus, institutionName }: Fet
           )
         `
     )
-    .in('post_type', ['project', 'proyecto'])
-    .order('updated_at', { ascending: false });
+    .eq('post_type', 'proyecto')
+    .eq('visibility', 'public')
+    .order('created_at', { ascending: false })
+    .limit(50);
 
   if (selectedStatus !== 'all') {
     projectsQuery = projectsQuery.eq('project_status', selectedStatus);
@@ -35,41 +49,14 @@ export async function fetchProjectPosts({ selectedStatus, institutionName }: Fet
   if (result.error) throw result.error;
 
   const posts = result.data || [];
-  const postIds = posts.map((p: any) => p.id);
-  if (postIds.length === 0) return [];
-
-  const [{ data: reactionsData }, { data: commentsData }, { data: viewsData }] = await Promise.all([
-    (supabase as any)
-      .from('reactions')
-      .select('post_id, id, user_id, reaction_type, created_at')
-      .in('post_id', postIds),
-    supabase.from('comments').select('post_id').in('post_id', postIds),
-    supabase.from('project_views').select('post_id').in('post_id', postIds),
-  ]);
-
-  const reactionsByPost = reactionsData?.reduce((acc: any, reaction: any) => {
-    if (!acc[reaction.post_id]) {
-      acc[reaction.post_id] = [];
-    }
-    acc[reaction.post_id].push(reaction);
-    return acc;
-  }, {}) || {};
-
-  const commentsCountByPost = commentsData?.reduce((acc: any, comment: any) => {
-    acc[comment.post_id] = (acc[comment.post_id] || 0) + 1;
-    return acc;
-  }, {}) || {};
-
-  const viewsCountByPost = viewsData?.reduce((acc: any, view: any) => {
-    acc[view.post_id] = (acc[view.post_id] || 0) + 1;
-    return acc;
-  }, {}) || {};
-
+  
+  // Simplified: return posts without extra queries for reactions/comments/views
+  // These can be loaded on-demand or via separate hooks
   return posts.map((post: any) => ({
     ...post,
-    reactions: reactionsByPost[post.id] || [],
-    comments_count: commentsCountByPost[post.id] || 0,
-    views_count: viewsCountByPost[post.id] || 0,
+    reactions: [],
+    comments_count: 0,
+    views_count: 0,
   }));
 }
 

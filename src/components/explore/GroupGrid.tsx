@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,12 +34,22 @@ export function GroupGrid({ searchQuery }: { searchQuery: string }) {
   }
 
   if (error) {
+    const isServerError = error instanceof Error && (
+      error.message.includes('503') || 
+      error.message.includes('500') ||
+      error.message.includes('server')
+    );
+    
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Users className="h-12 w-12 text-destructive mb-4" />
-        <p className="text-muted-foreground mb-2">Error al cargar grupos</p>
+        <p className="text-muted-foreground mb-2">
+          {isServerError ? 'Grupos no disponibles' : 'Error al cargar grupos'}
+        </p>
         <p className="text-xs text-muted-foreground mb-4">
-          {error instanceof Error ? error.message : 'Hubo un problema al conectar con el servidor'}
+          {isServerError 
+            ? 'El servidor está temporalmente no disponible. Reintentando...'
+            : (error instanceof Error ? error.message : 'Hubo un problema al conectar con el servidor')}
         </p>
         <Button onClick={() => refetch()} variant="outline" size="sm">
           Reintentar

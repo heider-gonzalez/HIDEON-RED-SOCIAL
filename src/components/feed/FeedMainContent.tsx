@@ -4,6 +4,7 @@ import { PublicFeedWall } from "./PublicFeedWall";
 import type { Post } from "@/types/post";
 import { FeedContent } from "./FeedContent";
 import { VirtualizedFeedContent } from "./VirtualizedFeedContent";
+import { FacebookPostCreator } from "./FacebookPostCreator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -101,11 +102,17 @@ export function FeedMainContent({
   }
 
   if (posts.length === 0 && !isLoading) {
-    return <EmptyFeed />;
+    return (
+      <>
+        <FacebookPostCreator />
+        <EmptyFeed />
+      </>
+    );
   }
 
   return (
     <div data-feed-container className="relative">
+      <FacebookPostCreator />
       {shouldVirtualize ? (
         <VirtualizedFeedContent
           posts={posts}

@@ -154,6 +154,13 @@ async function networkFirstStrategy(request, cacheName) {
   try {
     // Try network first
     const networkResponse = await fetch(request);
+    
+    // Don't cache 503 or other server errors
+    if (networkResponse.status >= 500) {
+      console.log('🌐 Server error (', networkResponse.status, '), trying cache for:', request.url);
+      throw new Error(`Server error: ${networkResponse.status}`);
+    }
+    
     if (networkResponse.ok) {
       // Cache successful network response
       const cache = await caches.open(cacheName);

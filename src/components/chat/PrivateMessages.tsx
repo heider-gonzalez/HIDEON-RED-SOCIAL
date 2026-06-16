@@ -11,15 +11,12 @@ import { es } from "date-fns/locale";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { playUiSound } from "@/lib/ui-sounds";
-import { useArchivedChats } from "@/hooks/use-archived-chats";
 import { splitConversationsByMutualFollow } from "@/lib/chat/split-conversations";
 import { followUser } from "@/lib/api/followers/follow-actions";
 import { GlobalChat } from "@/components/chat/GlobalChat";
 import { useMessages, useConversations, useSendMessage } from "@/hooks/use-messages";
 import { Message, Conversation } from "@/types/chat";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePresence } from "@/hooks/use-presence";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
 
 import {
@@ -53,15 +50,11 @@ interface ConversationItemProps {
   visibleConversations: Conversation[];
   markAsRead: (id: string) => void;
   setSelectedConversation: (id: string) => void;
-  handleChatLongPress: (id: string) => void;
-  handleChatPressEnd: () => void;
   selectedConversation: string | null;
   onlineUsers: Map<string, { isOnline: boolean }>;
-  activeInboxTab: 'inbox' | 'requests' | 'archived';
+  activeInboxTab: 'inbox' | 'requests';
   setAcceptedRequests: React.Dispatch<React.SetStateAction<Set<string>>>;
-  setActiveInboxTab: React.Dispatch<React.SetStateAction<'inbox' | 'requests' | 'archived'>>;
-  archivedChats: Set<string>;
-  handleUnarchiveChat: (id: string) => void;
+  setActiveInboxTab: React.Dispatch<React.SetStateAction<'inbox' | 'requests'>>;
 }
 
 function ConversationItem({
@@ -70,15 +63,11 @@ function ConversationItem({
   visibleConversations,
   markAsRead,
   setSelectedConversation,
-  handleChatLongPress,
-  handleChatPressEnd,
   selectedConversation,
   onlineUsers,
   activeInboxTab,
   setAcceptedRequests,
   setActiveInboxTab,
-  archivedChats,
-  handleUnarchiveChat,
 }: ConversationItemProps) {
   const conv = visibleConversations[index];
   if (!conv) return null;
@@ -93,11 +82,6 @@ function ConversationItem({
         }
         setSelectedConversation(conv.id);
       }}
-      onMouseDown={() => !conv.is_global && handleChatLongPress(conv.id)}
-      onMouseUp={handleChatPressEnd}
-      onMouseLeave={handleChatPressEnd}
-      onTouchStart={() => !conv.is_global && handleChatLongPress(conv.id)}
-      onTouchEnd={handleChatPressEnd}
       className={cn(
         "w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left border-b border-border/50",
         selectedConversation === conv.id && "bg-muted"
@@ -179,69 +163,7 @@ function ConversationItem({
           >
             Aceptar
           </span>
-          {archivedChats.has(conv.id) ? (
-            <span
-              role="button"
-              tabIndex={0}
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleUnarchiveChat(conv.id);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleUnarchiveChat(conv.id);
-                }
-              }}
-            >
-              Desarchivar
-            </span>
-          ) : (
-            <span
-              role="button"
-              tabIndex={0}
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleChatLongPress(conv.id);
-                setTimeout(() => handleChatPressEnd(), 0);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleChatLongPress(conv.id);
-                  setTimeout(() => handleChatPressEnd(), 0);
-                }
-              }}
-            >
-              Archivar
-            </span>
-          )}
         </div>
-      )}
-
-      {activeInboxTab === 'archived' && !conv.is_global && (
-        <span
-          role="button"
-          tabIndex={0}
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleUnarchiveChat(conv.id);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              e.stopPropagation();
-              handleUnarchiveChat(conv.id);
-            }
-          }}
-        >
-          Desarchivar
-        </span>
       )}
     </button>
   );
@@ -265,9 +187,8 @@ export function PrivateMessages() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
-  const { archivedChats, handleChatLongPress, handleChatPressEnd, handleUnarchiveChat } = useArchivedChats();
   const [mutualFollowMap, setMutualFollowMap] = useState<Record<string, boolean>>({});
-  const [activeInboxTab, setActiveInboxTab] = useState<'inbox' | 'requests' | 'archived'>('inbox');
+  const [activeInboxTab, setActiveInboxTab] = useState<'inbox' | 'requests'>('inbox');
   const queryClient = useQueryClient();
 
   const { unreadMessages, markAsRead } = useUnreadMessages(currentUserId || undefined);
@@ -856,9 +777,6 @@ export function PrivateMessages() {
     });
   }, [conversations, mutualFollowMap, acceptedRequests]);
 
-  const archivedConversations = useMemo(() => {
-    return conversations.filter((c) => archivedChats.has(c.id));
-  }, [conversations, archivedChats]);
 
   if (loading && conversations.length === 0) {
     return (
@@ -932,20 +850,6 @@ export function PrivateMessages() {
                 </span>
               )}
             </Button>
-            <Button
-              type="button"
-              variant={activeInboxTab === 'archived' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveInboxTab('archived')}
-              className="h-8"
-            >
-              Archivados
-              {archivedConversations.length > 0 && (
-                <span className="ml-2 bg-muted text-foreground text-xs rounded-full h-5 px-2 flex items-center justify-center">
-                  {archivedConversations.length}
-                </span>
-              )}
-            </Button>
           </div>
         </div>
 
@@ -984,7 +888,7 @@ export function PrivateMessages() {
           <ScrollArea className="flex-1">
             {visibleConversations.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground text-sm">
-                {searchQuery ? "No se encontraron conversaciones" : activeInboxTab === 'requests' ? "No tienes solicitudes" : activeInboxTab === 'archived' ? "No tienes chats archivados" : "No tienes conversaciones aún"}
+                {searchQuery ? "No se encontraron conversaciones" : activeInboxTab === 'requests' ? "No tienes solicitudes" : "No tienes conversaciones aún"}
               </div>
             ) : (
               <div className="divide-y divide-border">
@@ -1114,26 +1018,6 @@ export function PrivateMessages() {
                       </div>
                     )}
 
-                    {activeInboxTab === 'archived' && !conv.is_global && (
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUnarchiveChat(conv.id);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleUnarchiveChat(conv.id);
-                          }
-                        }}
-                      >
-                        Desarchivar
-                      </span>
-                    )}
                   </button>
                 ))}
               </div>
@@ -1273,26 +1157,6 @@ export function PrivateMessages() {
                     </div>
                   )}
 
-                  {activeInboxTab === 'archived' && !conv.is_global && (
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUnarchiveChat(conv.id);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleUnarchiveChat(conv.id);
-                        }
-                      }}
-                    >
-                      Desarchivar
-                    </span>
-                  )}
                 </button>
               ))}
             </div>
