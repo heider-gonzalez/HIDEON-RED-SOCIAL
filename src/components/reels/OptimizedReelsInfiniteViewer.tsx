@@ -138,10 +138,25 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
     };
   }, []);
 
-  // Manejar errores de video - sin fallback a Supabase para evitar egreso
-  const handleVideoError = useCallback(() => {
+  // Manejar errores de video - capturar error exacto del elemento video
+  const handleVideoError = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    const error = video.error;
+    console.error('❌ Error nativo del elemento de video:', {
+      src: currentSrc,
+      error: error ? {
+        code: error.code,
+        message: error.message,
+        MEDIA_ERR_ABORTED: error.MEDIA_ERR_ABORTED,
+        MEDIA_ERR_NETWORK: error.MEDIA_ERR_NETWORK,
+        MEDIA_ERR_DECODE: error.MEDIA_ERR_DECODE,
+        MEDIA_ERR_SRC_NOT_SUPPORTED: error.MEDIA_ERR_SRC_NOT_SUPPORTED,
+      } : 'No error object',
+      readyState: video.readyState,
+      networkState: video.networkState,
+    });
     setHasError(true);
-  }, []);
+  }, [currentSrc]);
 
   // Reset error cuando cambia el post
   useEffect(() => {
@@ -266,12 +281,23 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
                 const w = v.videoWidth || 1;
                 const h = v.videoHeight || 1;
                 setIsVertical(h / w >= 1.25);
+                console.log('🎬 Video loaded metadata:', { w, h, src: currentSrc });
               } catch {
                 // ignore
               }
             }}
-            onLoadStart={() => setIsReady(false)}
-            onCanPlay={() => setIsReady(true)}
+            onLoadStart={() => {
+              console.log('🎬 Video load start:', currentSrc);
+              setIsReady(false);
+            }}
+            onCanPlay={() => {
+              console.log('🎬 Video can play:', currentSrc);
+              setIsReady(true);
+            }}
+            onLoadedData={() => {
+              console.log('🎬 Video loaded data:', currentSrc);
+              setIsReady(true);
+            }}
           />
         )}
       </div>
@@ -383,7 +409,13 @@ const OptimizedReelItem = memo(function OptimizedReelItem({
               </Avatar>
 
               <div className="flex-1 min-w-0 text-white">
-                <h3 className="font-semibold text-sm truncate -mt-0.5">{post.profiles?.username || 'Usuario'}</h3>
+                <Link
+                  to={`/profile/${post.user_id}`}
+                  className="font-semibold text-sm truncate -mt-0.5 hover:underline pointer-events-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {post.profiles?.username || 'Usuario'}
+                </Link>
                 <span className="text-xs text-gray-300">
                   {formatDistanceToNow(new Date(post.created_at), {
                     addSuffix: true,
@@ -564,4 +596,5 @@ export const OptimizedReelsInfiniteViewer = memo(function OptimizedReelsInfinite
       </div>
     </div>
   );
+});;
 });

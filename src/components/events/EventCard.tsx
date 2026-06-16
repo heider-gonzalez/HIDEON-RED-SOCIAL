@@ -6,7 +6,7 @@ import { es } from 'date-fns/locale';
 
 interface EventCardProps {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   description: string;
   startDate: string;
   endDate?: string;

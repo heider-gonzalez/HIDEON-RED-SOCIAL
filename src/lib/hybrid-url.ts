@@ -117,10 +117,15 @@ export function getPostVideoUrl(post: {
   if (post.media_url) candidates.push(post.media_url);
   if ((post as any).demo_url) candidates.push((post as any).demo_url);
 
+  console.log('🎬 getPostVideoUrl - candidates:', candidates);
   const firstVideo = candidates.find((u) => isVideo(u));
+  console.log('🎬 getPostVideoUrl - firstVideo:', firstVideo);
+  
   if (!firstVideo) return null;
 
-  return getHybridUrl(firstVideo);
+  const finalUrl = getHybridUrl(firstVideo);
+  console.log('🎬 getPostVideoUrl - finalUrl:', finalUrl);
+  return finalUrl;
 }
 
 // Función para verificar si una URL es accesible

@@ -271,12 +271,16 @@ export default function ProjectDetail() {
 
           {/* Author Info */}
           <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={project.profiles?.avatar_url || ''} />
-              <AvatarFallback>{project.profiles?.username?.[0]?.toUpperCase()}</AvatarFallback>
-            </Avatar>
+            <Link to={`/profile/${project.user_id}`}>
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={project.profiles?.avatar_url || ''} />
+                <AvatarFallback>{project.profiles?.username?.[0]?.toUpperCase()}</AvatarFallback>
+              </Avatar>
+            </Link>
             <div>
-              <p className="font-semibold">{project.profiles?.username}</p>
+              <Link to={`/profile/${project.user_id}`} className="font-semibold hover:underline">
+                {project.profiles?.username}
+              </Link>
               <p className="text-sm text-muted-foreground">Creador del proyecto</p>
             </div>
           </div>
@@ -426,12 +430,16 @@ export default function ProjectDetail() {
             {comments.map((comment: any) => (
               <Card key={comment.id} className="p-4">
                 <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={comment.profiles?.avatar_url || ''} />
-                    <AvatarFallback>{comment.profiles?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                  <Link to={`/profile/${comment.user_id}`}>
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={comment.profiles?.avatar_url || ''} />
+                      <AvatarFallback>{comment.profiles?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  </Link>
                   <div className="flex-1">
-                    <p className="font-semibold text-sm">{comment.profiles?.username}</p>
+                    <Link to={`/profile/${comment.user_id}`} className="font-semibold text-sm hover:underline">
+                      {comment.profiles?.username}
+                    </Link>
                     <p className="text-sm text-muted-foreground mt-1">{comment.content}</p>
                   </div>
                 </div>

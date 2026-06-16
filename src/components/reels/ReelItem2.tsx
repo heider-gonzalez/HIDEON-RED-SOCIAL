@@ -69,9 +69,23 @@ const ReelItem2 = memo(function ReelItem2({
 
   const contentForMentions = post.content || "";
 
-  // Manejo de errores mejorado
-  const handleVideoError = useCallback(() => {
-    console.warn('❌ Error en video:', currentSrc);
+  // Manejo de errores mejorado - capturar error exacto del elemento video
+  const handleVideoError = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    const error = video.error;
+    console.error('❌ Error nativo del elemento de video:', {
+      src: currentSrc,
+      error: error ? {
+        code: error.code,
+        message: error.message,
+        MEDIA_ERR_ABORTED: error.MEDIA_ERR_ABORTED,
+        MEDIA_ERR_NETWORK: error.MEDIA_ERR_NETWORK,
+        MEDIA_ERR_DECODE: error.MEDIA_ERR_DECODE,
+        MEDIA_ERR_SRC_NOT_SUPPORTED: error.MEDIA_ERR_SRC_NOT_SUPPORTED,
+      } : 'No error object',
+      readyState: video.readyState,
+      networkState: video.networkState,
+    });
     setHasError(true);
   }, [currentSrc]);
 
@@ -216,12 +230,17 @@ const ReelItem2 = memo(function ReelItem2({
             const w = v.videoWidth || 1;
             const h = v.videoHeight || 1;
             setDuration(Number.isFinite(v.duration) ? v.duration : 0);
+            console.log('🎬 Video loaded metadata:', { w, h, src: currentSrc });
           } catch {
             // ignore
           }
         }}
-        onLoadStart={() => setIsReady(false)}
+        onLoadStart={() => {
+          console.log('🎬 Video load start:', currentSrc);
+          setIsReady(false);
+        }}
         onCanPlay={() => {
+          console.log('🎬 Video can play:', currentSrc);
           setIsReady(true);
           try {
             const v = videoRef.current;
@@ -230,6 +249,10 @@ const ReelItem2 = memo(function ReelItem2({
           } catch {
             // ignore
           }
+        }}
+        onLoadedData={() => {
+          console.log('🎬 Video loaded data:', currentSrc);
+          setIsReady(true);
         }}
         onTimeUpdate={() => {
           const v = videoRef.current;
@@ -366,7 +389,13 @@ const ReelItem2 = memo(function ReelItem2({
             </AvatarFallback>
           </Avatar>
           <div className="text-white min-w-0">
-            <div className="font-semibold text-sm truncate">{post.profiles?.username || 'Usuario'}</div>
+            <Link
+              to={`/profile/${post.user_id}`}
+              className="font-semibold text-sm truncate hover:underline pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {post.profiles?.username || 'Usuario'}
+            </Link>
             {contentForMentions && (
               <MentionsText
                 content={contentForMentions}
@@ -410,4 +439,5 @@ const ReelItem2 = memo(function ReelItem2({
   );
 });
 
+export default ReelItem2;
 export default ReelItem2;

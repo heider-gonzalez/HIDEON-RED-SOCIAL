@@ -356,14 +356,18 @@ export default function CompanyDetail() {
                 <div className="space-y-2">
                   {members.slice(0, 8).map((m: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <Avatar className="h-7 w-7">
-                        <AvatarImage src={m?.profiles?.avatar_url || undefined} />
-                        <AvatarFallback>
-                          {(m?.profiles?.username || "U").slice(0, 1).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      <Link to={`/profile/${m?.user_id}`}>
+                        <Avatar className="h-7 w-7">
+                          <AvatarImage src={m?.profiles?.avatar_url || undefined} />
+                          <AvatarFallback>
+                            {(m?.profiles?.username || "U").slice(0, 1).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Link>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm truncate">{m?.profiles?.username || "Usuario"}</p>
+                        <Link to={`/profile/${m?.user_id}`} className="text-sm truncate hover:underline">
+                          {m?.profiles?.username || "Usuario"}
+                        </Link>
                       </div>
                       <Badge variant="outline" className="text-[10px]">
                         {String(m?.role || "member").toUpperCase()}
@@ -429,13 +433,17 @@ export default function CompanyDetail() {
 
                   return (
                     <div key={uid} className="flex items-center gap-3 border rounded-md p-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={avatar || undefined} />
-                        <AvatarFallback>{uname.slice(0, 1).toUpperCase()}</AvatarFallback>
-                      </Avatar>
+                      <Link to={`/profile/${uid}`}>
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={avatar || undefined} />
+                          <AvatarFallback>{uname.slice(0, 1).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      </Link>
 
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{uname}</p>
+                        <Link to={`/profile/${uid}`} className="text-sm font-medium truncate hover:underline">
+                          {uname}
+                        </Link>
                         <p className="text-xs text-muted-foreground truncate">{uid}</p>
                       </div>
 

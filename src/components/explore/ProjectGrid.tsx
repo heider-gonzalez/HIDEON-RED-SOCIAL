@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { FolderOpen } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getHybridUrl } from "@/lib/hybrid-url";
 
@@ -185,15 +186,17 @@ export function ProjectGrid({
             </div>
             
             <div className="flex items-center gap-2">
-              <Avatar className="h-5 w-5">
-                <AvatarImage src={getHybridUrl(project.profiles?.avatar_url) || undefined} />
-                <AvatarFallback className="text-xs">
-                  {project.profiles?.username?.[0]?.toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-xs text-muted-foreground truncate">
+              <Link to={`/profile/${project.user_id}`}>
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={getHybridUrl(project.profiles?.avatar_url) || undefined} />
+                  <AvatarFallback className="text-xs">
+                    {project.profiles?.username?.[0]?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
+              <Link to={`/profile/${project.user_id}`} className="text-xs text-muted-foreground truncate hover:underline">
                 @{project.profiles?.username || 'usuario'}
-              </span>
+              </Link>
             </div>
           </CardContent>
         </Card>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -153,16 +154,18 @@ export function ReactionsListDialog({ postId, commentId, open, onOpenChange }: R
                   return (
                     <div key={`${reaction.user_id}-${reaction.created_at}`} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={reaction.profiles?.avatar_url || undefined} />
-                          <AvatarFallback>
-                            {reaction.profiles?.username?.[0]?.toUpperCase() || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
+                        <Link to={`/profile/${reaction.user_id}`}>
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={reaction.profiles?.avatar_url || undefined} />
+                            <AvatarFallback>
+                              {reaction.profiles?.username?.[0]?.toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                        </Link>
                         <div>
-                          <p className="font-medium text-sm">
+                          <Link to={`/profile/${reaction.user_id}`} className="font-medium text-sm hover:underline">
                             {reaction.profiles?.username || 'Usuario'}
-                          </p>
+                          </Link>
                           <p className="text-xs text-muted-foreground">
                             @{reaction.profiles?.username?.toLowerCase().replace(/\s+/g, '_') || 'usuario'}
                           </p>

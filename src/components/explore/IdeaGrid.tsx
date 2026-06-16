@@ -1,4 +1,5 @@
 import { useIdeas } from "@/hooks/ideas/use-ideas";
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Lightbulb, Sparkles, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -105,15 +106,17 @@ export function IdeaGrid({
               
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Avatar className="h-6 w-6">
-                  <AvatarImage src={idea.profiles?.avatar_url} />
-                  <AvatarFallback className="text-xs">
-                    {idea.profiles?.username?.[0]?.toUpperCase() || 'U'}
-                  </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs text-muted-foreground truncate">
+                  <Link to={`/profile/${idea.user_id}`}>
+                    <Avatar className="h-6 w-6">
+                    <AvatarImage src={idea.profiles?.avatar_url} />
+                    <AvatarFallback className="text-xs">
+                      {idea.profiles?.username?.[0]?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                    </Avatar>
+                  </Link>
+                  <Link to={`/profile/${idea.user_id}`} className="text-xs text-muted-foreground truncate hover:underline">
                     @{idea.profiles?.username || 'usuario'}
-                  </span>
+                  </Link>
                 </div>
 
                 <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", participantCount > 0 ? "opacity-100" : "opacity-0")}>

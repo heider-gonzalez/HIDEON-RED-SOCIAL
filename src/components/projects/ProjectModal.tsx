@@ -650,18 +650,20 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
                     {comments.length > 0 ? (
                       comments.map((comment: any) => (
                         <div key={comment.id} className="flex gap-3">
-                          <Avatar className="w-8 h-8 flex-shrink-0">
-                            <AvatarImage src={comment.profiles?.avatar_url} />
-                            <AvatarFallback>
-                              {comment.profiles?.username?.charAt(0).toUpperCase() || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
+                          <Link to={`/profile/${comment.user_id}`}>
+                            <Avatar className="w-8 h-8 flex-shrink-0">
+                              <AvatarImage src={comment.profiles?.avatar_url} />
+                              <AvatarFallback>
+                                {comment.profiles?.username?.charAt(0).toUpperCase() || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                          </Link>
                           <div className="flex-1">
                             <div className="bg-muted rounded-lg p-3">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-sm">
+                                <Link to={`/profile/${comment.user_id}`} className="font-medium text-sm hover:underline">
                                   {comment.profiles?.username || 'Usuario'}
-                                </span>
+                                </Link>
                                 <span className="text-xs text-muted-foreground">
                                   {formatDistanceToNow(new Date(comment.created_at), { 
                                     addSuffix: true,

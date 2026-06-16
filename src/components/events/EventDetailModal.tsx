@@ -16,7 +16,7 @@ interface EventDetailModalProps {
   onClose: () => void;
   event: {
     title: string;
-    subtitle?: string;
+    subtitle?: React.ReactNode;
     description: string;
     startDate: string;
     endDate?: string;

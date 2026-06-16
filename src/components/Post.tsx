@@ -513,7 +513,11 @@ function EventPostView({ post }: { post: PostType }) {
       {event ? (
         <EventCard
           title={event.title}
-          subtitle={post.profiles?.username || 'Organizador'}
+          subtitle={
+            <Link to={`/profile/${post.user_id}`} className="hover:underline">
+              {post.profiles?.username || 'Organizador'}
+            </Link>
+          }
           description={event.description}
           startDate={event.start_date}
           endDate={event.end_date}
@@ -549,7 +553,11 @@ function EventPostView({ post }: { post: PostType }) {
           onClose={() => setShowEventDetail(false)}
           event={{
             title: event.title,
-            subtitle: post.profiles?.username || 'Organizador',
+            subtitle: (
+              <Link to={`/profile/${post.user_id}`} className="hover:underline">
+                {post.profiles?.username || 'Organizador'}
+              </Link>
+            ),
             description: event.description,
             startDate: event.start_date,
             endDate: event.end_date,
