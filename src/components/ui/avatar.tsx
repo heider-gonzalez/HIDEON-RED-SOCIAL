@@ -36,6 +36,7 @@ const AvatarImage = React.forwardRef<
       ref={ref}
       src={finalSrc}
       className={cn("aspect-square h-full w-full", className)}
+      loading="lazy"
       onError={(e) => {
         setFailed(true)
         onError?.(e)

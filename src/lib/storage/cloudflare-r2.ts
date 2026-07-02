@@ -147,13 +147,13 @@ export async function compressImage(file: File, quality: number = 0.8): Promise<
  */
 export async function uploadWithOptimization(file: File, fileName: string): Promise<string> {
   let processedFile = file;
-  
-  // Compress images automatically
-  if (file.type.startsWith('image/') && file.size > 500000) { // 500KB threshold
+
+  // Compress images automatically - reduced threshold for better performance
+  if (file.type.startsWith('image/') && file.size > 200000) { // 200KB threshold (was 500KB)
     try {
-      processedFile = await compressImage(file, 0.85);
-      console.log('Image compressed:', { 
-        originalSize: file.size, 
+      processedFile = await compressImage(file, 0.75); // Reduced quality for better compression
+      console.log('Image compressed:', {
+        originalSize: file.size,
         compressedSize: processedFile.size,
         reduction: Math.round(((file.size - processedFile.size) / file.size) * 100) + '%'
       });
@@ -161,16 +161,17 @@ export async function uploadWithOptimization(file: File, fileName: string): Prom
       console.warn('Image compression failed, using original:', error);
     }
   }
-  
+
   return uploadToSupabase(processedFile, fileName);
 }
 
 export async function uploadWithOptimizationKey(file: File, fileName: string): Promise<string> {
   let processedFile = file;
 
-  if (file.type.startsWith('image/') && file.size > 500000) {
+  // Compress images automatically - reduced threshold for better performance
+  if (file.type.startsWith('image/') && file.size > 200000) { // 200KB threshold (was 500KB)
     try {
-      processedFile = await compressImage(file, 0.85);
+      processedFile = await compressImage(file, 0.75); // Reduced quality for better compression
       console.log('Image compressed:', {
         originalSize: file.size,
         compressedSize: processedFile.size,
