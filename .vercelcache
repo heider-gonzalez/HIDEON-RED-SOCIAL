@@ -1,3 +1,0 @@
-# Cache busting for Vercel deployment
-# Force complete cache invalidation
-CACHE_BUST=v4.0-$(date +%s)
