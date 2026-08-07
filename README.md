@@ -1,33 +1,119 @@
-HIDEON — Red Social Profesional
-Red social académica y profesional para estudiantes universitarios. Diseñada para compartir ideas, colaborar en proyectos y chatear en tiempo real.
+# 🌐 HIDEON — Plataforma Académica y Profesional
 
-Autor: Heider González (Barranquilla, CO)
+HIDEON es una plataforma web orientada a estudiantes y profesionales para compartir ideas, formar equipos de trabajo, desarrollar proyectos y comunicarse en tiempo real.
 
-Demo: hsocial-app.onrender.com
+El proyecto fue desarrollado como una solución integral de desarrollo web, trabajando tanto en la interfaz como en la integración con servicios backend, base de datos, almacenamiento y funcionalidades en tiempo real.
 
-🚀 Stack Tecnológico
-Frontend: React (TS) + Vite + Tailwind CSS + shadcn/ui.
+## 🚀 Características
 
-Backend & DB: Supabase (PostgreSQL, WebSockets).
+- 👤 Gestión de usuarios y perfiles
+- 💡 Publicación y exploración de ideas
+- 🤝 Solicitud de participación en proyectos
+- 💬 Comunicación en tiempo real
+- 📁 Gestión y almacenamiento de archivos
+- 🎓 Información académica y profesional
+- 🔐 Autenticación y control de acceso
+- 📱 Adaptación para dispositivos móviles
+- ⚡ Consultas optimizadas y carga progresiva de información
 
-Storage & Serverless: Cloudflare R2 + Edge Functions [cite: El user's técnico desarrollo stack includes React, Vite, Supabase, Node.js, Cloudflare R2, and Capacitor., El user configuró Cloudflare R2 secrets and successfully deployed the delete-from-r2 Supabase Edge Function in May 2026.].
+## 🛠️ Stack tecnológico
 
-Móvil: Capacitor (Android).
+### Frontend
 
-🛠️ Configuración Rápida
-Clonar e instalar:
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui
 
-Bash
-git clone <YOUR_GIT_URL> && cd hideon
+### Backend y base de datos
+
+- Supabase
+- PostgreSQL
+- WebSockets
+- Supabase Edge Functions
+
+### Almacenamiento y servicios
+
+- Cloudflare R2
+
+### Aplicación móvil
+
+- Capacitor
+- Android
+
+### Herramientas
+
+- Git
+- GitHub
+- npm
+
+## 🏗️ Arquitectura
+
+La aplicación utiliza React y TypeScript en el frontend, mientras que Supabase proporciona servicios de autenticación, base de datos PostgreSQL y comunicación en tiempo real.
+
+Para el almacenamiento de archivos se integra Cloudflare R2, mientras que determinadas operaciones backend se gestionan mediante Edge Functions.
+
+La aplicación también fue adaptada para ejecutarse como aplicación móvil mediante Capacitor.
+
+## 💻 Ejecución local
+
+### 1. Clonar el repositorio
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd hideon
+```
+
+### 2. Instalar dependencias
+
+```bash
 npm install
-Variables de entorno:
-Crea un archivo .env basado en .env.example:
+```
 
-Fragmento de código
+### 3. Configurar variables de entorno
+
+Crea un archivo `.env` a partir de `.env.example`:
+
+```env
 VITE_SUPABASE_URL=tu_url
 VITE_SUPABASE_ANON_KEY=tu_clave
-Iniciar:
+```
 
-Bash
+### 4. Ejecutar el proyecto
+
+```bash
 npm run dev
-Nota: Este proyecto se presenta actualmente como portafolio técnico, destacando la integración de bases de datos en tiempo real, almacenamiento en la nube y optimización de rendimiento [cite: El user's técnico desarrollo stack includes React, Vite, Supabase, Node.js, Cloudflare R2, and Capacitor., El user configuró Cloudflare R2 secrets and successfully deployed the delete-from-r2 Supabase Edge Function in May 2026., SQL Optimizar: Añadir almacenamiento en caché a las consultas rel...].
+```
+
+## 🌐 Demo
+
+El proyecto cuenta con una versión desplegada para demostración.
+
+**Demo:** https://hsocial-app.onrender.com
+
+## 📱 Aplicación móvil
+
+HIDEON también fue preparado para ejecutarse en Android utilizando Capacitor.
+
+## 🎯 Objetivo del proyecto
+
+El objetivo de HIDEON es crear un espacio digital donde estudiantes y profesionales puedan conectar sus conocimientos, compartir ideas y colaborar en proyectos.
+
+El proyecto también representa una aplicación práctica de conceptos de:
+
+- Desarrollo frontend moderno
+- Bases de datos relacionales
+- Autenticación
+- Aplicaciones en tiempo real
+- Almacenamiento en la nube
+- Optimización de consultas
+- Desarrollo multiplataforma
+
+## 👨‍💻 Autor
+
+**Heider González**
+
+Ingeniero Informático | Desarrollador de Software Junior
+
+Barranquilla, Colombia
