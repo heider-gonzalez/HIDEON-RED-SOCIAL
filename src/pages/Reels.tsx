@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
 import { ReelsInfiniteViewer } from '@/components/reels/ReelsInfiniteViewer';
@@ -7,7 +7,7 @@ import { ReelsDesktopLayout } from '@/components/reels/ReelsDesktopLayout';
 import { useReelsFeed } from '@/hooks/reels/use-reels-feed';
 import { useMobileDetection } from '@/hooks/use-mobile-detection';
 
-export default function Reels() {
+function ReelsContent() {
   const { reelId } = useParams();
   const { 
     videosPosts, 
@@ -81,3 +81,5 @@ export default function Reels() {
     </>
   );
 }
+
+export default memo(ReelsContent);

@@ -440,4 +440,3 @@ const ReelItem2 = memo(function ReelItem2({
 });
 
 export default ReelItem2;
-export default ReelItem2;

@@ -596,5 +596,4 @@ export const OptimizedReelsInfiniteViewer = memo(function OptimizedReelsInfinite
       </div>
     </div>
   );
-});;
 });

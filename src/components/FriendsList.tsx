@@ -107,7 +107,6 @@ export function FriendsList() {
         }
       }
       
-      console.log("Total friends loaded:", allFriends.length);
       setFriends(allFriends);
     } catch (error: any) {
       console.error("Error loading friends:", error);

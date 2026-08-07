@@ -4,8 +4,8 @@ export function useDoubleClick(
   onSingleClick: () => void,
   onDoubleClick: () => void,
   delay: number = 300
-) {
-  const clickTimeout = useRef<NodeJS.Timeout | null>(null);
+): () => void {
+  const clickTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clickCount = useRef(0);
 
   const handleClick = () => {

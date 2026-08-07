@@ -4,7 +4,7 @@ export function useAutoResize<T extends HTMLTextAreaElement>(
   content: string,
   minHeight: number = 100,
   maxHeight: number = 300
-) {
+): React.RefObject<T> {
   const ref = useRef<T>(null);
 
   useEffect(() => {

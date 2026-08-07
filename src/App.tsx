@@ -118,7 +118,6 @@ function ServiceWorkerRegistration() {
           (trySubscribe as any)._attempts = ((trySubscribe as any)._attempts ?? 0) + 1;
 
           if ((trySubscribe as any)._attempts > maxAttempts) {
-            console.error('🔔 Push subscription failed repeatedly. Stopping retries.');
             return;
           }
 
@@ -138,7 +137,7 @@ function ServiceWorkerRegistration() {
           }, 1500);
         }
       } catch (error) {
-        console.error('🔔 Error requesting notification permissions:', error);
+        console.error('Error requesting notification permissions:', error);
       }
     };
 

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 
-export function useScrollDirection() {
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+export function useScrollDirection(): boolean {
+  const [isVisible, setIsVisible] = useState<boolean>(true);
+  const [lastScrollY, setLastScrollY] = useState<number>(0);
 
   useEffect(() => {
     const handleScroll = () => {

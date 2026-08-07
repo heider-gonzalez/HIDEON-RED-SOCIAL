@@ -45,16 +45,12 @@ export function useServiceWorker() {
     }
 
     try {
-      console.log('🔧 Registering Service Worker...');
-
       const reg = await navigator.serviceWorker.register('/sw.js', {
         scope: '/'
       });
 
       // Wait for the service worker to be ready
       await navigator.serviceWorker.ready;
-
-      console.log('✅ Service Worker registered successfully:', reg);
 
       setRegistration(reg);
       setIsRegistered(true);
@@ -66,7 +62,6 @@ export function useServiceWorker() {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               // New version available, notify user
-              console.log('🔄 New Service Worker version available');
               // You could show a toast here to refresh the page
             }
           });
@@ -75,7 +70,7 @@ export function useServiceWorker() {
 
       // Handle controller change (when SW takes control)
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('🎛️ Service Worker controller changed');
+        // Service worker controller changed
       });
 
     } catch (error) {
@@ -139,19 +134,11 @@ export function useServiceWorker() {
     }
 
     try {
-      console.log('🔔 Subscribing to push notifications...');
-
-      console.log('🔔 VAPID key info:', {
-        stringLength: vapidPublicKey.length,
-        previewStart: vapidPublicKey.slice(0, 10),
-        previewEnd: vapidPublicKey.slice(-10),
-      });
-
       let applicationServerKey: Uint8Array;
       try {
         applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
       } catch (e) {
-        console.error('❌ Invalid VAPID public key (base64 decode failed)', {
+        console.error('Invalid VAPID public key (base64 decode failed)', {
           length: vapidPublicKey.length,
         });
         setPushSubscriptionAttempted(true);
@@ -166,12 +153,11 @@ export function useServiceWorker() {
         fixed[0] = 0x04;
         fixed.set(applicationServerKey, 1);
         applicationServerKey = fixed;
-        console.warn('🔧 VAPID key decoded to 64 bytes; prepended 0x04 prefix to fix to 65 bytes');
       }
 
       // WebPush VAPID public key (P-256) should decode to 65 bytes.
       if (applicationServerKey.byteLength !== 65) {
-        console.error('❌ Invalid VAPID public key (wrong decoded length)', {
+        console.error('Invalid VAPID public key (wrong decoded length)', {
           decodedLength: applicationServerKey.byteLength,
           stringLength: vapidPublicKey.length,
         });
@@ -179,10 +165,6 @@ export function useServiceWorker() {
         sessionStorage.setItem('pushSubscriptionAttempted', 'true');
         return null;
       }
-
-      console.log('🔔 VAPID decoded length OK:', {
-        decodedLength: applicationServerKey.byteLength,
-      });
 
       const applicationServerKeyBuffer = applicationServerKey.buffer.slice(
         applicationServerKey.byteOffset,
@@ -193,8 +175,6 @@ export function useServiceWorker() {
         userVisibleOnly: true,
         applicationServerKey: applicationServerKeyBuffer
       });
-
-      console.log('✅ Push subscription successful:', subscription);
 
       // Save subscription to Supabase database
       const { data: { user } } = await supabase.auth.getUser();
@@ -212,20 +192,16 @@ export function useServiceWorker() {
           });
 
         if (error) {
-          console.error('❌ Error saving subscription to database:', error);
-        } else {
-          console.log('💾 Subscription saved to database');
+          console.error('Error saving subscription to database:', error);
         }
       }
 
       return subscription;
     } catch (error: any) {
-      console.error('❌ Push subscription failed:', error);
+      console.error('Push subscription failed:', error);
       // Mark as attempted to prevent infinite retry loops
       setPushSubscriptionAttempted(true);
       sessionStorage.setItem('pushSubscriptionAttempted', 'true');
-      // Don't break the app flow, just log the error
-      console.warn('🔔 Push notifications disabled due to configuration error. App will continue to function without push notifications.');
       return null;
     }
   }, [registration, pushSubscriptionAttempted]);

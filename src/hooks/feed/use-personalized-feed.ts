@@ -61,15 +61,16 @@ export function usePersonalizedFeed(
     isFetchingNextPage,
   } = useInfiniteQuery({
     queryKey: ["posts", userId, groupId, companyId, contentType, "infinite"],
-    queryFn: ({ pageParam }) =>
-      getPostsPage({
+    queryFn: async ({ pageParam }) => {
+      return getPostsPage({
         userId,
         groupId,
         companyId,
         contentType,
         limit: PAGE_SIZE,
         cursor: (pageParam as string | undefined) ?? null,
-      }),
+      });
+    },
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage?.nextCursor,
     enabled: true,

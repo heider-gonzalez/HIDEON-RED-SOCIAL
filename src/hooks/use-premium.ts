@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 export function usePremium() {
-  const { isLoading } = useQuery({
+  const { isLoading } = useQuery<boolean>({
     queryKey: ["user-premium"],
     queryFn: async () => false,
     staleTime: 1000 * 60 * 60,
@@ -11,6 +11,6 @@ export function usePremium() {
   return {
     isPremium: false,
     isLoading: Boolean(isLoading),
-    error: null,
+    error: null as Error | null,
   };
 }
