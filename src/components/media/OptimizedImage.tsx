@@ -1,104 +1,111 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState, useRef, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps {
   src: string;
   alt: string;
   className?: string;
-  skeletonClassName?: string;
-  onLoad?: () => void;
-  onError?: () => void;
+  width?: number;
+  height?: number;
+  loading?: 'lazy' | 'eager';
+  placeholder?: 'blur' | 'color' | 'none';
+  placeholderColor?: string;
+  onClick?: () => void;
 }
 
-export const OptimizedImage = React.memo(function OptimizedImage({
+export function OptimizedImage({
   src,
   alt,
-  className = '',
-  skeletonClassName = 'w-full h-96 object-cover',
-  onLoad,
-  onError
+  className,
+  width,
+  height,
+  loading = 'lazy',
+  placeholder = 'blur',
+  placeholderColor = '#e5e7eb',
+  onClick,
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [isInView, setIsInView] = useState(false);
+  const [isInView, setIsInView] = useState(loading === 'eager');
   const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer for lazy loading
   useEffect(() => {
-    const element = imgRef.current;
-    if (!element) return;
+    if (loading === 'eager' || !containerRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            setIsInView(true);
-            // Start loading the image when it comes into view
-            if (element.src !== src) {
-              element.src = src;
-            }
-          }
-        });
+        if (entries[0]?.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
       },
-      {
-        threshold: 0.1,
-        rootMargin: '50px' // Start loading 50px before it comes into view
-      }
+      { rootMargin: '50px' } // Start loading 50px before element comes into view
     );
 
-    observer.observe(element);
+    observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [src]);
+  }, [loading]);
 
-  const handleLoad = useCallback(() => {
+  const handleLoad = () => {
     setIsLoaded(true);
-    setHasError(false);
-    onLoad?.();
-  }, [onLoad]);
+  };
 
-  const handleError = useCallback(() => {
-    setHasError(true);
-    setIsLoaded(false);
-    onError?.();
-  }, [onError]);
-
-  // Show skeleton while loading or if there's an error
-  if (!isInView || (!isLoaded && !hasError)) {
-    return <Skeleton className={skeletonClassName} />;
-  }
-
-  // Show error state
-  if (hasError) {
-    return (
-      <div className={`flex items-center justify-center bg-gray-100 dark:bg-gray-800 ${className}`}>
-        <div className="text-center p-4">
-          <div className="text-red-500 text-sm mb-2">⚠️ Error al cargar imagen</div>
-          <button
-            onClick={() => {
-              setHasError(false);
-              setIsLoaded(false);
-              if (imgRef.current) {
-                imgRef.current.src = src;
-              }
-            }}
-            className="text-blue-500 hover:text-blue-700 text-sm underline"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const handleError = () => {
+    // Handle error state if needed
+    setIsLoaded(true); // Still mark as loaded to hide placeholder
+  };
 
   return (
-    <img
-      ref={imgRef}
-      src={isInView ? src : undefined} // Don't load until in view
-      alt={alt}
-      className={`transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'} ${className}`}
-      loading="lazy"
-      onLoad={handleLoad}
-      onError={handleError}
-    />
+    <div
+      ref={containerRef}
+      className={cn('relative overflow-hidden bg-gray-200', className)}
+      style={{
+        width: width ? `${width}px` : '100%',
+        height: height ? `${height}px` : 'auto',
+        backgroundColor: placeholder === 'color' ? placeholderColor : undefined,
+      }}
+      onClick={onClick}
+      onKeyDown={onClick ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      } : undefined}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
+      {/* Placeholder */}
+      {!isLoaded && placeholder === 'blur' && (
+        <div
+          className="absolute inset-0 animate-pulse"
+          style={{
+            backgroundColor: placeholderColor,
+            filter: 'blur(20px)',
+            transform: 'scale(1.1)',
+          }}
+        />
+      )}
+
+      {/* Image */}
+      {isInView && (
+        <img
+          ref={imgRef}
+          src={src}
+          alt={alt}
+          className={cn(
+            'w-full h-full object-cover transition-opacity duration-300',
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          )}
+          loading={loading}
+          onLoad={handleLoad}
+          onError={handleError}
+          style={{
+            width: '100%',
+            height: '100%',
+          }}
+        />
+      )}
+    </div>
   );
-});
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { personalizedFeedAlgorithm } from "@/lib/feed/personalized-algorithm";
 import { getPostsPage } from "@/lib/api";
@@ -48,6 +48,11 @@ export function usePersonalizedFeed(
     getCurrentUser();
   }, []);
 
+  // Memoize the merge function to avoid recreation
+  const mergePosts = useCallback((raw: Post[], prioritized: Post[]) => {
+    return mergePreservingAllPosts(raw, prioritized);
+  }, []);
+
   const PAGE_SIZE = 20;
 
   const {
@@ -87,7 +92,7 @@ export function usePersonalizedFeed(
     return flat.sort(
       (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-  }, [data]);
+  }, [data?.pages]);
 
   const { 
     data: personalizedPosts = [], 
@@ -108,7 +113,7 @@ export function usePersonalizedFeed(
         }
 
         // Personalization must not reduce content; only re-order
-        return mergePreservingAllPosts(rawPosts, prioritized as Post[]);
+        return mergePosts([...rawPosts], [...prioritized] as Post[]);
       } catch (error) {
         console.error('Error generating personalized feed:', error);
         return rawPosts.sort((a: any, b: any) => 
@@ -121,18 +126,18 @@ export function usePersonalizedFeed(
 
   const feedPosts = useMemo(() => {
     if (!isPersonalized) {
-      return rawPosts.sort((a: any, b: any) => 
+      return [...rawPosts].sort((a: any, b: any) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     }
     if (algorithLoading) {
-      return rawPosts;
+      return [...rawPosts];
     }
     // Evitar cambios bruscos manteniendo el orden original si la personalización falla
     if (!personalizedPosts || personalizedPosts.length === 0) {
-      return rawPosts;
+      return [...rawPosts];
     }
-    return personalizedPosts;
+    return [...personalizedPosts];
   }, [isPersonalized, rawPosts, personalizedPosts, algorithLoading]);
 
   const [hiddenPostIds, setHiddenPostIds] = useState<string[]>([]);
@@ -148,7 +153,8 @@ export function usePersonalizedFeed(
           .eq('user_id', currentUserId);
 
         const rows = (hiddenPosts as Array<{ post_id: string }> | null) ?? null;
-        setHiddenPostIds(rows?.map((h) => h.post_id) || []);
+        const postIds = rows?.map((h) => h.post_id) || [];
+        setHiddenPostIds(postIds);
       } catch (error) {
         console.error("Error fetching hidden data:", error);
       }
@@ -157,8 +163,9 @@ export function usePersonalizedFeed(
     getHiddenData();
   }, [currentUserId]);
 
+  const hiddenPostIdsSet = useMemo(() => new Set(hiddenPostIds), [hiddenPostIds]);
   const visiblePosts = feedPosts.filter((post: any) => 
-    !hiddenPostIds.includes(post.id)
+    !hiddenPostIdsSet.has(post.id)
   );
 
   const trackPostView = async (postId: string, durationSeconds?: number) => {

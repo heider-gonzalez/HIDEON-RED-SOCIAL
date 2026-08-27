@@ -1,10 +1,11 @@
 import { MessageCircle, Share2, MoreHorizontal, User, Briefcase, School, ChevronDown, ChevronUp, Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useReducer, useCallback } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { LikeButton } from './LikeButton';
 import { InstagramAudioPlayer } from '@/components/media/InstagramAudioPlayer';
+import { OptimizedImage } from '@/components/media/OptimizedImage';
 import { useUser } from '@/hooks/use-user';
 import { Post } from './PostFeed';
 import { CommentForm } from './CommentForm';
@@ -18,28 +19,119 @@ export interface PostCardProps {
   post: Post;
 }
 
+// Consolidated state for better performance
+interface PostCardState {
+  showComments: boolean;
+  commentCount: number;
+  lightboxOpen: boolean;
+  lightboxStart: number;
+  isPlaying: boolean;
+  duration: number;
+  currentTime: number;
+  isMuted: boolean;
+  volume: number;
+  showVolumeUI: boolean;
+  isVerticalVideo: boolean;
+}
+
+type PostCardAction = 
+  | { type: 'TOGGLE_COMMENTS' }
+  | { type: 'SET_COMMENT_COUNT'; payload: number }
+  | { type: 'OPEN_LIGHTBOX'; payload: number }
+  | { type: 'CLOSE_LIGHTBOX' }
+  | { type: 'SET_PLAYING'; payload: boolean }
+  | { type: 'SET_DURATION'; payload: number }
+  | { type: 'SET_CURRENT_TIME'; payload: number }
+  | { type: 'TOGGLE_MUTE' }
+  | { type: 'SET_VOLUME'; payload: number }
+  | { type: 'TOGGLE_VOLUME_UI' }
+  | { type: 'SET_VERTICAL_VIDEO'; payload: boolean };
+
+const initialState: PostCardState = {
+  showComments: false,
+  commentCount: 0,
+  lightboxOpen: false,
+  lightboxStart: 0,
+  isPlaying: false,
+  duration: 0,
+  currentTime: 0,
+  isMuted: (() => {
+    try {
+      return localStorage.getItem('feed_video_muted') !== 'false';
+    } catch {
+      return true;
+    }
+  })(),
+  volume: (() => {
+    try {
+      const saved = localStorage.getItem('feed_video_volume');
+      const n = saved ? Number(saved) : 0.5;
+      return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0.5;
+    } catch {
+      return 0.5;
+    }
+  })(),
+  showVolumeUI: false,
+  isVerticalVideo: true,
+};
+
+function postCardReducer(state: PostCardState, action: PostCardAction): PostCardState {
+  switch (action.type) {
+    case 'TOGGLE_COMMENTS':
+      return { ...state, showComments: !state.showComments };
+    case 'SET_COMMENT_COUNT':
+      return { ...state, commentCount: action.payload };
+    case 'OPEN_LIGHTBOX':
+      return { ...state, lightboxOpen: true, lightboxStart: action.payload };
+    case 'CLOSE_LIGHTBOX':
+      return { ...state, lightboxOpen: false };
+    case 'SET_PLAYING':
+      return { ...state, isPlaying: action.payload };
+    case 'SET_DURATION':
+      return { ...state, duration: action.payload };
+    case 'SET_CURRENT_TIME':
+      return { ...state, currentTime: action.payload };
+    case 'TOGGLE_MUTE':
+      return { ...state, isMuted: !state.isMuted };
+    case 'SET_VOLUME':
+      return { ...state, volume: action.payload };
+    case 'TOGGLE_VOLUME_UI':
+      return { ...state, showVolumeUI: !state.showVolumeUI };
+    case 'SET_VERTICAL_VIDEO':
+      return { ...state, isVerticalVideo: action.payload };
+    default:
+      return state;
+  }
+}
+
 export function PostCard({ post }: PostCardProps) {
   // Format the creation date
-  const formattedDate = new Date(post.created_at).toLocaleDateString('es-ES', {
+  const formattedDate = useMemo(() => new Date(post.created_at).toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  });
+  }), [post.created_at]);
 
   const { user } = useUser();
-  const [showComments, setShowComments] = useState(false);
-  const [commentCount, setCommentCount] = useState<number>(0);
+  const [state, dispatch] = useReducer(postCardReducer, initialState);
   
   // Get profile data
   const { username, avatar_url, career, institution } = post.profiles;
 
   // Determine if media is an image or video
-  const isVideo = post.media_url?.match(/\.(mp4|webm|mov|ogg)$/i) || 
-                  ((post as any).media_urls && (post as any).media_urls.some((url: string) => url.match(/\.(mp4|webm|mov|ogg)$/i)));
-  const isImage = post.media_url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) || 
-                  ((post as any).media_urls && (post as any).media_urls.some((url: string) => url.match(/\.(jpg|jpeg|png|gif|webp)$/i)));
+  const isVideo = useMemo(() => 
+    post.media_url?.match(/\.(mp4|webm|mov|ogg)$/i) || 
+    ((post as any).media_urls && (post as any).media_urls.some((url: string) => url.match(/\.(mp4|webm|mov|ogg)$/i))),
+    [post.media_url, (post as any).media_urls]
+  );
+  
+  const isImage = useMemo(() => 
+    post.media_url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) || 
+    ((post as any).media_urls && (post as any).media_urls.some((url: string) => url.match(/\.(jpg|jpeg|png|gif|webp)$/i))),
+    [post.media_url, (post as any).media_urls]
+  );
   
   // Get the primary media URL (for projects, use first video if exists)
   const primaryMediaUrl = useMemo(() => {
@@ -66,43 +158,19 @@ export function PostCard({ post }: PostCardProps) {
 
   const cleanContent = useMemo(() => normalizePostContent(post.content), [post.content]);
 
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxStart, setLightboxStart] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fullscreenVideo = useFullscreenVideo();
-
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isMuted, setIsMuted] = useState(() => {
-    try {
-      return localStorage.getItem('feed_video_muted') !== 'false';
-    } catch {
-      return true;
-    }
-  });
-  const [volume, setVolume] = useState(() => {
-    try {
-      const saved = localStorage.getItem('feed_video_volume');
-      const n = saved ? Number(saved) : 0.5;
-      return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0.5;
-    } catch {
-      return 0.5;
-    }
-  });
-  const [showVolumeUI, setShowVolumeUI] = useState(false);
   const userVolumeTouchedRef = useRef(false);
-  const [isVerticalVideo, setIsVerticalVideo] = useState(true);
 
-  const formatTime = (seconds: number) => {
+  const formatTime = useCallback((seconds: number) => {
     const s = Math.max(0, Math.floor(seconds || 0));
     const m = Math.floor(s / 60);
     const r = s % 60;
     return `${m}:${String(r).padStart(2, '0')}`;
-  };
+  }, []);
 
-  const openFullscreenFromFeed = (v?: HTMLVideoElement | null) => {
+  const openFullscreenFromFeed = useCallback((v?: HTMLVideoElement | null) => {
     const video = v ?? videoRef.current;
     try {
       video?.pause();
@@ -115,9 +183,9 @@ export function PostCard({ post }: PostCardProps) {
       initialTime: video?.currentTime ?? 0,
       muted: video?.muted ?? true,
     });
-  };
+  }, [fullscreenVideo, post.id, primaryMediaSrc, primaryMediaUrl]);
 
-  const togglePlay = async () => {
+  const togglePlay = useCallback(async () => {
     const v = videoRef.current;
     if (!v) return;
     try {
@@ -129,14 +197,14 @@ export function PostCard({ post }: PostCardProps) {
     } catch {
       // ignore
     }
-  };
+  }, []);
 
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
     try {
       v.muted = !v.muted;
-      setIsMuted(v.muted);
+      dispatch({ type: 'TOGGLE_MUTE' });
       userVolumeTouchedRef.current = true;
       try {
         localStorage.setItem('feed_video_muted', String(v.muted));
@@ -146,15 +214,15 @@ export function PostCard({ post }: PostCardProps) {
     } catch {
       // ignore
     }
-  };
+  }, []);
 
-  const changeVolume = (next: number) => {
+  const changeVolume = useCallback((next: number) => {
     const v = videoRef.current;
     if (!v) return;
     const clamped = Math.min(1, Math.max(0, next));
     try {
       v.volume = clamped;
-      setVolume(clamped);
+      dispatch({ type: 'SET_VOLUME', payload: clamped });
       userVolumeTouchedRef.current = true;
       try {
         localStorage.setItem('feed_video_volume', String(clamped));
@@ -164,16 +232,16 @@ export function PostCard({ post }: PostCardProps) {
       }
       if (clamped > 0 && v.muted) {
         v.muted = false;
-        setIsMuted(false);
+        dispatch({ type: 'TOGGLE_MUTE' });
       }
       if (clamped === 0 && !v.muted) {
         v.muted = true;
-        setIsMuted(true);
+        dispatch({ type: 'TOGGLE_MUTE' });
       }
     } catch {
       // ignore
     }
-  };
+  }, []);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -194,8 +262,8 @@ export function PostCard({ post }: PostCardProps) {
         }
         try {
           if (!userVolumeTouchedRef.current) {
-            v.muted = isMuted;
-            v.volume = volume;
+            v.muted = state.isMuted;
+            v.volume = state.volume;
           }
           v.play().catch(() => {});
         } catch {
@@ -206,32 +274,32 @@ export function PostCard({ post }: PostCardProps) {
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [primaryMediaUrl, isVideo, isMuted, volume]);
+  }, [primaryMediaUrl, isVideo, state.isMuted, state.volume, userVolumeTouchedRef]);
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
 
     const onLoadedMetadata = () => {
-      setDuration(Number.isFinite(v.duration) ? v.duration : 0);
+      dispatch({ type: 'SET_DURATION', payload: Number.isFinite(v.duration) ? v.duration : 0 });
       try {
         const w = v.videoWidth || 1;
         const h = v.videoHeight || 1;
-        setIsVerticalVideo(h / w >= 1.25);
+        dispatch({ type: 'SET_VERTICAL_VIDEO', payload: h / w >= 1.25 });
       } catch {
         // ignore
       }
     };
 
     const onTimeUpdate = () => {
-      setCurrentTime(v.currentTime || 0);
+      dispatch({ type: 'SET_CURRENT_TIME', payload: v.currentTime || 0 });
     };
 
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
+    const onPlay = () => dispatch({ type: 'SET_PLAYING', payload: true });
+    const onPause = () => dispatch({ type: 'SET_PLAYING', payload: false });
     const onVolumeChange = () => {
-      setIsMuted(Boolean(v.muted));
-      setVolume(typeof v.volume === 'number' ? v.volume : 1);
+      dispatch({ type: 'TOGGLE_MUTE' });
+      dispatch({ type: 'SET_VOLUME', payload: typeof v.volume === 'number' ? v.volume : 1 });
     };
 
     v.addEventListener('loadedmetadata', onLoadedMetadata);
@@ -251,18 +319,18 @@ export function PostCard({ post }: PostCardProps) {
       v.removeEventListener('pause', onPause);
       v.removeEventListener('volumechange', onVolumeChange);
     };
-  }, [primaryMediaUrl]);
+  }, [primaryMediaUrl, dispatch]);
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     try {
-      v.volume = volume;
-      v.muted = isMuted;
+      v.volume = state.volume;
+      v.muted = state.isMuted;
     } catch {
       // ignore
     }
-  }, [volume, isMuted]);
+  }, [state.volume, state.isMuted, videoRef]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -326,14 +394,14 @@ export function PostCard({ post }: PostCardProps) {
       {primaryMediaUrl && (
         <div ref={containerRef} className="border-t border-b border-gray-100 dark:border-gray-700">
           {isImage && (
-            <img
-              src={primaryMediaSrc || undefined}
+            <OptimizedImage
+              src={primaryMediaSrc || ''}
               alt="Post media"
               className="w-full h-auto max-h-[500px] object-cover"
               loading="lazy"
+              placeholder="blur"
               onClick={() => {
-                setLightboxStart(0);
-                setLightboxOpen(true);
+                dispatch({ type: 'OPEN_LIGHTBOX', payload: 0 });
               }}
             />
           )}
@@ -343,14 +411,14 @@ export function PostCard({ post }: PostCardProps) {
                 ref={videoRef}
                 src={primaryMediaSrc || undefined}
                 className={
-                  isVerticalVideo
+                  state.isVerticalVideo
                     ? "w-full max-h-[500px] cursor-pointer object-cover"
                     : "w-full max-h-[500px] cursor-pointer object-contain"
                 }
-                muted={isMuted}
+                muted={state.isMuted}
                 playsInline
                 loop
-                preload="metadata"
+                preload="none" // Changed from metadata to none for better performance
                 onClick={() => {
                   try {
                     const v = videoRef.current;
@@ -381,39 +449,40 @@ export function PostCard({ post }: PostCardProps) {
                       e.stopPropagation();
                       void togglePlay();
                     }}
-                    aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+                    aria-label={state.isPlaying ? 'Pausar' : 'Reproducir'}
                   >
-                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                    {state.isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                   </button>
 
                   <div className="text-xs text-white tabular-nums min-w-[84px]">
-                    {formatTime(currentTime)} / {formatTime(duration)}
+                    {formatTime(state.currentTime)} / {formatTime(state.duration)}
                   </div>
 
                   <input
                     type="range"
                     min={0}
-                    max={duration || 0}
+                    max={state.duration || 0}
                     step={0.1}
-                    value={Math.min(currentTime, duration || 0)}
+                    value={Math.min(state.currentTime, state.duration || 0)}
                     onChange={(e) => {
                       const v = videoRef.current;
                       if (!v) return;
                       const t = Number(e.target.value);
                       try {
                         v.currentTime = t;
-                        setCurrentTime(t);
+                        dispatch({ type: 'SET_CURRENT_TIME', payload: t });
                       } catch {
                         // ignore
                       }
                     }}
                     className="flex-1 h-1 accent-white"
+                    aria-label="Tiempo de video"
                   />
 
                   <div
                     className="relative"
-                    onMouseEnter={() => setShowVolumeUI(true)}
-                    onMouseLeave={() => setShowVolumeUI(false)}
+                    onMouseEnter={() => dispatch({ type: 'TOGGLE_VOLUME_UI' })}
+                    onMouseLeave={() => dispatch({ type: 'TOGGLE_VOLUME_UI' })}
                   >
                     <button
                       type="button"
@@ -422,23 +491,23 @@ export function PostCard({ post }: PostCardProps) {
                         e.stopPropagation();
                         toggleMute();
                       }}
-                      aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
+                      aria-label={state.isMuted ? 'Activar sonido' : 'Silenciar'}
                     >
-                      {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                      {state.isMuted || state.volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
                     </button>
 
-                    {showVolumeUI && (
+                    {state.showVolumeUI && (
                       <div
                         className="absolute bottom-10 right-0 z-30 rounded-lg bg-zinc-950/70 p-3 backdrop-blur-sm"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex flex-col items-center gap-2 h-28">
                           <div className="text-[10px] text-white/80 tabular-nums">
-                            {Math.round((isMuted ? 0 : volume) * 100)}%
+                            {Math.round((state.isMuted ? 0 : state.volume) * 100)}%
                           </div>
                           <div className="h-full flex items-center">
                             <Slider
-                              value={[Math.round((isMuted ? 0 : volume) * 100)]}
+                              value={[Math.round((state.isMuted ? 0 : state.volume) * 100)]}
                               onValueChange={(v) => changeVolume((v[0] ?? 0) / 100)}
                               max={100}
                               step={1}
@@ -470,10 +539,10 @@ export function PostCard({ post }: PostCardProps) {
       )}
 
       <MediaLightbox
-        isOpen={lightboxOpen}
-        onClose={() => setLightboxOpen(false)}
+        isOpen={state.lightboxOpen}
+        onClose={() => dispatch({ type: 'CLOSE_LIGHTBOX' })}
         items={mediaItems}
-        startIndex={lightboxStart}
+        startIndex={state.lightboxStart}
       />
 
       {/* 🎵 Audio Player */}
@@ -499,15 +568,15 @@ export function PostCard({ post }: PostCardProps) {
           />
           <Button 
             variant="ghost"
-            className="flex items-center gap-1 group/comment transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/60 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-            onClick={() => setShowComments(!showComments)}
-            aria-pressed={showComments}
+            className="flex items-center gap-1 group/comment transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary/60 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            onClick={() => dispatch({ type: 'TOGGLE_COMMENTS' })}
+            aria-pressed={state.showComments}
           >
-            <MessageCircle className="h-5 w-5 transition-all duration-200 group-hover/comment:scale-110 group-active/comment:scale-95" />
+            <MessageCircle className="h-5 w-5 transition-transform duration-200 group-hover/comment:scale-110 group-active/comment:scale-95" />
             <span className="text-sm font-medium transition-colors duration-200 group-hover/comment:text-blue-500">
-              {commentCount > 0 ? commentCount : ''} Comentar
+              {state.commentCount > 0 ? state.commentCount : ''} Comentar
             </span>
-            {showComments ? (
+            {state.showComments ? (
               <ChevronUp className="h-4 w-4 ml-1" />
             ) : (
               <ChevronDown className="h-4 w-4 ml-1" />
@@ -515,16 +584,16 @@ export function PostCard({ post }: PostCardProps) {
           </Button>
           <Button 
             variant="ghost"
-            className="flex items-center gap-1 group/share transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/60 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+            className="flex items-center gap-1 group/share transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary/60 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
           >
-            <Share2 className="h-5 w-5 transition-all duration-200 group-hover/share:scale-110 group-active/share:scale-95" />
+            <Share2 className="h-5 w-5 transition-transform duration-200 group-hover/share:scale-110 group-active/share:scale-95" />
             <span className="text-sm font-medium transition-colors duration-200 group-hover/share:text-emerald-500">Compartir</span>
           </Button>
         </div>
       </div>
 
       {/* Comments Section */}
-      {showComments && (
+      {state.showComments && (
         <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 space-y-3">
           <CommentList 
             postId={post.id} 
