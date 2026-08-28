@@ -48,10 +48,10 @@ ON public.engagement_hearts
 FOR SELECT 
 USING (auth.uid() = user_id);
 
-CREATE POLICY "System can insert engagement hearts" 
+CREATE POLICY "Users can insert their own engagement hearts" 
 ON public.engagement_hearts 
 FOR INSERT 
-WITH CHECK (true);
+WITH CHECK (auth.uid() = user_id);
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_daily_engagement_user_date ON public.daily_engagement(user_id, date);

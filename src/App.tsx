@@ -25,6 +25,7 @@ import { PostComposerProvider } from "@/providers/PostComposerProvider";
 import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { ProfileCompletionModal } from "@/components/onboarding/ProfileCompletionModal";
 import { useToast } from "@/hooks/use-toast";
+import { usePerformanceMonitor } from "@/utils/performance-monitor";
 
 // Critical pages loaded immediately
 import Index from "./pages/Index";
@@ -286,6 +287,20 @@ const App = () => {
 
   // Initialize session cleanup
   const { triggerCleanup } = useSessionCleanup();
+
+  // Initialize performance monitoring
+  const perfMonitor = usePerformanceMonitor();
+  
+  useEffect(() => {
+    // Medir Web Vitals cuando la aplicación carga
+    if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+      perfMonitor.getWebVitals().then(vitals => {
+        Object.entries(vitals).forEach(([name, value]) => {
+          perfMonitor.recordMetric(`web_vital_${name}`, value);
+        });
+      });
+    }
+  }, [perfMonitor]);
 
   return (
     <ErrorBoundary>

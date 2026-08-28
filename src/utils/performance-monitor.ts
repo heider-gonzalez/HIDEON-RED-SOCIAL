@@ -1,105 +1,201 @@
-// 🚀 Performance Monitoring Utility
-// Track Google Auth performance metrics
+/**
+ * Sistema de monitoreo de rendimiento
+ * Rastrea métricas clave de la aplicación
+ */
 
-import { useState, useEffect } from 'react';
-
-interface AuthMetrics {
-  startTime: number;
-  profileCheckTime?: number;
-  endTime?: number;
-  totalTime?: number;
-  cached: boolean;
-  userId: string;
+interface PerformanceMetric {
+  name: string;
+  value: number;
+  timestamp: number;
+  metadata?: Record<string, any>;
 }
 
 class PerformanceMonitor {
-  private static instance: PerformanceMonitor;
-  private metrics: Map<string, AuthMetrics> = new Map();
-  private isDev = !!(import.meta as any)?.env?.DEV;
+  private metrics: PerformanceMetric[] = [];
+  private maxMetrics = 100; // Limitar el número de métricas almacenadas
 
-  static getInstance(): PerformanceMonitor {
-    if (!PerformanceMonitor.instance) {
-      PerformanceMonitor.instance = new PerformanceMonitor();
+  /**
+   * Registra una métrica de rendimiento
+   */
+  recordMetric(name: string, value: number, metadata?: Record<string, any>): void {
+    const metric: PerformanceMetric = {
+      name,
+      value,
+      timestamp: Date.now(),
+      metadata,
+    };
+
+    this.metrics.push(metric);
+
+    // Limitar el tamaño del array
+    if (this.metrics.length > this.maxMetrics) {
+      this.metrics.shift();
     }
-    return PerformanceMonitor.instance;
+
+    // En producción, enviar a servicio de monitoreo
+    if (process.env.NODE_ENV === 'production' && typeof window !== 'undefined') {
+      this.sendToMonitoringService(metric);
+    }
   }
 
-  startAuthTracking(userId: string): string {
-    const trackingId = `${userId}-${Date.now()}`;
-    this.metrics.set(trackingId, {
-      startTime: performance.now(),
-      cached: false,
-      userId
+  /**
+   * Mide el tiempo de ejecución de una función asíncrona
+   */
+  async measureAsync<T>(
+    name: string,
+    fn: () => Promise<T>,
+    metadata?: Record<string, any>
+  ): Promise<T> {
+    const start = performance.now();
+    try {
+      const result = await fn();
+      const duration = performance.now() - start;
+      this.recordMetric(name, duration, metadata);
+      return result;
+    } catch (error) {
+      const duration = performance.now() - start;
+      this.recordMetric(`${name}_error`, duration, { ...metadata, error: String(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Mide el tiempo de ejecución de una función síncrona
+   */
+  measure<T>(name: string, fn: () => T, metadata?: Record<string, any>): T {
+    const start = performance.now();
+    try {
+      const result = fn();
+      const duration = performance.now() - start;
+      this.recordMetric(name, duration, metadata);
+      return result;
+    } catch (error) {
+      const duration = performance.now() - start;
+      this.recordMetric(`${name}_error`, duration, { ...metadata, error: String(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene métricas por nombre
+   */
+  getMetricsByName(name: string): PerformanceMetric[] {
+    return this.metrics.filter(m => m.name === name);
+  }
+
+  /**
+   * Obtiene el promedio de una métrica
+   */
+  getAverageMetric(name: string): number {
+    const metrics = this.getMetricsByName(name);
+    if (metrics.length === 0) return 0;
+    
+    const sum = metrics.reduce((acc, m) => acc + m.value, 0);
+    return sum / metrics.length;
+  }
+
+  /**
+   * Obtiene el percentil de una métrica
+   */
+  getPercentile(name: string, percentile: number): number {
+    const metrics = this.getMetricsByName(name)
+      .map(m => m.value)
+      .sort((a, b) => a - b);
+    
+    if (metrics.length === 0) return 0;
+    
+    const index = Math.ceil((percentile / 100) * metrics.length) - 1;
+    return metrics[Math.max(0, index)];
+  }
+
+  /**
+   * Limpia métricas antiguas
+   */
+  clearMetrics(olderThan?: number): void {
+    if (olderThan) {
+      const cutoff = Date.now() - olderThan;
+      this.metrics = this.metrics.filter(m => m.timestamp > cutoff);
+    } else {
+      this.metrics = [];
+    }
+  }
+
+  /**
+   * Envía métricas a servicio de monitoreo (placeholder)
+   */
+  private sendToMonitoringService(metric: PerformanceMetric): void {
+    // Aquí se implementaría el envío a servicios como:
+    // - Google Analytics
+    // - Sentry
+    // - Datadog
+    // - Custom backend endpoint
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Performance Monitor]', metric);
+    }
+  }
+
+  /**
+   * Obtiene Web Vitals del navegador
+   */
+  getWebVitals(): Promise<Record<string, number>> {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined' || !('PerformanceObserver' in window)) {
+        resolve({});
+        return;
+      }
+
+      const vitals: Record<string, number> = {};
+
+      // Observar FCP (First Contentful Paint)
+      try {
+        const fcpObserver = new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          const fcp = entries.find(entry => entry.name === 'first-contentful-paint');
+          if (fcp) {
+            vitals.fcp = fcp.startTime;
+          }
+        });
+        fcpObserver.observe({ entryTypes: ['paint'] });
+      } catch (e) {
+        // Ignore if not supported
+      }
+
+      // Observar LCP (Largest Contentful Paint)
+      try {
+        const lcpObserver = new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          const lcp = entries[entries.length - 1];
+          if (lcp) {
+            vitals.lcp = lcp.startTime;
+          }
+        });
+        lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+      } catch (e) {
+        // Ignore if not supported
+      }
+
+      // Resolver después de un tiempo para permitir que las métricas se capturen
+      setTimeout(() => resolve(vitals), 1000);
     });
-    if (this.isDev) console.log(`🚀 Performance Monitor: Started tracking auth for user ${userId}`);
-    return trackingId;
-  }
-
-  markProfileCheck(trackingId: string, cached: boolean): void {
-    const metric = this.metrics.get(trackingId);
-    if (metric) {
-      metric.profileCheckTime = performance.now();
-      metric.cached = cached;
-      if (this.isDev) console.log(`🚀 Performance Monitor: Profile check ${cached ? '(CACHED)' : '(DB QUERY)'} for ${metric.userId}`);
-    }
-  }
-
-  endAuthTracking(trackingId: string): void {
-    const metric = this.metrics.get(trackingId);
-    if (metric) {
-      metric.endTime = performance.now();
-      metric.totalTime = metric.endTime - metric.startTime;
-      
-      if (this.isDev) {
-        console.log(`🚀 Performance Monitor: Auth completed for ${metric.userId}`);
-        console.log(`   ⏱️  Total time: ${metric.totalTime?.toFixed(2)}ms`);
-        console.log(`   🗄️  Profile check: ${metric.profileCheckTime ? (metric.profileCheckTime - metric.startTime).toFixed(2) : 'N/A'}ms`);
-        console.log(`   💾 Cached: ${metric.cached ? 'YES' : 'NO'}`);
-      }
-      
-      // Performance alerts
-      if (metric.totalTime > 2000) {
-        console.warn(`⚠️  Slow auth detected: ${metric.totalTime?.toFixed(2)}ms for user ${metric.userId}`);
-      }
-      
-      if (metric.totalTime < 500 && metric.cached) {
-        if (this.isDev) console.log(`✅ Fast auth with cache: ${metric.totalTime?.toFixed(2)}ms for user ${metric.userId}`);
-      }
-    }
-  }
-
-  getAverageTime(): number {
-    const completedMetrics = Array.from(this.metrics.values()).filter(m => m.totalTime);
-    if (completedMetrics.length === 0) return 0;
-    
-    const total = completedMetrics.reduce((sum, m) => sum + (m.totalTime || 0), 0);
-    return total / completedMetrics.length;
-  }
-
-  getCacheHitRate(): number {
-    const completedMetrics = Array.from(this.metrics.values()).filter(m => m.totalTime);
-    if (completedMetrics.length === 0) return 0;
-    
-    const cachedCount = completedMetrics.filter(m => m.cached).length;
-    return (cachedCount / completedMetrics.length) * 100;
   }
 }
 
-export const performanceMonitor = PerformanceMonitor.getInstance();
+// Instancia singleton del monitor
+export const performanceMonitor = new PerformanceMonitor();
 
-// Hook for React components
-export function useAuthPerformance() {
-  const [averageTime, setAverageTime] = useState(0);
-  const [cacheHitRate, setCacheHitRate] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAverageTime(performanceMonitor.getAverageTime());
-      setCacheHitRate(performanceMonitor.getCacheHitRate());
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return { averageTime, cacheHitRate };
+/**
+ * Hook de React para usar el monitor de rendimiento
+ */
+export function usePerformanceMonitor() {
+  return {
+    recordMetric: performanceMonitor.recordMetric.bind(performanceMonitor),
+    measureAsync: performanceMonitor.measureAsync.bind(performanceMonitor),
+    measure: performanceMonitor.measure.bind(performanceMonitor),
+    getMetricsByName: performanceMonitor.getMetricsByName.bind(performanceMonitor),
+    getAverageMetric: performanceMonitor.getAverageMetric.bind(performanceMonitor),
+    getPercentile: performanceMonitor.getPercentile.bind(performanceMonitor),
+    clearMetrics: performanceMonitor.clearMetrics.bind(performanceMonitor),
+    getWebVitals: performanceMonitor.getWebVitals.bind(performanceMonitor),
+  };
 }

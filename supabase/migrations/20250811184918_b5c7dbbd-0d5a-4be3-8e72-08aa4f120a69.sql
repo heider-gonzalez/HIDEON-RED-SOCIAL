@@ -51,11 +51,11 @@ ON public.premium_profile_viewers
 FOR SELECT 
 USING (auth.uid() = profile_id);
 
--- System can insert profile viewers
-CREATE POLICY "System can insert profile viewers" 
+-- Users can insert their own profile viewers
+CREATE POLICY "Users can insert their own profile viewers" 
 ON public.premium_profile_viewers 
 FOR INSERT 
-WITH CHECK (true);
+WITH CHECK (auth.uid() = profile_id);
 
 -- Create function to get social level for a given score
 CREATE OR REPLACE FUNCTION public.get_social_level(score_param integer)

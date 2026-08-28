@@ -89,12 +89,12 @@ BEGIN
       FOR SELECT 
       USING (auth.uid() = user_id);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_streaks' AND policyname = 'System can manage streaks') THEN
-      CREATE POLICY "System can manage streaks" 
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user_streaks' AND policyname = 'Users can manage their own streaks') THEN
+      CREATE POLICY "Users can manage their own streaks" 
       ON public.user_streaks 
       FOR ALL 
-      USING (true)
-      WITH CHECK (true);
+      USING (auth.uid() = user_id)
+      WITH CHECK (auth.uid() = user_id);
     END IF;
   END IF;
 END $$;

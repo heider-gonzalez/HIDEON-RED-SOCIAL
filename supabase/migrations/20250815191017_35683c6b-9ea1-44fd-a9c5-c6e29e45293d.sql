@@ -23,11 +23,11 @@ ON public.promo_codes
 FOR SELECT 
 USING (is_active = true);
 
-CREATE POLICY "System can manage promo codes" 
+CREATE POLICY "Admins can manage promo codes" 
 ON public.promo_codes 
 FOR ALL 
-USING (true)
-WITH CHECK (true);
+USING (auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true))
+WITH CHECK (auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true));
 
 -- Crear tabla para registrar uso de códigos promocionales
 CREATE TABLE public.promo_code_uses (

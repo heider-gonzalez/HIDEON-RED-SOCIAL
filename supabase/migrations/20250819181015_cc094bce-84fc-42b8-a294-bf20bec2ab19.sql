@@ -27,6 +27,6 @@ WITH CHECK (public.is_group_admin_or_moderator(group_id, auth.uid()));
 -- Fix engagement_hearts RLS policy to allow system inserts
 DROP POLICY IF EXISTS "System can insert engagement hearts" ON public.engagement_hearts;
 
-CREATE POLICY "System can insert engagement hearts" ON public.engagement_hearts
+CREATE POLICY "Users can insert their own engagement hearts" ON public.engagement_hearts
 FOR INSERT
-WITH CHECK (true); -- Allow all inserts since this is managed by functions
+WITH CHECK (auth.uid() = user_id);

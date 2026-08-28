@@ -79,10 +79,10 @@ CREATE POLICY "Users can update their own subscriptions"
   FOR UPDATE 
   USING (auth.uid() = user_id);
 
-CREATE POLICY "System can insert subscriptions" 
+CREATE POLICY "Users can insert their own subscriptions" 
   ON public.subscriptions 
   FOR INSERT 
-  WITH CHECK (true);
+  WITH CHECK (auth.uid() = user_id);
 
 -- Políticas para premium_hearts
 CREATE POLICY "Users can view their own premium hearts" 

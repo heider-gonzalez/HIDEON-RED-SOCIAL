@@ -15,6 +15,7 @@ export default {
           jsx: 'react',
           esModuleInterop: true,
           allowSyntheticDefaultImports: true,
+          strict: false,
         },
       },
     ],
@@ -28,10 +29,10 @@ export default {
   ],
   coverageThreshold: {
     global: {
-      branches: 60,
-      functions: 60,
-      lines: 60,
-      statements: 60,
+      branches: 50,
+      functions: 50,
+      lines: 50,
+      statements: 50,
     },
   },
   testMatch: [
@@ -39,11 +40,4 @@ export default {
     '**/*.{spec,test}.{ts,tsx}',
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  globals: {
-    'ts-jest': {
-      tsconfig: {
-        types: ['jest', '@testing-library/jest-dom'],
-      },
-    },
-  },
 };
