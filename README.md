@@ -1,57 +1,60 @@
-# 🌐 HIDEON — Plataforma Académica y Profesional
+# 🌐 HSOCIAL — Plataforma Académica y Profesional
 
-HIDEON es una plataforma web orientada a estudiantes y profesionales para compartir ideas, formar equipos de trabajo, desarrollar proyectos y comunicarse en tiempo real.
+HSOCIAL es una plataforma web y PWA orientada a estudiantes y profesionales para compartir ideas, formar equipos de trabajo, desarrollar proyectos y comunicarse en tiempo real.
 
-**Autor:** Heider González  
-**Ubicación:** Barranquilla, Colombia  
-**Demo:** [hsocial-app.onrender.com](https://hsocial-app.onrender.com)
+**Autor:** Heider González
+
+**Ubicación:** Barranquilla, Colombia
+
+**Demo:** [hideon-red-social.vercel.app](https://www.google.com/search?q=https://hideon-red-social.vercel.app)
 
 ## 🚀 Características
 
-- 👤 Gestión de usuarios y perfiles
-- 💡 Publicación y exploración de ideas
-- 🤝 Solicitud de participación en proyectos
-- 💬 Comunicación en tiempo real
-- 📁 Gestión y almacenamiento de archivos
-- 🎓 Información académica y profesional
-- 🔐 Autenticación y control de acceso
-- 📱 Adaptación para dispositivos móviles
-- ⚡ Consultas optimizadas y carga progresiva de información
+* 👤 Gestión de usuarios, perfiles y portafolios
+* 💡 Publicación y exploración de ideas de proyectos
+* 🤝 Solicitud de colaboración y gestión de equipos
+* 💬 Chat y comunicación en tiempo real vía WebSockets
+* 🔔 Notificaciones Push en tiempo real (Web Push / VAPID)
+* 📁 Almacenamiento seguro de archivos e imágenes
+* 🔐 Autenticación OAuth 2.0 (Google) y credenciales con Supabase Auth
+* 📱 Progressive Web App (PWA) instalable y adaptada a móviles
+* ⚡ Carga optimizada, caché inteligente y consultas progresivas
 
 ## 🛠️ Stack Tecnológico
 
-### Frontend
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- shadcn/ui
+### Frontend & PWA
 
-### Backend y base de datos
-- Supabase
-- PostgreSQL
-- WebSockets
-- Supabase Edge Functions
+* React
+* TypeScript
+* Vite
+* Tailwind CSS
+* shadcn/ui
+* Vite PWA Plugin / Service Workers
 
-### Almacenamiento y servicios
-- Cloudflare R2
+### Backend & Servicios Cloud
 
-### Aplicación móvil
-- Capacitor
-- Android
+* Supabase (Auth, PostgreSQL, Realtime)
+* Supabase Edge Functions (Deno / TypeScript)
+* Cloudflare R2 (Almacenamiento de archivos)
+* Google Cloud Console (OAuth 2.0 Integration)
 
-### Herramientas
-- Git
-- GitHub
-- npm
+### Despliegue e Infraestructura
+
+* Vercel (Hosting Frontend & CI/CD)
+* GitHub Actions
+
+### Aplicación Móvil & Herramientas
+
+* Capacitor (Android)
+* Git / GitHub / npm
 
 ## 🏗️ Arquitectura
 
-La aplicación utiliza React y TypeScript en el frontend, mientras que Supabase proporciona servicios de autenticación, base de datos PostgreSQL y comunicación en tiempo real.
+La arquitectura de **HSOCIAL** está construida sobre un frontend reactivo en React y TypeScript, desplegado de forma continua en **Vercel**.
 
-Para el almacenamiento de archivos se integra Cloudflare R2, mientras que determinadas operaciones backend se gestionan mediante Edge Functions.
+La capa de backend, autenticación de usuarios y sincronización en tiempo real es provista por **Supabase** sobre una base de datos PostgreSQL. Las operaciones complejas de servidor y el envío de notificaciones push utilizan **Supabase Edge Functions**. El almacenamiento persistente de archivos multimedia y documentos se gestiona mediante la infraestructura de **Cloudflare R2**.
 
-La aplicación también fue adaptada para ejecutarse como aplicación móvil mediante Capacitor.
+Adicionalmente, la plataforma cuenta con soporte PWA y una compilación móvil nativa para Android generada con **Capacitor**.
 
 ## 💻 Ejecución local
 
@@ -59,58 +62,62 @@ La aplicación también fue adaptada para ejecutarse como aplicación móvil med
 
 ```bash
 git clone https://github.com/heider-gonzalez/HIDEON-RED-SOCIAL.git
-cd hideon
+cd HIDEON-RED-SOCIAL
+
 ```
 
 ### 2. Instalar dependencias
 
 ```bash
 npm install
+
 ```
 
 ### 3. Configurar variables de entorno
 
-Crea un archivo `.env` a partir de `.env.example`:
+Crea un archivo `.env` a partir de tus credenciales:
 
 ```env
-VITE_SUPABASE_URL=tu_url
-VITE_SUPABASE_ANON_KEY=tu_clave
+VITE_SUPABASE_URL=tu_supabase_url
+VITE_SUPABASE_ANON_KEY=tu_supabase_anon_key
+VITE_VAPID_PUBLIC_KEY=tu_vapid_public_key
+
 ```
 
 ### 4. Ejecutar el proyecto
 
 ```bash
 npm run dev
+
 ```
 
-## 📱 Aplicación móvil
+## 📱 Aplicación móvil y PWA
 
-HIDEON también fue preparado para ejecutarse en Android utilizando Capacitor.
+HSOCIAL puede instalarse directamente desde el navegador como una **PWA (Progressive Web App)** o ejecutarse de manera nativa en dispositivos Android mediante el contenedor de **Capacitor**.
 
 ## 🎯 Objetivo del proyecto
 
-El objetivo de HIDEON es crear un espacio digital donde estudiantes y profesionales puedan conectar sus conocimientos, compartir ideas y colaborar en proyectos.
+El objetivo de HSOCIAL es consolidar un ecosistema digital colaborativo donde estudiantes y profesionales puedan conectar talentos, compartir iniciativas y construir proyectos reales.
 
-El proyecto también representa una aplicación práctica de conceptos de:
+Representa una aplicación práctica de alto nivel en:
 
-- Desarrollo frontend moderno
-- Bases de datos relacionales
-- Autenticación
-- Aplicaciones en tiempo real
-- Almacenamiento en la nube
-- Optimización de consultas
-- Desarrollo multiplataforma
+* Arquitectura limpia y escalable en React + TypeScript
+* Integración de servicios Serverless y Edge Computing
+* Autenticación segura y flujos OAuth 2.0
+* Sistemas distribuídos en tiempo real y Web Push Notifications
+* Despliegue e integración continua (CI/CD) en Vercel
+* Desarrollo multiplataforma (Web, PWA y Móvil)
 
 ## 📈 Estado del Proyecto
 
-Proyecto técnico de portafolio que implementa flujos complejos de autenticación, almacenamiento en la nube, optimización de rendimiento y bases de datos en tiempo real.
+Proyecto técnico activo de portafolio que implementa arquitecturas cloud modernas, sincronización distribuida en tiempo real y despliegue automatizado en producción.
 
 ## 👨‍💻 Autor
 
 **Heider González**
 
-Ingeniero Informático | Desarrollador de Software Junior
+Ingeniero Informático | Desarrollador Full Stack / Software Junior
 
 Barranquilla, Colombia
 
-© 2026 HIDEON — Barranquilla, Colombia
+© 2026 HSOCIAL — Barranquilla, Colombia
