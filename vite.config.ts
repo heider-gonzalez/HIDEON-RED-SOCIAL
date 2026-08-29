@@ -42,12 +42,16 @@ export default defineConfig(({ mode }) => ({
     minify: 'terser',
     sourcemap: false,
     assetsInlineLimit: 0, // Prevent inline assets that can cause MIME issues
+    chunkSizeWarningLimit: 1000, // Aumentar límite de warning
     terserOptions: {
       compress: {
         // Remove console.log, console.debug, console.info in production
         // Keep console.warn and console.error for important debugging
         drop_console: false,
         pure_funcs: ['console.log', 'console.debug', 'console.info'],
+      },
+      mangle: {
+        safari10: true,
       },
     },
     rollupOptions: {
@@ -85,9 +89,19 @@ export default defineConfig(({ mode }) => ({
             return 'charts';
           }
           
+          // UI components (Radix UI)
+          if (id.includes('@radix-ui')) {
+            return 'ui-components';
+          }
+          
           // Utilities
           if (id.includes('date-fns') || id.includes('lodash-es') || id.includes('clsx') || id.includes('class-variance-authority')) {
             return 'utils';
+          }
+          
+          // Capacitor for mobile
+          if (id.includes('@capacitor')) {
+            return 'capacitor';
           }
         },
       },

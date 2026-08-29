@@ -4,6 +4,7 @@ import { personalizedFeedAlgorithm } from "@/lib/feed/personalized-algorithm";
 import { getPostsPage } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
 import type { Post } from "@/types/post";
+import { logger, logPerformance } from "@/utils/logger";
 
 function mergePreservingAllPosts(raw: Post[], prioritized: Post[]) {
   const byId = new Map<string, Post>();
@@ -113,9 +114,9 @@ export function usePersonalizedFeed(
         }
 
         // Personalization must not reduce content; only re-order
-        return mergePosts([...rawPosts], [...prioritized] as Post[]);
+        return mergePosts([...rawPosts], [...prioritized]);
       } catch (error) {
-        console.error('Error generating personalized feed:', error);
+        logger.error('Error generating personalized feed', 'feed', { error });
         return rawPosts.sort((a: any, b: any) => 
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
@@ -156,7 +157,7 @@ export function usePersonalizedFeed(
         const postIds = rows?.map((h) => h.post_id) || [];
         setHiddenPostIds(postIds);
       } catch (error) {
-        console.error("Error fetching hidden data:", error);
+        logger.error("Error fetching hidden data:", "feed", { error });
       }
     };
     

@@ -14,6 +14,7 @@ import { MediaLightbox, type LightboxMediaItem } from '@/components/post/MediaLi
 import { useFullscreenVideo } from '@/components/video/FullscreenVideoContext';
 import { normalizePostContent } from '@/utils/post-content';
 import { getHybridUrl } from '@/lib/hybrid-url';
+import { logger, logUserAction } from '@/utils/logger';
 
 export interface PostCardProps {
   post: Post;
@@ -183,7 +184,9 @@ export function PostCard({ post }: PostCardProps) {
       initialTime: video?.currentTime ?? 0,
       muted: video?.muted ?? true,
     });
-  }, [fullscreenVideo, post.id, primaryMediaSrc, primaryMediaUrl]);
+    
+    logUserAction('open_fullscreen_video', user?.id, { postId: post.id });
+  }, [fullscreenVideo, post.id, primaryMediaSrc, primaryMediaUrl, user?.id]);
 
   const togglePlay = useCallback(async () => {
     const v = videoRef.current;

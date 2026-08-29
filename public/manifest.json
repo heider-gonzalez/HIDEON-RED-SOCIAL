@@ -1,23 +1,81 @@
 {
-  "name": "HIDEON",
+  "name": "HIDEON - Red Social Profesional",
   "short_name": "HIDEON",
-  "description": "HIDEON",
-  "start_url": "/?v=2",
+  "description": "Plataforma social académica y profesional para estudiantes universitarios",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#0B0F14",
-  "theme_color": "#0B0F14",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "es",
+  "categories": ["social", "education", "networking"],
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icon-maskable.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-narrow.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nuevo Post",
+      "short_name": "Post",
+      "description": "Crear una nueva publicación",
+      "url": "/?action=new-post",
+      "icons": [
+        {
+          "src": "/icon-new-post.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Mensajes",
+      "short_name": "Chat",
+      "description": "Ver mensajes directos",
+      "url": "/messages",
+      "icons": [
+        {
+          "src": "/icon-messages.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Notificaciones",
+      "short_name": "Alertas",
+      "description": "Ver notificaciones",
+      "url": "/notifications",
+      "icons": [
+        {
+          "src": "/icon-notifications.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

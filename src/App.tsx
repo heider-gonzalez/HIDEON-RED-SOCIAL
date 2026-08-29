@@ -26,6 +26,7 @@ import { FacebookLayout } from "@/components/layout/FacebookLayout";
 import { ProfileCompletionModal } from "@/components/onboarding/ProfileCompletionModal";
 import { useToast } from "@/hooks/use-toast";
 import { usePerformanceMonitor } from "@/utils/performance-monitor";
+import { getAnimationQuality } from "@/utils/performance";
 
 // Critical pages loaded immediately
 import Index from "./pages/Index";
@@ -290,6 +291,7 @@ const App = () => {
 
   // Initialize performance monitoring
   const perfMonitor = usePerformanceMonitor();
+  const animationQuality = getAnimationQuality();
   
   useEffect(() => {
     // Medir Web Vitals cuando la aplicación carga
@@ -300,7 +302,21 @@ const App = () => {
         });
       });
     }
-  }, [perfMonitor]);
+    
+    // Aplicar configuración de animaciones basada en el dispositivo
+    document.documentElement.setAttribute('data-animation-quality', animationQuality);
+    
+    // Registrar Service Worker para PWA
+    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('Service Worker registrado con éxito:', registration);
+        })
+        .catch((error) => {
+          console.log('Error al registrar Service Worker:', error);
+        });
+    }
+  }, [perfMonitor, animationQuality]);
 
   return (
     <ErrorBoundary>
