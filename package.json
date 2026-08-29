@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "build:dev": "vite build --mode development",
     "start": "node server.js",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --ignore-pattern \"capacitor.config.ts\" --ignore-pattern \"tailwind.config.ts\" --ignore-pattern \"types/supabase.ts\"",
     "preview": "vite preview",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -136,8 +136,10 @@
     "@types/nodemailer": "^8.0.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
     "dotenv": "^17.3.1",
-    "eslint": "^9.9.0",
+    "eslint": "^9.15.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
@@ -147,6 +149,6 @@
     "ts-jest": "^29.4.12",
     "tsx": "^4.21.0",
     "typescript": "^5.5.3",
-    "typescript-eslint": "^8.0.1"
+    "typescript-eslint": "^8.15.0"
   }
 }

@@ -15,67 +15,58 @@ export async function uploadToSupabase(
   fileName: string,
   options?: { allowFallback?: boolean; return?: 'url' | 'key' }
 ): Promise<string> {
-  try {
-    try {
-      console.log('Iniciando POST real a Edge Function...');
-      const { data, error } = await supabase.functions.invoke('upload-to-r2', {
-        body: JSON.stringify({
-          fileName,
-          contentType: file.type,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+  console.log('Iniciando POST real a Edge Function...');
+  const { data, error } = await supabase.functions.invoke('upload-to-r2', {
+    body: JSON.stringify({
+      fileName,
+      contentType: file.type,
+    }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 
-      if (error) {
-        throw error;
-      }
-
-      const signedUrl = (data as any)?.signedUrl as string | undefined;
-      const publicUrlFromFn = (data as any)?.publicUrl as string | undefined;
-      const key = (data as any)?.key as string | undefined;
-
-      if (!signedUrl) {
-        throw new Error('R2 signed URL missing. Check Edge Function upload-to-r2 and its secrets.');
-      }
-
-      console.log('Iniciando upload a R2 con signedUrl:', signedUrl);
-      const uploadRes = await fetch(signedUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-          'Cache-Control': 'public, max-age=31536000, immutable',
-        },
-        mode: 'cors',
-      });
-
-      if (!uploadRes.ok) {
-        const hint = uploadRes.status === 0
-          ? 'Possible CORS/OPTIONS issue in your R2 bucket policy.'
-          : 'Check your R2 bucket CORS policy includes OPTIONS and allows Content-Type/Cache-Control headers.';
-        throw new Error(`R2 upload failed: ${uploadRes.status} ${uploadRes.statusText}. ${hint}`);
-      }
-
-      if (key && R2_PUBLIC_URL) {
-        const finalUrl = buildR2PublicUrl(key);
-        console.log('R2 upload successful, URL:', finalUrl);
-        return options?.return === 'key' ? key : finalUrl;
-      }
-
-      if (publicUrlFromFn) {
-        return options?.return === 'key' && key ? key : publicUrlFromFn;
-      }
-
-      throw new Error('R2 upload succeeded but no public URL was provided. Set VITE_R2_PUBLIC_URL or CLOUDFLARE_R2_PUBLIC_URL.');
-    } catch (r2Error) {
-      throw r2Error;
-    }
-  } catch (error) {
-    console.error('Error uploading to Supabase storage:', error);
+  if (error) {
     throw error;
   }
+
+  const signedUrl = (data as any)?.signedUrl as string | undefined;
+  const publicUrlFromFn = (data as any)?.publicUrl as string | undefined;
+  const key = (data as any)?.key as string | undefined;
+
+  if (!signedUrl) {
+    throw new Error('R2 signed URL missing. Check Edge Function upload-to-r2 and its secrets.');
+  }
+
+  console.log('Iniciando upload a R2 con signedUrl:', signedUrl);
+  const uploadRes = await fetch(signedUrl, {
+    method: 'PUT',
+    body: file,
+    headers: {
+      'Content-Type': file.type,
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    },
+    mode: 'cors',
+  });
+
+  if (!uploadRes.ok) {
+    const hint = uploadRes.status === 0
+      ? 'Possible CORS/OPTIONS issue in your R2 bucket policy.'
+      : 'Check your R2 bucket CORS policy includes OPTIONS and allows Content-Type/Cache-Control headers.';
+    throw new Error(`R2 upload failed: ${uploadRes.status} ${uploadRes.statusText}. ${hint}`);
+  }
+
+  if (key && R2_PUBLIC_URL) {
+    const finalUrl = buildR2PublicUrl(key);
+    console.log('R2 upload successful, URL:', finalUrl);
+    return options?.return === 'key' ? key : finalUrl;
+  }
+
+  if (publicUrlFromFn) {
+    return options?.return === 'key' && key ? key : publicUrlFromFn;
+  }
+
+  throw new Error('R2 upload succeeded but no public URL was provided. Set VITE_R2_PUBLIC_URL or CLOUDFLARE_R2_PUBLIC_URL.');
 }
 
 
