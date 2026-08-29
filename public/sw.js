@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hideon-pwa-v1';
+const CACHE_NAME = 'hsocial-pwa-v1';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -6,9 +6,9 @@ const urlsToCache = [
   '/offline.html'
 ];
 
-const dynamicCacheName = 'hideon-dynamic-v1';
+const dynamicCacheName = 'hsocial-dynamic-v1';
 
-// Service Worker para HIDEON PWA
+// Service Worker para HSOCIAL PWA
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -31,6 +31,16 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Función para verificar si es request de Supabase
+function isSupabaseRequest(url) {
+  return url.includes('supabase.co') || url.includes('supabase');
+}
+
+// Función para verificar si es request de autenticación
+function isAuthRequest(url) {
+  return url.includes('/auth/') || url.includes('auth/callback');
+}
+
 self.addEventListener('fetch', (event) => {
   // Solo interceptar requests GET
   if (event.request.method !== 'GET') {
@@ -39,6 +49,18 @@ self.addEventListener('fetch', (event) => {
 
   // Ignorar requests de Chrome Extensions
   if (event.request.url.startsWith('chrome-extension://')) {
+    return;
+  }
+
+  // NO cachear requests de Supabase - siempre ir a la red
+  if (isSupabaseRequest(event.request.url)) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // NO cachear requests de autenticación
+  if (isAuthRequest(event.request.url)) {
+    event.respondWith(fetch(event.request));
     return;
   }
 
@@ -70,46 +92,12 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Estrategia de cache para API responses
-self.addEventListener('fetch', (event) => {
-  // Network First para API requests
-  if (event.request.url.includes('/api/') || event.request.url.includes('supabase')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          // Cache exitoso responses
-          if (response.status === 200) {
-            const responseToCache = response.clone();
-            caches.open(dynamicCacheName).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          // Si falla la red, intentar el cache
-          return caches.match(event.request);
-        })
-    );
-  }
-});
-
-// Background sync para mensajes y notificaciones
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-messages') {
-    event.waitUntil(syncMessages());
-  }
-  if (event.tag === 'sync-notifications') {
-    event.waitUntil(syncNotifications());
-  }
-});
-
 // Push notifications
 self.addEventListener('push', (event) => {
   const options = {
-    body: event.data?.text() || 'Nueva notificación en HIDEON',
-    icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png',
+    body: event.data?.text() || 'Nueva notificación en HSOCIAL',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
     vibrate: [100, 50, 100],
     data: {
       url: event.data?.url || '/'
@@ -117,7 +105,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('HIDEON', options)
+    self.registration.showNotification('HSOCIAL', options)
   );
 });
 
@@ -127,14 +115,3 @@ self.addEventListener('notificationclick', (event) => {
     clients.openWindow(event.notification.data.url, '_blank')
   );
 });
-
-// Funciones auxiliares
-async function syncMessages() {
-  // Implementar sincronización de mensajes pendientes
-  console.log('Syncing messages...');
-}
-
-async function syncNotifications() {
-  // Implementar sincronización de notificaciones pendientes
-  console.log('Syncing notifications...');
-}
