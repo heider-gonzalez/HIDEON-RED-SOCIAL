@@ -267,7 +267,7 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
     <div className="fixed inset-0 bg-background z-[100] flex flex-col h-[100dvh] overflow-hidden">
       {/* Hidden accessibility elements for Radix UI */}
       <div className="sr-only" role="dialog" aria-modal="true">
-        <h2 id="search-dialog-title">Buscar en Hideon</h2>
+        <h2 id="search-dialog-title">Buscar en HSOCIAL</h2>
         <p id="search-dialog-description">Busca usuarios, ideas y proyectos</p>
       </div>
       
@@ -285,7 +285,7 @@ export function FullScreenSearch({ isOpen, onClose }: FullScreenSearchProps) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar en Hideon"
+            placeholder="Buscar en HSOCIAL"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {

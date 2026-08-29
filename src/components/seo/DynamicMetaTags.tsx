@@ -9,13 +9,13 @@ interface DynamicMetaTagsProps {
 }
 
 export function DynamicMetaTags({ 
-  title = 'HIDEON - Red Social Profesional y Académica',
+  title = 'HSOCIAL - Red Social Profesional y Académica',
   description = 'Plataforma social académica y profesional para estudiantes universitarios. Comparte ideas, colabora en proyectos y conecta con profesionales.',
   image = '/og-image.png',
   noIndex = false
 }: DynamicMetaTagsProps) {
   const location = useLocation();
-  const currentUrl = `https://hsocial-app.onrender.com${location.pathname}`;
+  const currentUrl = `https://hideon-red-social.vercel.app${location.pathname}`;
   
   return (
     <Helmet>

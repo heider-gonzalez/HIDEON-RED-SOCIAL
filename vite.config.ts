@@ -27,13 +27,13 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Configuración para producción en Render.com
+  // Configuración para producción en Vercel
   base: mode === 'production' ? '/' : '/',
   // Ensure environment variables are properly loaded in production
   envPrefix: 'VITE_',
   envDir: './',
   preview: {
-    allowedHosts: ['hsocial-app.onrender.com', 'localhost', '.onrender.com'],
+    allowedHosts: ['hideon-red-social.vercel.app', 'localhost', '.vercel.app'],
     host: true,
     port: 4173,
   },
